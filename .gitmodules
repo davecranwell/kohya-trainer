@@ -1,0 +1,6 @@
+[submodule "kohya_docker"]
+	path = kohya_docker
+	url = https://github.com/davecranwell/kohya_ss
+[submodule "sd-scripts"]
+	path = sd-scripts
+	url = https://github.com/davecranwell/sd-scripts
