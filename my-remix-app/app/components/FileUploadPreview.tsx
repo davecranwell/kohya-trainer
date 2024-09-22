@@ -9,14 +9,12 @@ interface FileUploadPreviewProps {
   previews: Preview[];
   setPreviews: React.Dispatch<React.SetStateAction<Preview[]>>;
   uploadProgress: Record<string, number>;
-  setUploadProgress: React.Dispatch<React.SetStateAction<Record<string, number>>>;
 }
 
 export const FileUploadPreview: React.FC<FileUploadPreviewProps> = ({
   previews,
   setPreviews,
   uploadProgress,
-  setUploadProgress,
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
 

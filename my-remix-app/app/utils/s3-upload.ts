@@ -1,10 +1,6 @@
 import { S3Client } from "@aws-sdk/client-s3";
 import { Upload } from "@aws-sdk/lib-storage";
-import type { UploadHandler } from '@remix-run/node';
-import { ReadableStream } from 'stream/web';
-import { writeAsyncIterableToWritable } from "@remix-run/node";
 import { PassThrough } from "stream";
-
 
 export type UploadedFile = {
   key: string;
@@ -59,30 +55,7 @@ export async function uploadStreamToS3(data: any, filename: string, ContentType:
     data,
     progressCallback,
   });
-  // await writeAsyncIterableToWritable(data, stream.writeStream);
+
   const file = await stream.promise.done();
   return file.Location;
 }
-
-// export const uploadStreamToS3 = async (data: AsyncIterable<Uint8Array>, key: string, contentType: string) => {
-//   const upload = new Upload({
-//     client: s3Client,
-//       params: {
-//         Bucket: process.env.AWS_S3_BUCKET_NAME,
-//         Key: key,
-//         Body: await convertToBuffer(data),
-//         ContentType: contentType,
-//       },
-//       leavePartsOnError: false,
-//     });
-
-//   // upload.on("httpUploadProgress", (progress) => {
-//   //   const percentComplete = progress.total
-//   //     ? Math.round((progress.loaded ? progress.loaded : 0/ progress.total) * 100)
-//   //     : 0;
-
-   
-//   // });
-
-//   return upload.done();
-// }
