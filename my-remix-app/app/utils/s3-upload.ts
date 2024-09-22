@@ -1,6 +1,6 @@
+import { PassThrough } from "stream";
 import { S3Client } from "@aws-sdk/client-s3";
 import { Upload } from "@aws-sdk/lib-storage";
-import { PassThrough } from "stream";
 
 export type UploadedFile = {
   key: string;
