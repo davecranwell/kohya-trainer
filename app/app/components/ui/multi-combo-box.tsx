@@ -8,6 +8,7 @@ type Props = {
     name: string;
     options: Option[];
     defaultValue: string | undefined | null;
+    onChange: (options: Option[]) => void;
 };
 
 export type Option = string;
@@ -22,13 +23,15 @@ export const MultiComboBox: React.FC<Props> = ({ ...props }) => {
         setSelected(props.defaultValue ? commaSeparatedStringToArray(props.defaultValue) : []);
     }, [props.defaultValue]);
 
-    const handleChange = (option: Option[]) => {
-        setSelected(option);
+    const handleChange = (selectedOptions: Option[]) => {
+        setSelected(selectedOptions);
         setQuery('');
+        props.onChange(selectedOptions);
     };
 
     const handleRemove = (option: Option) => {
         setSelected((selected) => selected.filter((selectedItem) => selectedItem !== option));
+        props.onChange(selected.filter((selectedItem) => selectedItem !== option));
     };
 
     // Filter the items by the active query
@@ -38,7 +41,7 @@ export const MultiComboBox: React.FC<Props> = ({ ...props }) => {
     const unSelectedItems = filteredItems?.filter((item) => !selected.find((selected) => item === selected)) || [];
 
     return (
-        <div className="flex flex-wrap bg-white p-2">
+        <div className="rounded bg-white p-2">
             {selected.length > 0 && (
                 <ul className="flex flex-wrap">
                     {selected.map((option: Option, index) => (
@@ -49,7 +52,7 @@ export const MultiComboBox: React.FC<Props> = ({ ...props }) => {
                             <span
                                 title={`Remove ${option}`}
                                 onClick={() => handleRemove(option)}
-                                className="ustify-items-center absolute inset-0 flex hidden w-full cursor-pointer content-center items-center justify-center justify-items-stretch justify-self-center bg-gray-300 opacity-90 group-hover:block">
+                                className="absolute inset-0 flex hidden w-full cursor-pointer content-center items-center justify-center justify-items-center justify-items-stretch justify-self-center rounded bg-gray-300 opacity-90 group-hover:block">
                                 <Icon
                                     name="cross-1"
                                     size="font"
@@ -69,7 +72,7 @@ export const MultiComboBox: React.FC<Props> = ({ ...props }) => {
                         https://headlessui.com/react/combobox#using-with-html-forms  */}
 
                         <input type="hidden" name={props.name} value={value} />
-                        <div className="w-full">
+                        <div className="dropdown w-full">
                             <div>
                                 <div className="relative w-full">
                                     <ComboboxInput
@@ -86,7 +89,7 @@ export const MultiComboBox: React.FC<Props> = ({ ...props }) => {
                                 </div>
                             </div>
 
-                            <ComboboxOptions className="absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded-md bg-white py-1 text-base shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm">
+                            <ComboboxOptions className="dropdown-content absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm">
                                 {query.length > 0 && (
                                     <ComboboxOption value={query} className="flex p-1 data-[focus]:bg-blue-100">
                                         <Icon name="plus" size="sm" className="mr-1 text-gray-500" /> Add <span className="font-bold">"{query}"</span>

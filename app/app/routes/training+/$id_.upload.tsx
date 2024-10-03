@@ -1,5 +1,5 @@
-import { useState, useEffect, useRef } from 'react';
-import { Form, useLoaderData } from '@remix-run/react';
+import { useState, useEffect } from 'react';
+import { Form, Links, useLoaderData } from '@remix-run/react';
 import type { LoaderFunctionArgs, UploadHandler } from '@remix-run/node';
 import {
     json,
@@ -10,7 +10,7 @@ import {
 } from '@remix-run/node';
 import { useEventSource } from 'remix-utils/sse/react';
 
-import { FileUploadPreview, Preview } from '#app/components/ui/FileUploadPreview';
+import { FileUploadPreview, ImageWithMetadata } from '#app/components/ui/FileUploadPreview';
 import { Progress, uploadStreamToS3 } from '#app/utils/s3-upload.server.js';
 import { emitter } from '#app/utils/emitter.server';
 import { Button } from '#app/components/ui/button.js';
@@ -20,6 +20,10 @@ import { requireUserWithPermission } from '#app/utils/permissions.server.js';
 import { invariantResponse } from '@epic-web/invariant';
 import { GeneralErrorBoundary } from '#app/components/error-boundary.js';
 import { sanitiseTagArray } from '#app/utils/misc.js';
+import { ImagePreview } from '#app/components/ui/ImagePreview.js';
+import { Label } from '#app/components/ui/label.js';
+import { MultiComboBox } from '#app/components/ui/multi-combo-box.js';
+import { redirectWithToast } from '#app/utils/toast.server.js';
 
 const MAX_IMAGES = 50;
 
@@ -56,16 +60,18 @@ export const action = async ({ params, request }: ActionFunctionArgs) => {
         const imagesToCreate = Math.min(MAX_IMAGES - trainingImages.length, formData.getAll('images').length);
 
         await prisma.trainingImage.createMany({
-            data: formData
-                .getAll('images')
-                .slice(0, imagesToCreate)
-                .map((filename) => ({
-                    text: formData.get(`${filename}-tags`) as string | null,
-                    url: filename as string,
-                    name: filename as string,
+            data: (formData.getAll('images') as string[]).slice(0, imagesToCreate).map((url) => {
+                // S3 upload results in a URL being returned for each image, but we want to access the filename so we can store its name separate from its URL
+                const fileName = url.split('/').pop();
+
+                return {
+                    text: formData.get(`${fileName}-tags`) as string,
+                    url: url as string,
+                    name: fileName as string,
                     trainingId: params.id!,
                     type: 'image/jpeg',
-                })),
+                };
+            }),
         });
     }
 
@@ -78,7 +84,11 @@ export const action = async ({ params, request }: ActionFunctionArgs) => {
         });
     }
 
-    return json(null, { status: 201 });
+    return redirectWithToast(`/training/${params.id}/upload`, {
+        type: 'success',
+        title: 'Success',
+        description: 'Training images have been updated.',
+    });
 };
 
 export async function loader({ params, request }: LoaderFunctionArgs) {
@@ -109,14 +119,15 @@ export async function loader({ params, request }: LoaderFunctionArgs) {
         },
     });
 
-    return json({ userId, images });
+    return json({ userId, images, trainingId: params.id });
 }
 
 export default function ImageUpload() {
     const data = useLoaderData<typeof loader>();
+    const [newImages, setNewImages] = useState<ImageWithMetadata[]>([]);
     const [uploadProgress, setUploadProgress] = useState<Record<string, number>>({});
-    const formRef = useRef<HTMLFormElement>(null);
     const progressMessage = useEventSource(`/sse/${data.userId}`, { event: data.userId });
+    const [allTags, setAllTags] = useState<string[]>(sanitiseTagArray(data.images.map((image) => (image.text || '').split(',')).flat()));
 
     useEffect(() => {
         if (!progressMessage) return;
@@ -131,20 +142,80 @@ export default function ImageUpload() {
         setUploadProgress(newProgress);
     }, [progressMessage]);
 
-    const tags = sanitiseTagArray(data.images.map((image) => (image.text || '').split(',')).flat());
+    const handleNewImageDropped = ({
+        updatedImages, // todo: make this work when uploading a text file
+        newImages,
+        tags,
+    }: {
+        updatedImages: ImageWithMetadata[];
+        newImages: ImageWithMetadata[];
+        tags: string[];
+    }) => {
+        setNewImages((prev) => [...prev, ...newImages] as ImageWithMetadata[]);
+        setAllTags(tags);
+    };
+
+    const handleTagChange = (tags: string[]) => {
+        setAllTags(tags);
+    };
 
     return (
-        <Form ref={formRef} method="post" encType="multipart/form-data">
-            <FileUploadPreview
-                uploadProgress={uploadProgress}
-                acceptedFileTypes={['image/png', 'image/jpeg', 'text/plain']}
-                images={data.images.map((image) => ({ ...image, filenameNoExtension: image.name.split('.').slice(0, -1).join('.') }))} // yuk hate this filenameNoExtension thing
-                tags={tags}
-                maxImages={MAX_IMAGES}
-            />
-            <Button type="submit" disabled={data.images.length >= MAX_IMAGES}>
-                Upload
+        <Form key={data.trainingId} id={data.trainingId} method="post" encType="multipart/form-data" className="relative">
+            <Button type="submit" disabled={data.images.length >= MAX_IMAGES} className="fixed top-0">
+                Update
             </Button>
+
+            <FileUploadPreview
+                key={`${data.trainingId}-preview`}
+                acceptedFileTypes={['image/png', 'image/jpeg', 'text/plain']}
+                previousImages={data.images.map((image) => ({ ...image, filenameNoExtension: image.name.split('.').slice(0, -1).join('.') }))} // yuk hate this filenameNoExtension thing
+                maxImages={MAX_IMAGES}
+                onDropped={handleNewImageDropped}
+                className="mb-4">
+                {newImages.length > 0 && (
+                    <>
+                        <div className="mt-4 space-y-2">
+                            <div className="flex flex-row flex-wrap">
+                                {newImages
+                                    .filter((image) => uploadProgress[image.name] !== 100)
+                                    .map((image) => (
+                                        <div key={image.url} className="mr-1 mt-1">
+                                            <ImagePreview
+                                                url={image.url}
+                                                name={image.name}
+                                                id={image.id}
+                                                width={100}
+                                                uploadProgress={uploadProgress[image.name]}
+                                            />
+                                        </div>
+                                    ))}
+                            </div>
+                        </div>
+                        <Button type="submit" disabled={data.images.length >= MAX_IMAGES} className="mt-4">
+                            Upload
+                        </Button>
+                    </>
+                )}
+            </FileUploadPreview>
+
+            <h2 className="text-2xl font-bold tracking-tight text-gray-900">Your training images</h2>
+            <ul role="list" className="mt-4 space-y-2 divide-y divide-gray-300">
+                {data.images.map((image) => (
+                    <li key={image.id} className="flex flex-row pt-2">
+                        <ImagePreview url={image.url} name={image.name} id={image.id} uploadProgress={uploadProgress[image.name]} width={200} />
+
+                        <div className="ml-2 flex-1">
+                            <Label htmlFor={`${image.name}-text`}>Tags</Label>
+                            <MultiComboBox
+                                name={`${image.id || image.name}-tags`}
+                                defaultValue={image.text}
+                                options={allTags}
+                                onChange={handleTagChange}
+                            />
+                        </div>
+                    </li>
+                ))}
+            </ul>
         </Form>
     );
 }

@@ -1,0 +1,10 @@
+{
+    "name": "thumbnail-lambda",
+    "version": "1.0.0",
+    "description": "A lambda function to create thumbnails of images uploaded to S3",
+    "main": "index.js",
+    "dependencies": {
+        "aws-sdk": "^2.105.0",
+        "sharp": "^0.28.3"
+    }
+}

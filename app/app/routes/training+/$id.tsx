@@ -36,7 +36,7 @@ export default function TrainingRoute() {
         <main className="container flex h-full min-h-[400px] px-0 pb-12 md:px-8">
             <div className="inset-0 flex flex-col">
                 <ul className="overflow-y-auto overflow-x-hidden pb-12">
-                    <TrainingEditor training={training} />
+                    <TrainingEditor key={training.id} training={training} />
                 </ul>
             </div>
         </main>

@@ -5,9 +5,9 @@ import { json, type ActionFunctionArgs, type LoaderFunctionArgs, type MetaFuncti
 import { Form, Link, useActionData, useSearchParams } from '@remix-run/react';
 import { HoneypotInputs } from 'remix-utils/honeypot/react';
 import { z } from 'zod';
+
 import { GeneralErrorBoundary } from '#app/components/error-boundary.tsx';
 import { CheckboxField, ErrorList, Field } from '#app/components/forms.tsx';
-import { Spacer } from '#app/components/spacer.tsx';
 import { StatusButton } from '#app/components/ui/status-button.tsx';
 import { login, requireAnonymous } from '#app/utils/auth.server.ts';
 import { ProviderConnectionForm, providerNames } from '#app/utils/connections.tsx';
@@ -93,8 +93,6 @@ export default function LoginPage() {
                     <h1 className="text-h1">Welcome back!</h1>
                     <p className="text-body-md text-muted-foreground">Please enter your details.</p>
                 </div>
-                <Spacer size="xs" />
-
                 <div>
                     <div className="mx-auto w-full max-w-md px-8">
                         <Form method="POST" {...getFormProps(form)}>

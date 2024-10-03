@@ -7,6 +7,7 @@ import { Input } from './ui/input.tsx';
 import { Label } from './ui/label.tsx';
 import { Textarea } from './ui/textarea.tsx';
 import { MultiComboBox, type Option } from './ui/multi-combo-box.tsx';
+import { cn } from '#app/utils/misc.js';
 
 export type ListOfErrors = Array<string | null | undefined> | null | undefined;
 
@@ -38,8 +39,9 @@ export function Field({
     const fallbackId = useId();
     const id = inputProps.id ?? fallbackId;
     const errorId = errors?.length ? `${id}-error` : undefined;
+
     return (
-        <div className={className}>
+        <div className={cn('form-control w-full max-w-xs', className)}>
             <Label htmlFor={id} {...labelProps} />
             <Input id={id} aria-invalid={errorId ? true : undefined} aria-describedby={errorId} {...inputProps} />
             <div className="min-h-[32px] px-4 pb-3 pt-1">{errorId ? <ErrorList id={errorId} errors={errors} /> : null}</div>

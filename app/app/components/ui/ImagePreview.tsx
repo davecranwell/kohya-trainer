@@ -1,31 +1,33 @@
 import React from 'react';
-import { Label } from './label';
-import { MultiComboBox } from './multi-combo-box';
+
+import { cn, getThumbnailKey } from '#app/utils/misc.js';
 
 interface ImagePreviewProps {
     id?: string;
     name: string;
-    text: string | null | undefined;
+    text?: string | null | undefined;
     url?: string;
     uploadProgress: number | undefined;
-    tagList: string[];
+    width?: number;
 }
 
-export const ImagePreview: React.FC<ImagePreviewProps> = ({ id, name, text, url, uploadProgress, tagList }) => {
+export const ImagePreview: React.FC<ImagePreviewProps> = ({ id, name, url, uploadProgress, width = 200 }) => {
     return (
-        <div className="flex flex-row">
-            <div className="flex w-[250px] flex-none flex-col space-y-2">
-                <img src={url} alt={`Preview ${name}`} className="m-auto h-[200px] w-[200px] object-contain text-center" />
-                {!id && (
-                    <div className="w-fullrounded-full h-2.5 bg-gray-300">
-                        <div className="h-2.5 w-[0px] rounded-full bg-blue-600 text-sm text-gray-500" style={{ width: `${uploadProgress}%` }}></div>
-                    </div>
-                )}
-            </div>
-            <div className="flex-grow">
-                <Label htmlFor={`${name}-text`}>Tags/Caption</Label>
-                <MultiComboBox name={`${id || name}-tags`} defaultValue={text} options={tagList} />
-            </div>
+        <div className={cn(`relative flex w-[${width}px] h-[${width}px] flex-none`)}>
+            {url && (
+                <img
+                    src={getThumbnailKey(url)}
+                    width={width}
+                    height={width}
+                    alt={`Preview ${name}`}
+                    className={`m-auto block w-[${width}px] rounded border border-gray-300 object-contain text-center`}
+                />
+            )}
+            {!id && (
+                <div className="absolute inset-x-0 bottom-0 left-0 right-0 top-0 m-auto h-2.5 w-9/12 rounded-full border border-white bg-gray-300 ring-2 ring-white">
+                    <div className="h-2.5 w-[0px] rounded-full bg-blue-600 text-sm text-gray-500" style={{ width: `${uploadProgress}%` }}></div>
+                </div>
+            )}
         </div>
     );
 };

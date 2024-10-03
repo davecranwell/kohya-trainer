@@ -1,4 +1,4 @@
-import { FormProvider, getFormProps, getInputProps, getTextareaProps, useForm } from '@conform-to/react';
+import { getFormProps, getInputProps, getTextareaProps, useForm } from '@conform-to/react';
 import { getZodConstraint, parseWithZod } from '@conform-to/zod';
 import { type Training } from '@prisma/client';
 import { type SerializeFrom } from '@remix-run/node';
@@ -22,7 +22,7 @@ export function TrainingEditor({ training }: { training?: SerializeFrom<Pick<Tra
     const isPending = useIsPending();
 
     const [form, fields] = useForm({
-        id: 'note-editor',
+        id: `training-editor-${training?.id}`,
         constraint: getZodConstraint(TrainingEditorSchema),
         lastResult: actionData?.result,
         onValidate({ formData }) {
@@ -34,46 +34,48 @@ export function TrainingEditor({ training }: { training?: SerializeFrom<Pick<Tra
         shouldRevalidate: 'onBlur',
     });
 
+    const { key: nameKey, ...nameProps } = getInputProps(fields.name, { type: 'text' });
+    const { key: triggerWordKey, ...triggerWordProps } = getInputProps(fields.triggerWord, { type: 'text' });
+    const { key: baseModelKey, ...baseModelProps } = getInputProps(fields.baseModel, { type: 'text' });
+
     return (
-        <div className="absolute inset-0">
-            <FormProvider context={form.context}>
-                <Form method="POST" {...getFormProps(form)} encType="multipart/form-data">
-                    {training ? <input type="hidden" name="id" value={training.id} /> : null}
-                    <div>
-                        <Field
-                            labelProps={{ children: 'Title' }}
-                            inputProps={{
-                                autoFocus: true,
-                                ...getInputProps(fields.name, { type: 'text' }),
-                            }}
-                            errors={fields.name.errors}
-                        />
-                        <Field
-                            labelProps={{ children: 'Trigger Word' }}
-                            inputProps={{
-                                ...getTextareaProps(fields.triggerWord),
-                            }}
-                            errors={fields.triggerWord.errors}
-                        />
-                        <Field
-                            labelProps={{ children: 'Base model' }}
-                            inputProps={{
-                                ...getTextareaProps(fields.baseModel),
-                            }}
-                            errors={fields.baseModel.errors}
-                        />
-                    </div>
-                    <ErrorList id={form.errorId} errors={form.errors} />
-                </Form>
-                <div>
-                    <Button variant="destructive" {...form.reset.getButtonProps()}>
-                        Reset
-                    </Button>
-                    <StatusButton form={form.id} type="submit" disabled={isPending} status={isPending ? 'pending' : 'idle'}>
-                        Submit
-                    </StatusButton>
+        <div>
+            <Form method="POST" {...getFormProps(form)} encType="multipart/form-data">
+                {training ? <input type="hidden" name="id" value={training.id} /> : null}
+                <div className="w-100">
+                    <Field
+                        labelProps={{ children: 'Title' }}
+                        inputProps={{
+                            autoFocus: true,
+                            ...nameProps,
+                        }}
+                        errors={fields.name.errors}
+                    />
+                    <Field
+                        labelProps={{ children: 'Trigger Word' }}
+                        inputProps={{
+                            ...triggerWordProps,
+                        }}
+                        errors={fields.triggerWord.errors}
+                    />
+                    <Field
+                        labelProps={{ children: 'Base model' }}
+                        inputProps={{
+                            ...baseModelProps,
+                        }}
+                        errors={fields.baseModel.errors}
+                    />
                 </div>
-            </FormProvider>
+                <ErrorList id={form.errorId} errors={form.errors} />
+            </Form>
+            <div>
+                <Button variant="destructive" {...form.reset.getButtonProps()}>
+                    Reset
+                </Button>
+                <StatusButton form={form.id} type="submit" disabled={isPending} status={isPending ? 'pending' : 'idle'}>
+                    Submit
+                </StatusButton>
+            </div>
         </div>
     );
 }

@@ -2,8 +2,6 @@ import { useFormAction, useNavigation } from '@remix-run/react';
 import { clsx, type ClassValue } from 'clsx';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useSpinDelay } from 'spin-delay';
-import { extendTailwindMerge } from 'tailwind-merge';
-import { extendedTheme } from './extended-theme.ts';
 
 export function getUserImgSrc(imageId?: string | null) {
     return imageId ? `/resources/user-images/${imageId}` : '/img/user.png';
@@ -22,37 +20,8 @@ export function getErrorMessage(error: unknown) {
     return 'Unknown Error';
 }
 
-function formatColors() {
-    const colors = [];
-    for (const [key, color] of Object.entries(extendedTheme.colors)) {
-        if (typeof color === 'string') {
-            colors.push(key);
-        } else {
-            const colorGroup = Object.keys(color).map((subKey) => (subKey === 'DEFAULT' ? '' : subKey));
-            colors.push({ [key]: colorGroup });
-        }
-    }
-    return colors;
-}
-
-const customTwMerge = extendTailwindMerge<string, string>({
-    extend: {
-        theme: {
-            colors: formatColors(),
-            borderRadius: Object.keys(extendedTheme.borderRadius),
-        },
-        classGroups: {
-            'font-size': [
-                {
-                    text: Object.keys(extendedTheme.fontSize),
-                },
-            ],
-        },
-    },
-});
-
 export function cn(...inputs: ClassValue[]) {
-    return customTwMerge(clsx(inputs));
+    return clsx(inputs);
 }
 
 export function getDomainUrl(request: Request) {
@@ -243,6 +212,7 @@ export async function downloadFile(url: string, retries: number = 0) {
 }
 
 export function commaSeparatedStringToArray(string: string) {
+    if (typeof string !== 'string') return string;
     return string
         .split(',')
         .map((tag) => tag.trim())
@@ -263,4 +233,9 @@ export function sanitiseTagString(tagString: string) {
 
 export function sanitiseTagArray(tagArray: string[]) {
     return makeArrayUnique(tagArray);
+}
+
+// a function which converts an S3 string pointing to an image file, to a string in which the file extension is replaced with _thumbnail.extension
+export function getThumbnailKey(s3Key: string) {
+    return s3Key.replace(/\.[^.]+$/, '_thumbnail$&');
 }
