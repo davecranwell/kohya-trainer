@@ -21,17 +21,11 @@ export async function shutdownInactiveGpus() {
     if (!liveInstances.length) return;
 
     // We want to delete instances whos IDs aren't linked in our gpu table
-    const knownGpus = await prisma.gpu.findMany({
-        where: {
-            instanceId: {
-                in: liveInstances.map((liveInstance: { id: string }) => liveInstance.id.toString()),
-            },
-        },
-    });
+    const knownGpus = await prisma.gpu.findMany();
 
     // get a list of liveInstance IDs that aren't in knownGpus
     const unknownGpus = liveInstances
-        .filter((liveInstance: { id: string }) => !knownGpus.some((knownGpu) => knownGpu.instanceId === liveInstance.id))
+        .filter((liveInstance: { id: string }) => !knownGpus.some((knownGpu) => knownGpu.instanceId.toString() === liveInstance.id.toString()))
         .map((liveInstance: { id: string }) => liveInstance.id.toString());
 
     console.log(`Unknown GPU instances: ${unknownGpus.join(',')}`);
@@ -99,7 +93,9 @@ export async function shutdownInactiveGpus() {
             // set training using this gpu as onerror
             await prisma.training.updateMany({
                 where: {
-                    gpuId: gpu.toString(),
+                    gpu: {
+                        instanceId: gpu.toString(),
+                    },
                 },
                 data: {
                     status: 'onerror',
