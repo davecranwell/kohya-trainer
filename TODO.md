@@ -1,6 +1,7 @@
-- [ ] Limit number of images uploaded per training
+- [ ] fix --headless handle which is causing bug in docker on vast. Might have alreayd fixed this?
+- [x] Limit number of images uploaded per training
 - [ ] Limit filesize of individual training images
 - [ ] Allow training images to be deleted
 - [ ] Allow choosing of base model from civitai API
 - [x] Filter SSE by the user
-- [ ] prevent duplicate image upload
+- [x] prevent duplicate image upload

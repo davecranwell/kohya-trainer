@@ -27,11 +27,14 @@ model User {
 }
 
 model Training {
-  id      String @id @default(cuid())
-  name    String
-  config  String
-  triggerWord String @default("oxhw")
-  baseModel String @default("")
+  id           String   @id @default(cuid())
+  name         String
+  config       String
+  triggerWord  String   @default("oxhw")
+  baseModel    String   @default("")
+  status       String   @default("") // New field: <none>(for when the user hasn't pressed "start"), pending, active, onerror, completed
+  gpu   Gpu? @relation(fields: [gpuId], references: [id])
+  gpuId String? @unique
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -155,4 +158,14 @@ model Connection {
   userId String
 
   @@unique([providerName, providerId])
+}
+
+model Gpu {
+  id            String   @id @default(cuid())
+  instanceId    String   @unique
+  status        String   // running, stopped NB: this status currently unused
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  training      Training?
+  trainingId    String?
 }

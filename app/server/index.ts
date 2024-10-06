@@ -11,6 +11,9 @@ import getPort, { portNumbers } from 'get-port';
 import helmet from 'helmet';
 import morgan from 'morgan';
 
+import { assignGpuToTraining } from './cron/createGpuInstance.ts';
+import { shutdownInactiveGpus } from './cron/shutdownInactiveGpus.ts';
+
 const MODE = process.env.NODE_ENV ?? 'development';
 const IS_PROD = MODE === 'production';
 const IS_DEV = MODE === 'development';
@@ -261,6 +264,9 @@ ${lanUrl ? `${chalk.bold('On Your Network:')}  ${chalk.cyan(lanUrl)}` : ''}
 ${chalk.bold('Press Ctrl+C to stop')}
 		`.trim(),
     );
+
+    assignGpuToTraining();
+    shutdownInactiveGpus();
 });
 
 closeWithGrace(async () => {

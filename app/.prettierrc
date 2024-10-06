@@ -9,7 +9,7 @@
     "bracketSpacing": true,
     "arrowParens": "always",
     "endOfLine": "lf",
-    "plugins": ["prettier-plugin-tailwindcss"],
+    "plugins": ["prettier-plugin-tailwindcss", "prettier-plugin-prisma"],
     "tailwindAttributes": ["class", "className", "ngClass", ".*[cC]lassName"],
     "tailwindFunctions": ["clsx", "cn"]
 }
