@@ -4,6 +4,8 @@ import axios from 'axios';
 
 const prisma = new PrismaClient();
 
+const STALL_PERIOD = 2 * 60 * 1000; // 10 minutes
+
 // Function to shut down inactive GPU instances
 export async function shutdownInactiveGpus() {
     const toShutDownIds = [];
@@ -16,7 +18,7 @@ export async function shutdownInactiveGpus() {
     });
     const liveInstances = response.data.instances;
 
-    console.log('Live GPU instances', liveInstances.length);
+    console.log(`Live GPU instances: ${liveInstances.length ? liveInstances.map((instance: { id: string }) => instance.id).join(', ') : 'none'}`);
 
     if (!liveInstances.length) return;
 
@@ -28,9 +30,8 @@ export async function shutdownInactiveGpus() {
         .filter((liveInstance: { id: string }) => !knownGpus.some((knownGpu) => knownGpu.instanceId.toString() === liveInstance.id.toString()))
         .map((liveInstance: { id: string }) => liveInstance.id.toString());
 
-    console.log(`Unknown GPU instances: ${unknownGpus.join(',')}`);
+    console.log(`Unknown GPU instances: ${unknownGpus.length ? unknownGpus.join(',') : 'none'}`);
 
-    // add the ids to toShutDownIds
     toShutDownIds.push(...unknownGpus);
 
     // We want to delete those that are linked, but where training has finished
@@ -48,9 +49,8 @@ export async function shutdownInactiveGpus() {
 
     const finishedTrainingIds = finishedTrainings.map((training) => training.gpu?.instanceId);
 
-    console.log(`Complete GPU instances: ${finishedTrainings.join(',')}`);
+    console.log(`Complete GPU instances: ${finishedTrainingIds.length ? finishedTrainingIds.join(',') : 'none'}`);
 
-    // add the ids to toShutDownIds
     toShutDownIds.push(...finishedTrainingIds);
 
     // We want to delete those where they are linked but training hasn't received an update in more than 10 minutes
@@ -60,7 +60,7 @@ export async function shutdownInactiveGpus() {
             NOT: {
                 training: {
                     updatedAt: {
-                        gt: new Date(Date.now() - 10 * 60 * 1000), // 10 minutes ago
+                        gt: new Date(Date.now() - STALL_PERIOD), // 10 minutes ago
                     },
                 },
             },
@@ -69,8 +69,8 @@ export async function shutdownInactiveGpus() {
 
     const stalledGpuIds = stalledGpus.map((gpu) => gpu.instanceId);
 
-    console.log(`Stalled GPU instances: ${stalledGpuIds.join(',')}`);
-    // add the ids to toShutDownIds
+    console.log(`Stalled GPU instances: ${stalledGpuIds.length ? stalledGpuIds.join(',') : 'none'}`);
+
     toShutDownIds.push(...stalledGpuIds);
 
     console.log(`Shutting down inactive GPU instances: ${toShutDownIds.join(', ')}`);
@@ -78,11 +78,6 @@ export async function shutdownInactiveGpus() {
     try {
         for (const gpu of toShutDownIds) {
             console.log(`Shutting down inactive GPU instance: ${gpu}`);
-
-            // delete these gpus from the database
-            await prisma.gpu.deleteMany({
-                where: { instanceId: gpu.toString() },
-            });
 
             await axios.delete(`https://console.vast.ai/api/v0/instances/${gpu}/`, {
                 headers: {
@@ -102,6 +97,11 @@ export async function shutdownInactiveGpus() {
                 },
             });
 
+            // delete these gpus from the database
+            await prisma.gpu.deleteMany({
+                where: { instanceId: gpu.toString() },
+            });
+
             console.log(`Shut down inactive GPU instance: ${gpu}`);
         }
     } catch (error) {
@@ -109,6 +109,9 @@ export async function shutdownInactiveGpus() {
     }
 }
 
-cron.schedule('*/5 * * * *', shutdownInactiveGpus); // Run every 5 minutes
+const USE_CRON = process.env.USE_CRON !== 'false';
 
-console.log('GPU Manager shutdownInactiveGpus job scheduled');
+if (USE_CRON) {
+    cron.schedule('*/5 * * * *', shutdownInactiveGpus); // Run every 5 minutes
+    console.log('GPU Manager shutdownInactiveGpus job scheduled');
+}

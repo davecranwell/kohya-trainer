@@ -18,6 +18,7 @@ const MODE = process.env.NODE_ENV ?? 'development';
 const IS_PROD = MODE === 'production';
 const IS_DEV = MODE === 'development';
 const ALLOW_INDEXING = process.env.ALLOW_INDEXING !== 'false';
+const USE_CRON = process.env.USE_CRON !== 'false';
 
 if (IS_PROD && process.env.SENTRY_DSN) {
     void import('./utils/monitoring.js').then(({ init }) => init());
@@ -265,8 +266,10 @@ ${chalk.bold('Press Ctrl+C to stop')}
 		`.trim(),
     );
 
-    assignGpuToTraining();
-    shutdownInactiveGpus();
+    if (USE_CRON) {
+        assignGpuToTraining();
+        shutdownInactiveGpus();
+    }
 });
 
 closeWithGrace(async () => {

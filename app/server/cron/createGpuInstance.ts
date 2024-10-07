@@ -40,14 +40,13 @@ export async function createGpuInstance() {
 
     const bundleId = bundle.ask_contract_id;
 
-    console.log({ bundle: bundleId });
-
     try {
         // This query string is discoverable from network tab when creating an instance: https://cloud.vast.ai/create/
         // no return value as it's largely useless and ID of isntance is already in bundle.id
         const newGpuResponse = await axios.put(
             `https://console.vast.ai/api/v0/asks/${bundleId}/`,
             JSON.stringify({
+                // templates are unnecesasry here as the code that JSON config which follows is all a template truly is
                 // template_id: 165993,
                 // template_hash_id: 'a69eb447f9fa3ab0937f8142a858bc96',
                 client_id: 'me',
@@ -128,7 +127,7 @@ export async function assignGpuToTraining() {
                 await prisma.training.update({
                     where: { id: pendingTraining.id },
                     data: {
-                        status: 'assigned',
+                        status: 'active',
                         gpuId: availableGpu.id,
                         updatedAt: new Date(),
                     },
@@ -144,7 +143,10 @@ export async function assignGpuToTraining() {
     }
 }
 
-// Schedule cron jobs
-cron.schedule('*/30 * * * * *', assignGpuToTraining); // Run every 30 seconds
+const USE_CRON = process.env.USE_CRON !== 'false';
 
-console.log('GPU Manager createGpuInstance/assignGpuToTraining job scheduled');
+if (USE_CRON) {
+    // Schedule cron jobs
+    cron.schedule('*/30 * * * * *', assignGpuToTraining); // Run every 30 seconds
+    console.log('GPU Manager createGpuInstance/assignGpuToTraining job scheduled');
+}
