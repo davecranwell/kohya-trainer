@@ -17,7 +17,7 @@ export function ErrorList({ id, errors }: { errors?: ListOfErrors; id?: string }
     return (
         <ul id={id} className="flex flex-col gap-1">
             {errorsToRender.map((e) => (
-                <li key={e} className="text-[10px] text-foreground-destructive">
+                <li key={e} className="text-foreground-destructive text-[10px]">
                     {e}
                 </li>
             ))}
@@ -30,21 +30,28 @@ export function Field({
     inputProps,
     errors,
     className,
+    help,
 }: {
     labelProps: React.LabelHTMLAttributes<HTMLLabelElement>;
     inputProps: React.InputHTMLAttributes<HTMLInputElement>;
     errors?: ListOfErrors;
     className?: string;
+    help?: string;
 }) {
     const fallbackId = useId();
     const id = inputProps.id ?? fallbackId;
     const errorId = errors?.length ? `${id}-error` : undefined;
 
     return (
-        <div className={cn('form-control w-full max-w-xs', className)}>
+        <div className={cn('w-full max-w-xs', className)}>
             <Label htmlFor={id} {...labelProps} />
             <Input id={id} aria-invalid={errorId ? true : undefined} aria-describedby={errorId} {...inputProps} />
-            <div className="min-h-[32px] px-4 pb-3 pt-1">{errorId ? <ErrorList id={errorId} errors={errors} /> : null}</div>
+            {help && <p className="mt-3 text-sm leading-6 text-gray-500">{help}</p>}
+            {errorId && (
+                <div className="min-h-[32px] px-4 pb-3 pt-1">
+                    <ErrorList id={errorId} errors={errors} />
+                </div>
+            )}
         </div>
     );
 }
@@ -195,7 +202,7 @@ export function CheckboxField({
                     }}
                     type="button"
                 />
-                <label htmlFor={id} {...labelProps} className="self-center text-body-xs text-muted-foreground" />
+                <label htmlFor={id} {...labelProps} className="text-body-xs text-muted-foreground self-center" />
             </div>
             <div className="px-4 pb-3 pt-1">{errorId ? <ErrorList id={errorId} errors={errors} /> : null}</div>
         </div>

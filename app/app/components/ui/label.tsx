@@ -4,7 +4,7 @@ import * as React from 'react';
 
 import { cn } from '#app/utils/misc.tsx';
 
-const labelVariants = cva('label');
+const labelVariants = cva('block text-sm font-medium leading-6 text-gray-900 mb-2');
 
 const Label = React.forwardRef<
     React.ElementRef<typeof LabelPrimitive.Root>,

@@ -7,10 +7,13 @@ import { cn } from '#app/utils/misc.tsx';
 const buttonVariants = cva('btn rounded-full', {
     variants: {
         variant: {
-            default: 'btn-primary',
-            destructive: 'btn-warning',
+            default:
+                'rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 ',
+            destructive:
+                'rounded-md bg-red-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-red-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600 ',
             outline: 'border border-input bg-background hover:bg-accent hover:text-accent-foreground',
-            secondary: 'btn-secondary',
+            secondary:
+                'rounded-md px-3 py-2 text-sm font-semibold shadow-sm hover:bg-grey-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600',
             link: 'text-primary underline-offset-4 hover:underline',
         },
         size: {

@@ -1,21 +1,8 @@
 import { json, type LoaderFunctionArgs } from '@remix-run/node';
-import { Link, NavLink, Outlet, useLoaderData } from '@remix-run/react';
-import {
-    Dialog,
-    DialogBackdrop,
-    DialogPanel,
-    Disclosure,
-    DisclosureButton,
-    DisclosurePanel,
-    Menu,
-    MenuButton,
-    MenuItem,
-    MenuItems,
-} from '@headlessui/react';
+import { NavLink, Outlet, useLoaderData } from '@remix-run/react';
 
 import { prisma } from '#app/utils/db.server.ts';
 import { requireUserWithPermission } from '#app/utils/permissions.server.ts';
-import { Icon } from '#app/components/ui/icon.js';
 
 export async function loader({ request }: LoaderFunctionArgs) {
     const userId = await requireUserWithPermission(request, 'create:training:own');
@@ -47,8 +34,12 @@ export default function TrainingRoute() {
                 <section aria-labelledby="products-heading" className="pb-24 pt-6">
                     <div className="grid grid-cols-1 gap-x-8 gap-y-10 lg:grid-cols-4">
                         <div className="lg:block">
-                            <h3 className="sr-only">Categories</h3>
-                            <ul role="list" className="space-y-4 border-b border-gray-200 pb-6 font-medium text-gray-900">
+                            <NavLink
+                                to="/training/new"
+                                className="flex items-center justify-center rounded-md border border-transparent bg-indigo-600 px-6 py-3 text-base font-medium text-white shadow-sm hover:bg-indigo-700">
+                                New training
+                            </NavLink>
+                            {/* <ul role="list" className="space-y-4 border-b border-gray-200 pb-6 font-medium text-gray-900">
                                 <li>
                                     <NavLink to="/training/new">
                                         <Icon name="plus">New training</Icon>
@@ -62,7 +53,7 @@ export default function TrainingRoute() {
                                         </Link>
                                     </li>
                                 ))}
-                            </ul>
+                            </ul> */}
                         </div>
 
                         <div className="lg:col-span-3">

@@ -32,13 +32,5 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
 export default function TrainingRoute() {
     const { training } = useLoaderData<typeof loader>();
 
-    return (
-        <main className="container flex h-full min-h-[400px] px-0 pb-12 md:px-8">
-            <div className="inset-0 flex flex-col">
-                <ul className="overflow-y-auto overflow-x-hidden pb-12">
-                    <TrainingEditor key={training.id} training={training} />
-                </ul>
-            </div>
-        </main>
-    );
+    return <TrainingEditor key={training.id} training={training} />;
 }

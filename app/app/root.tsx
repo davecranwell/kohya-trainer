@@ -160,7 +160,7 @@ function Document({
                 {allowIndexing ? null : <meta name="robots" content="noindex, nofollow" />}
                 <Links />
             </head>
-            <body className="h-full">
+            <body className="h-full bg-gray-50">
                 {children}
                 <script
                     nonce={nonce}
