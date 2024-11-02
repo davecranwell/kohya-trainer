@@ -1,6 +1,7 @@
 import { PassThrough } from 'stream';
 import { S3Client } from '@aws-sdk/client-s3';
 import { Upload } from '@aws-sdk/lib-storage';
+import { Resource } from 'sst';
 
 // Add this import
 import { PutObjectRequest } from '@aws-sdk/client-s3';
@@ -51,7 +52,7 @@ const uploadStream = async ({
     const upload = new Upload({
         client: s3Client,
         params: {
-            Bucket: process.env.AWS_S3_BUCKET_NAME,
+            Bucket: Resource.myloraappbucket.name,
             Key: `${userId}/${trainingId}/${Key}`,
             Body: await convertToBuffer(data),
             ContentType,

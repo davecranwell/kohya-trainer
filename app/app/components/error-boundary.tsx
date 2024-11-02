@@ -30,9 +30,9 @@ export function GeneralErrorBoundary({
     const params = useParams();
     captureRemixErrorBoundaryError(error);
 
-    if (typeof document !== 'undefined') {
-        console.error(error);
-    }
+    // if (typeof document !== 'undefined') {
+    //     console.error(error);
+    // }
 
     return (
         <div>

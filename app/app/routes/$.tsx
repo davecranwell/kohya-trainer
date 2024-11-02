@@ -20,20 +20,18 @@ export default function NotFound() {
 }
 
 export function ErrorBoundary() {
-    const location = useLocation();
     return (
         <GeneralErrorBoundary
             statusHandlers={{
                 404: () => (
-                    <div>
+                    <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                         <div>
-                            <h1>We can't find this page:</h1>
-                            <pre>{location.pathname}</pre>
+                            <h1 className="text-3xl font-bold tracking-tight text-gray-900">We can't find this page</h1>
                         </div>
                         <Link to="/">
                             <Icon name="arrow-left">Back to home</Icon>
                         </Link>
-                    </div>
+                    </main>
                 ),
             }}
         />

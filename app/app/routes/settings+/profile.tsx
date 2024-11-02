@@ -13,9 +13,13 @@ import { useUser } from '#app/utils/user.ts';
 export const BreadcrumbHandle = z.object({ breadcrumb: z.any() });
 export type BreadcrumbHandle = z.infer<typeof BreadcrumbHandle>;
 
-export const handle: BreadcrumbHandle & SEOHandle = {
-    breadcrumb: <Icon name="file-text">Edit Profile</Icon>,
+export const PageHeadingHandle = z.object({ pageHeading: z.any() });
+export type PageHeadingHandle = z.infer<typeof PageHeadingHandle>;
+
+export const handle: BreadcrumbHandle & SEOHandle & PageHeadingHandle = {
+    breadcrumb: 'Edit Profile',
     getSitemapEntries: () => null,
+    pageHeading: 'Profile',
 };
 
 export async function loader({ request }: LoaderFunctionArgs) {
@@ -32,7 +36,7 @@ const BreadcrumbHandleMatch = z.object({
     handle: BreadcrumbHandle,
 });
 
-export default function EditUserProfile() {
+export default function ProfilePage() {
     const user = useUser();
     const matches = useMatches();
     const breadcrumbs = matches
@@ -48,26 +52,19 @@ export default function EditUserProfile() {
         .filter(Boolean);
 
     return (
-        <div className="m-auto mb-24 mt-16 max-w-3xl">
-            <div className="container">
-                <ul className="flex gap-3">
-                    <li>
-                        <Link className="text-muted-foreground" to={`/users/${user.username}`}>
-                            Profile
-                        </Link>
+        <div>
+            <ul className="flex gap-3">
+                <li>
+                    <Link to={`/users/${user.username}`}>Profile</Link>
+                </li>
+                {breadcrumbs.map((breadcrumb, i, arr) => (
+                    <li key={i} className={cn('flex items-center gap-3')}>
+                        / {breadcrumb}
                     </li>
-                    {breadcrumbs.map((breadcrumb, i, arr) => (
-                        <li
-                            key={i}
-                            className={cn('flex items-center gap-3', {
-                                'text-muted-foreground': i < arr.length - 1,
-                            })}>
-                            ▶️ {breadcrumb}
-                        </li>
-                    ))}
-                </ul>
-            </div>
-            <main className="mx-auto bg-muted px-6 py-8 md:container md:rounded-3xl">
+                ))}
+            </ul>
+
+            <main className="mx-auto px-6 py-8 md:container md:rounded-3xl">
                 <Outlet />
             </main>
         </div>

@@ -6,6 +6,17 @@ import colors from 'tailwindcss/colors';
 
 export default {
     content: ['./app/**/*.{ts,tsx,jsx,js}'],
-    theme: {},
+    theme: {
+        colors: {
+            ...colors,
+            primary: {
+                DEFAULT: colors.indigo[600],
+                faded: colors.indigo[500],
+            },
+            secondary: {
+                DEFAULT: colors.gray[200],
+            },
+        },
+    },
     plugins: [require('@tailwindcss/typography'), animatePlugin, radixPlugin, require('@tailwindcss/forms')],
 } satisfies Config;

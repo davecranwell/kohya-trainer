@@ -87,16 +87,16 @@ export default function LoginPage() {
     });
 
     return (
-        <div className="flex min-h-full flex-col justify-center pb-32 pt-20">
-            <div className="mx-auto w-full max-w-md">
-                <div className="flex flex-col gap-3 text-center">
-                    <h1 className="text-h1">Welcome back!</h1>
-                    <p className="text-body-md text-muted-foreground">Please enter your details.</p>
-                </div>
-                <div>
-                    <div className="mx-auto w-full max-w-md px-8">
-                        <Form method="POST" {...getFormProps(form)}>
-                            <HoneypotInputs />
+        <div>
+            <div className="flex flex-col gap-3 text-center">
+                <h1 className="h1">Welcome back!</h1>
+                <p>Please enter your details.</p>
+            </div>
+            <div>
+                <div className="mx-auto w-full max-w-md py-8">
+                    <Form method="POST" {...getFormProps(form)}>
+                        <HoneypotInputs />
+                        <div className="w-100 space-y-8">
                             <Field
                                 labelProps={{ children: 'Username' }}
                                 inputProps={{
@@ -131,7 +131,7 @@ export default function LoginPage() {
                                     errors={fields.remember.errors}
                                 />
                                 <div>
-                                    <Link to="/forgot-password" className="text-body-xs font-semibold">
+                                    <Link to="/forgot-password" className="font-primary font-semibold">
                                         Forgot password?
                                     </Link>
                                 </div>
@@ -149,18 +149,19 @@ export default function LoginPage() {
                                     Log in
                                 </StatusButton>
                             </div>
-                        </Form>
-                        <ul className="mt-5 flex flex-col gap-5 border-b-2 border-t-2 border-border py-3">
-                            {providerNames.map((providerName) => (
-                                <li key={providerName}>
-                                    <ProviderConnectionForm type="Login" providerName={providerName} redirectTo={redirectTo} />
-                                </li>
-                            ))}
-                        </ul>
-                        <div className="flex items-center justify-center gap-2 pt-6">
-                            <span className="text-muted-foreground">New here?</span>
-                            <Link to={redirectTo ? `/signup?${encodeURIComponent(redirectTo)}` : '/signup'}>Create an account</Link>
                         </div>
+                    </Form>
+                    <ul className="border-border mt-5 flex flex-col gap-5 border-b-2 border-t-2 py-3">
+                        <p className="text-sm text-gray-500">Or log in with your favourite providers:</p>
+                        {providerNames.map((providerName) => (
+                            <li key={providerName}>
+                                <ProviderConnectionForm type="Login" providerName={providerName} redirectTo={redirectTo} />
+                            </li>
+                        ))}
+                    </ul>
+                    <div className="flex items-center justify-center gap-2 pt-6">
+                        <span>New here?</span>
+                        <Link to={redirectTo ? `/signup?${encodeURIComponent(redirectTo)}` : '/signup'}>Create an account</Link>
                     </div>
                 </div>
             </div>

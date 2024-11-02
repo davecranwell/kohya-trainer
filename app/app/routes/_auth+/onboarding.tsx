@@ -121,7 +121,7 @@ export default function OnboardingRoute() {
             <div className="mx-auto w-full max-w-lg">
                 <div className="flex flex-col gap-3 text-center">
                     <h1 className="text-h1">Welcome aboard {data.email}!</h1>
-                    <p className="text-body-md text-muted-foreground">Please enter your details.</p>
+                    <p className="text-body-md">Please enter your details.</p>
                 </div>
                 <Form method="POST" className="mx-auto min-w-full max-w-sm sm:min-w-[368px]" {...getFormProps(form)}>
                     <HoneypotInputs />

@@ -39,7 +39,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
     return json({ trainings });
 }
 
-export default function TrainingRoute() {
+export default function TrainingPage() {
     const data = useLoaderData<typeof loader>();
 
     return (

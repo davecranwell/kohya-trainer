@@ -9,6 +9,8 @@ import {
     unstable_composeUploadHandlers,
 } from '@remix-run/node';
 import { useEventSource } from 'remix-utils/sse/react';
+import { invariantResponse } from '@epic-web/invariant';
+import { Resource } from 'sst';
 
 import { FileUploadPreview, ImageWithMetadata } from '#app/components/ui/FileUploadPreview';
 import { Progress, uploadStreamToS3 } from '#app/utils/s3-upload.server.js';
@@ -17,7 +19,6 @@ import { Button } from '#app/components/ui/button.js';
 import { requireUserId } from '#app/utils/auth.server.js';
 import { prisma } from '#app/utils/db.server.ts';
 import { requireUserWithPermission } from '#app/utils/permissions.server.js';
-import { invariantResponse } from '@epic-web/invariant';
 import { GeneralErrorBoundary } from '#app/components/error-boundary.js';
 import { sanitiseTagArray } from '#app/utils/misc.js';
 import { ImagePreview } from '#app/components/ui/ImagePreview.js';

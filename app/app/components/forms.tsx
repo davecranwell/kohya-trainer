@@ -17,7 +17,7 @@ export function ErrorList({ id, errors }: { errors?: ListOfErrors; id?: string }
     return (
         <ul id={id} className="flex flex-col gap-1">
             {errorsToRender.map((e) => (
-                <li key={e} className="text-foreground-destructive text-[10px]">
+                <li key={e} className="text-red-500">
                     {e}
                 </li>
             ))}
@@ -43,12 +43,12 @@ export function Field({
     const errorId = errors?.length ? `${id}-error` : undefined;
 
     return (
-        <div className={cn('w-full max-w-xs', className)}>
+        <div className={cn('w-full', className)}>
             <Label htmlFor={id} {...labelProps} />
             <Input id={id} aria-invalid={errorId ? true : undefined} aria-describedby={errorId} {...inputProps} />
-            {help && <p className="mt-3 text-sm leading-6 text-gray-500">{help}</p>}
+            {help && <p className="mt-3 text-sm text-gray-500">{help}</p>}
             {errorId && (
-                <div className="min-h-[32px] px-4 pb-3 pt-1">
+                <div className="pt-1">
                     <ErrorList id={errorId} errors={errors} />
                 </div>
             )}
@@ -83,7 +83,7 @@ export function ComboBoxField({
                 aria-describedby={errorId}
                 {...inputProps}
             />
-            <div className="min-h-[32px] px-4 pb-3 pt-1">{errorId ? <ErrorList id={errorId} errors={errors} /> : null}</div>
+            <div className="pt-1">{errorId ? <ErrorList id={errorId} errors={errors} /> : null}</div>
         </div>
     );
 }
@@ -124,7 +124,7 @@ export function OTPField({
                     <InputOTPSlot index={5} />
                 </InputOTPGroup>
             </InputOTP>
-            <div className="min-h-[32px] px-4 pb-3 pt-1">{errorId ? <ErrorList id={errorId} errors={errors} /> : null}</div>
+            <div className="pt-1">{errorId ? <ErrorList id={errorId} errors={errors} /> : null}</div>
         </div>
     );
 }
@@ -147,7 +147,7 @@ export function TextareaField({
         <div className={className}>
             <Label htmlFor={id} {...labelProps} />
             <Textarea id={id} aria-invalid={errorId ? true : undefined} aria-describedby={errorId} {...textareaProps} />
-            <div className="min-h-[32px] px-4 pb-3 pt-1">{errorId ? <ErrorList id={errorId} errors={errors} /> : null}</div>
+            <div className="pt-1">{errorId ? <ErrorList id={errorId} errors={errors} /> : null}</div>
         </div>
     );
 }
@@ -181,7 +181,7 @@ export function CheckboxField({
 
     return (
         <div className={className}>
-            <div className="flex gap-2">
+            <div className="flex items-center gap-2">
                 <Checkbox
                     {...checkboxProps}
                     id={id}
@@ -202,9 +202,9 @@ export function CheckboxField({
                     }}
                     type="button"
                 />
-                <label htmlFor={id} {...labelProps} className="text-body-xs text-muted-foreground self-center" />
+                <label htmlFor={id} {...labelProps} className="text-body-xs self-center" />
             </div>
-            <div className="px-4 pb-3 pt-1">{errorId ? <ErrorList id={errorId} errors={errors} /> : null}</div>
+            <div className="pt-1">{errorId ? <ErrorList id={errorId} errors={errors} /> : null}</div>
         </div>
     );
 }

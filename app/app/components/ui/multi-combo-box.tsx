@@ -48,7 +48,7 @@ export const MultiComboBox: React.FC<Props> = ({ ...props }) => {
                         <li
                             key={`${props.name}-${option}-${index}`}
                             className="group relative mb-1 mr-1 flex items-center items-stretch whitespace-nowrap rounded bg-gray-200 p-1 text-xs hover:bg-gray-300">
-                            <span className="mr-1">{option}</span>
+                            <span>{option}</span>
                             <span
                                 title={`Remove ${option}`}
                                 onClick={() => handleRemove(option)}
@@ -56,7 +56,7 @@ export const MultiComboBox: React.FC<Props> = ({ ...props }) => {
                                 <Icon
                                     name="cross-1"
                                     size="font"
-                                    className="text-primary-600 m-auto group-hover:text-red-600"
+                                    className="text-primary m-auto group-hover:text-red-600"
                                     aria-label={`Remove ${option}`}
                                 />
                             </span>
@@ -81,7 +81,7 @@ export const MultiComboBox: React.FC<Props> = ({ ...props }) => {
                                         onChange={(event) => {
                                             setQuery(event.target.value);
                                         }}
-                                        className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:max-w-xs sm:text-sm sm:leading-6"
+                                        className="focus:ring-primary block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset sm:max-w-xs sm:text-sm sm:leading-6"
                                     />
                                     <ComboboxButton className="absolute inset-y-0 right-0 z-0 flex w-8 items-center">
                                         <Icon name="arrow-down" size="sm" className="text-gray-500" />
