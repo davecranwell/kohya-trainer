@@ -39,6 +39,8 @@ export const action = async ({ params, request }: ActionFunctionArgs) => {
         },
     });
 
+    invariantResponse(trainingId, 'Not found', { status: 404 });
+
     const s3UploaderHandler: UploadHandler = async (field) => {
         const { name, data, filename, contentType } = field;
         if (name !== 'images' || !filename || !contentType.startsWith('image/')) {
@@ -166,6 +168,7 @@ export default function ImageUpload() {
                 Update
             </Button>
 
+            {data.images.length < 1 && <h2 className="mb-4 text-2xl font-bold tracking-tight text-gray-900">Upload some training images</h2>}
             <FileUploadPreview
                 key={`${data.trainingId}-preview`}
                 acceptedFileTypes={['image/png', 'image/jpeg', 'text/plain']}
@@ -199,34 +202,34 @@ export default function ImageUpload() {
                 )}
             </FileUploadPreview>
 
-            <h2 className="text-2xl font-bold tracking-tight text-gray-900">Your training images</h2>
-            <ul role="list" className="mt-4 space-y-2 divide-y divide-gray-300">
-                {data.images.map((image) => (
-                    <li key={image.id} className="flex flex-row pt-2">
-                        <ImagePreview url={image.url} name={image.name} id={image.id} uploadProgress={uploadProgress[image.name]} width={200} />
+            {data.images.length > 0 && (
+                <>
+                    <h2 className="text-2xl font-bold tracking-tight text-gray-900">Your training images</h2>
+                    <ul role="list" className="mt-4 space-y-2 divide-y divide-gray-300">
+                        {data.images.map((image) => (
+                            <li key={image.id} className="flex flex-row pt-2">
+                                <ImagePreview
+                                    url={image.url}
+                                    name={image.name}
+                                    id={image.id}
+                                    uploadProgress={uploadProgress[image.name]}
+                                    width={200}
+                                />
 
-                        <div className="ml-2 flex-1">
-                            <Label htmlFor={`${image.name}-text`}>Tags</Label>
-                            <MultiComboBox
-                                name={`${image.id || image.name}-tags`}
-                                defaultValue={image.text}
-                                options={allTags}
-                                onChange={handleTagChange}
-                            />
-                        </div>
-                    </li>
-                ))}
-            </ul>
+                                <div className="ml-2 flex-1">
+                                    <Label htmlFor={`${image.name}-text`}>Tags</Label>
+                                    <MultiComboBox
+                                        name={`${image.id || image.name}-tags`}
+                                        defaultValue={image.text}
+                                        options={allTags}
+                                        onChange={handleTagChange}
+                                    />
+                                </div>
+                            </li>
+                        ))}
+                    </ul>
+                </>
+            )}
         </Form>
-    );
-}
-
-export function ErrorBoundary() {
-    return (
-        <GeneralErrorBoundary
-            statusHandlers={{
-                404: ({ params }) => <p>No training with the id "{params.id}" exists</p>,
-            }}
-        />
     );
 }

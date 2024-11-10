@@ -1,10 +1,7 @@
 import { PassThrough } from 'stream';
-import { S3Client } from '@aws-sdk/client-s3';
+import { S3Client, PutObjectRequest } from '@aws-sdk/client-s3';
 import { Upload } from '@aws-sdk/lib-storage';
 import { Resource } from 'sst';
-
-// Add this import
-import { PutObjectRequest } from '@aws-sdk/client-s3';
 
 export type UploadedFile = {
     key: string;
@@ -52,7 +49,7 @@ const uploadStream = async ({
     const upload = new Upload({
         client: s3Client,
         params: {
-            Bucket: Resource.myloraappbucket.name,
+            Bucket: Resource.TrainerAppBucket.name,
             Key: `${userId}/${trainingId}/${Key}`,
             Body: await convertToBuffer(data),
             ContentType,

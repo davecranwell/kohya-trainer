@@ -61,7 +61,7 @@ export async function action({ request }: ActionFunctionArgs) {
         },
     });
 
-    return redirectWithToast(`/training/${updateTraining.id}`, {
+    return redirectWithToast(`/training/${updateTraining.id}/upload`, {
         type: 'success',
         title: 'Success',
         description: trainingId ? 'Training configuration has been updated.' : 'New training has been created.',

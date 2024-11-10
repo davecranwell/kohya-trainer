@@ -47,8 +47,8 @@ export default function VerifyRoute() {
 
     const checkEmail = (
         <>
-            <h1 className="text-h1">Check your email</h1>
-            <p className="text-body-md mt-3">We've sent you a code to verify your email address.</p>
+            <h1 className="h1">Check your email</h1>
+            <p className="text-body-md mt-3">We've sent that email address a code to verify. Please enter it below.</p>
         </>
     );
 
@@ -58,7 +58,7 @@ export default function VerifyRoute() {
         'change-email': checkEmail,
         '2fa': (
             <>
-                <h1 className="text-h1">Check your 2FA app</h1>
+                <h1 className="h1">Check your 2FA app</h1>
                 <p className="text-body-md mt-3">Please enter your 2FA code to verify your identity.</p>
             </>
         ),
@@ -80,16 +80,16 @@ export default function VerifyRoute() {
     });
 
     return (
-        <main className="container flex flex-col justify-center pb-32 pt-20">
+        <main className="container flex flex-col justify-center">
             <div className="text-center">{type ? headings[type] : 'Invalid Verification Type'}</div>
-            <div className="mx-auto flex w-72 max-w-full flex-col justify-center gap-1">
+            <div className="mx-auto mt-4 flex w-72 max-w-full flex-col justify-center gap-1">
                 <div>
                     <ErrorList errors={form.errors} id={form.errorId} />
                 </div>
                 <div className="flex w-full gap-2">
                     <Form method="POST" {...getFormProps(form)} className="flex-1">
                         <HoneypotInputs />
-                        <div className="flex items-center justify-center">
+                        <div className="mb-4 flex items-center justify-center">
                             <OTPField
                                 labelProps={{
                                     htmlFor: fields[codeQueryParam].id,

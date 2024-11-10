@@ -1,0 +1,14 @@
+{
+    "printWidth": 150,
+    "bracketSameLine": true,
+    "tabWidth": 4,
+    "useTabs": false,
+    "semi": true,
+    "singleQuote": true,
+    "trailingComma": "all",
+    "bracketSpacing": true,
+    "arrowParens": "always",
+    "endOfLine": "lf",
+    "tailwindAttributes": ["class", "className", "ngClass", ".*[cC]lassName"],
+    "tailwindFunctions": ["clsx", "cn"]
+}

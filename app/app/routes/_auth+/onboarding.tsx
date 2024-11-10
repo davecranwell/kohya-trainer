@@ -31,24 +31,30 @@ const SignupFormSchema = z
     .and(PasswordAndConfirmPasswordSchema);
 
 async function requireOnboardingEmail(request: Request) {
-    await requireAnonymous(request);
     const verifySession = await verifySessionStorage.getSession(request.headers.get('cookie'));
     const email = verifySession.get(onboardingEmailSessionKey);
+
     if (typeof email !== 'string' || !email) {
         throw redirect('/signup');
     }
+
     return email;
 }
 
 export async function loader({ request }: LoaderFunctionArgs) {
+    await requireAnonymous(request);
+
     const email = await requireOnboardingEmail(request);
+
     return json({ email });
 }
 
 export async function action({ request }: ActionFunctionArgs) {
     const email = await requireOnboardingEmail(request);
     const formData = await request.formData();
+
     checkHoneypot(formData);
+
     const submission = await parseWithZod(formData, {
         schema: (intent) =>
             SignupFormSchema.superRefine(async (data, ctx) => {
@@ -82,6 +88,7 @@ export async function action({ request }: ActionFunctionArgs) {
     const authSession = await authSessionStorage.getSession(request.headers.get('cookie'));
     authSession.set(sessionKey, session.id);
     const verifySession = await verifySessionStorage.getSession();
+
     const headers = new Headers();
     headers.append(
         'set-cookie',
@@ -95,7 +102,7 @@ export async function action({ request }: ActionFunctionArgs) {
 }
 
 export const meta: MetaFunction = () => {
-    return [{ title: 'Setup Epic Notes Account' }];
+    return [{ title: 'Set up your account' }];
 };
 
 export default function OnboardingRoute() {
@@ -117,68 +124,71 @@ export default function OnboardingRoute() {
     });
 
     return (
-        <div className="container flex min-h-full flex-col justify-center pb-32 pt-20">
+        <div className="container flex min-h-full flex-col justify-center">
             <div className="mx-auto w-full max-w-lg">
                 <div className="flex flex-col gap-3 text-center">
-                    <h1 className="text-h1">Welcome aboard {data.email}!</h1>
+                    <h1 className="h1">Welcome aboard {data.email}!</h1>
                     <p className="text-body-md">Please enter your details.</p>
                 </div>
+
                 <Form method="POST" className="mx-auto min-w-full max-w-sm sm:min-w-[368px]" {...getFormProps(form)}>
                     <HoneypotInputs />
-                    <Field
-                        labelProps={{ htmlFor: fields.username.id, children: 'Username' }}
-                        inputProps={{
-                            ...getInputProps(fields.username, { type: 'text' }),
-                            autoComplete: 'username',
-                            className: 'lowercase',
-                        }}
-                        errors={fields.username.errors}
-                    />
-                    <Field
-                        labelProps={{ htmlFor: fields.name.id, children: 'Name' }}
-                        inputProps={{
-                            ...getInputProps(fields.name, { type: 'text' }),
-                            autoComplete: 'name',
-                        }}
-                        errors={fields.name.errors}
-                    />
-                    <Field
-                        labelProps={{ htmlFor: fields.password.id, children: 'Password' }}
-                        inputProps={{
-                            ...getInputProps(fields.password, { type: 'password' }),
-                            autoComplete: 'new-password',
-                        }}
-                        errors={fields.password.errors}
-                    />
+                    <div className="mt-4 space-y-8">
+                        <Field
+                            labelProps={{ htmlFor: fields.username.id, children: 'Username' }}
+                            inputProps={{
+                                ...getInputProps(fields.username, { type: 'text' }),
+                                autoComplete: 'username',
+                                className: 'lowercase',
+                            }}
+                            errors={fields.username.errors}
+                        />
+                        <Field
+                            labelProps={{ htmlFor: fields.name.id, children: 'Name' }}
+                            inputProps={{
+                                ...getInputProps(fields.name, { type: 'text' }),
+                                autoComplete: 'name',
+                            }}
+                            errors={fields.name.errors}
+                        />
+                        <Field
+                            labelProps={{ htmlFor: fields.password.id, children: 'Password' }}
+                            inputProps={{
+                                ...getInputProps(fields.password, { type: 'password' }),
+                                autoComplete: 'new-password',
+                            }}
+                            errors={fields.password.errors}
+                        />
 
-                    <Field
-                        labelProps={{
-                            htmlFor: fields.confirmPassword.id,
-                            children: 'Confirm Password',
-                        }}
-                        inputProps={{
-                            ...getInputProps(fields.confirmPassword, { type: 'password' }),
-                            autoComplete: 'new-password',
-                        }}
-                        errors={fields.confirmPassword.errors}
-                    />
+                        <Field
+                            labelProps={{
+                                htmlFor: fields.confirmPassword.id,
+                                children: 'Confirm Password',
+                            }}
+                            inputProps={{
+                                ...getInputProps(fields.confirmPassword, { type: 'password' }),
+                                autoComplete: 'new-password',
+                            }}
+                            errors={fields.confirmPassword.errors}
+                        />
 
-                    <CheckboxField
-                        labelProps={{
-                            htmlFor: fields.agreeToTermsOfServiceAndPrivacyPolicy.id,
-                            children: 'Do you agree to our Terms of Service and Privacy Policy?',
-                        }}
-                        buttonProps={getInputProps(fields.agreeToTermsOfServiceAndPrivacyPolicy, { type: 'checkbox' })}
-                        errors={fields.agreeToTermsOfServiceAndPrivacyPolicy.errors}
-                    />
-                    <CheckboxField
-                        labelProps={{
-                            htmlFor: fields.remember.id,
-                            children: 'Remember me',
-                        }}
-                        buttonProps={getInputProps(fields.remember, { type: 'checkbox' })}
-                        errors={fields.remember.errors}
-                    />
+                        <CheckboxField
+                            labelProps={{
+                                htmlFor: fields.agreeToTermsOfServiceAndPrivacyPolicy.id,
+                                children: 'Do you agree to our Terms of Service and Privacy Policy?',
+                            }}
+                            buttonProps={getInputProps(fields.agreeToTermsOfServiceAndPrivacyPolicy, { type: 'checkbox' })}
+                            errors={fields.agreeToTermsOfServiceAndPrivacyPolicy.errors}
+                        />
+                        <CheckboxField
+                            labelProps={{
+                                htmlFor: fields.remember.id,
+                                children: 'Remember me',
+                            }}
+                            buttonProps={getInputProps(fields.remember, { type: 'checkbox' })}
+                            errors={fields.remember.errors}
+                        />
+                    </div>
 
                     <input {...getInputProps(fields.redirectTo, { type: 'hidden' })} />
                     <ErrorList errors={form.errors} id={form.errorId} />

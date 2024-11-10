@@ -115,7 +115,7 @@ export async function isCodeValid({
     });
     if (!verification) return false;
     const result = verifyTOTP({
-        otp: code,
+        otp: code.toUpperCase(),
         ...verification,
     });
     if (!result) return false;

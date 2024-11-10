@@ -33,9 +33,11 @@ const SignupFormSchema = z.object({
 
 async function requireData({ request, params }: { request: Request; params: Params }) {
     await requireAnonymous(request);
+
     const verifySession = await verifySessionStorage.getSession(request.headers.get('cookie'));
     const email = verifySession.get(onboardingEmailSessionKey);
     const providerId = verifySession.get(providerIdKey);
+
     const result = z
         .object({
             email: z.string(),
@@ -53,6 +55,7 @@ async function requireData({ request, params }: { request: Request; params: Para
 
 export async function loader({ request, params }: LoaderFunctionArgs) {
     const { email } = await requireData({ request, params });
+
     const connectionSession = await connectionSessionStorage.getSession(request.headers.get('cookie'));
     const verifySession = await verifySessionStorage.getSession(request.headers.get('cookie'));
     const prefilledProfile = verifySession.get(prefilledProfileKey);
@@ -147,13 +150,13 @@ export default function OnboardingProviderRoute() {
     });
 
     return (
-        <div className="container flex min-h-full flex-col justify-center pb-32 pt-20">
-            <div className="mx-auto w-full max-w-lg">
-                <div className="flex flex-col gap-3 text-center">
-                    <h1 className="text-h1">Welcome aboard {data.email}!</h1>
-                    <p className="text-body-md">Please enter your details.</p>
-                </div>
-                <Form method="POST" className="mx-auto min-w-full max-w-sm sm:min-w-[368px]" {...getFormProps(form)}>
+        <div className="mx-auto w-full max-w-lg">
+            <div className="flex flex-col gap-3 text-center">
+                <h1 className="h1">Welcome aboard {data.email}!</h1>
+                <p className="text-body-md">Please enter your details.</p>
+            </div>
+            <Form method="POST" className="mx-auto min-w-full max-w-sm sm:min-w-[368px]" {...getFormProps(form)}>
+                <div className="space-y-8">
                     <Field
                         labelProps={{ htmlFor: fields.username.id, children: 'Username' }}
                         inputProps={{
@@ -190,16 +193,15 @@ export default function OnboardingProviderRoute() {
                     />
 
                     {redirectTo ? <input type="hidden" name="redirectTo" value={redirectTo} /> : null}
+                </div>
+                <ErrorList errors={form.errors} id={form.errorId} />
 
-                    <ErrorList errors={form.errors} id={form.errorId} />
-
-                    <div className="flex items-center justify-between gap-6">
-                        <StatusButton className="w-full" status={isPending ? 'pending' : (form.status ?? 'idle')} type="submit" disabled={isPending}>
-                            Create an account
-                        </StatusButton>
-                    </div>
-                </Form>
-            </div>
+                <div className="mt-4">
+                    <StatusButton className="w-full" status={isPending ? 'pending' : (form.status ?? 'idle')} type="submit" disabled={isPending}>
+                        Create an account
+                    </StatusButton>
+                </div>
+            </Form>
         </div>
     );
 }

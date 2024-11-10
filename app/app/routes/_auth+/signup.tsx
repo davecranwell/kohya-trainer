@@ -31,25 +31,14 @@ export async function action({ request }: ActionFunctionArgs) {
     checkHoneypot(formData);
 
     const submission = await parseWithZod(formData, {
-        schema: SignupSchema.superRefine(async (data, ctx) => {
-            const existingUser = await prisma.user.findUnique({
-                where: { email: data.email },
-                select: { id: true },
-            });
-            if (existingUser) {
-                ctx.addIssue({
-                    path: ['email'],
-                    code: z.ZodIssueCode.custom,
-                    message: 'A user already exists with this email',
-                });
-                return;
-            }
-        }),
+        schema: SignupSchema,
         async: true,
     });
+
     if (submission.status !== 'success') {
         return json({ result: submission.reply() }, { status: submission.status === 'error' ? 400 : 200 });
     }
+
     const { email } = submission.value;
     const { verifyUrl, redirectTo, otp } = await prepareVerification({
         period: 10 * 60,
@@ -58,9 +47,18 @@ export async function action({ request }: ActionFunctionArgs) {
         target: email,
     });
 
+    // check for existing user silently to prevent enumeration of customers
+    const existingUser = await prisma.user.findUnique({
+        where: { email: formData.get('email') as string },
+        select: { id: true },
+    });
+    if (existingUser) {
+        return redirect(redirectTo.toString());
+    }
+
     const response = await sendEmail({
         to: email,
-        subject: `Welcome to Epic Notes!`,
+        subject: `Welcome!`,
         react: <SignupEmail onboardingUrl={verifyUrl.toString()} otp={otp} />,
     });
 
@@ -83,7 +81,7 @@ export function SignupEmail({ onboardingUrl, otp }: { onboardingUrl: string; otp
         <E.Html lang="en" dir="ltr">
             <E.Container>
                 <h1>
-                    <E.Text>Welcome to Epic Notes!</E.Text>
+                    <E.Text>Welcome!</E.Text>
                 </h1>
                 <p>
                     <E.Text>
@@ -100,7 +98,7 @@ export function SignupEmail({ onboardingUrl, otp }: { onboardingUrl: string; otp
 }
 
 export const meta: MetaFunction = () => {
-    return [{ title: 'Sign Up | Epic Notes' }];
+    return [{ title: 'Sign up' }];
 };
 
 export default function SignupRoute() {
@@ -142,12 +140,13 @@ export default function SignupRoute() {
                         errors={fields.email.errors}
                     />
                     <ErrorList errors={form.errors} id={form.errorId} />
-                    <div className="flex items-center justify-between gap-6 pt-3">
+                    <div className="pt-3">
                         <StatusButton className="w-full" status={isPending ? 'pending' : (form.status ?? 'idle')} type="submit" disabled={isPending}>
                             Submit
                         </StatusButton>
                     </div>
                 </Form>
+
                 <ul className="border-border mt-5 flex flex-col gap-5 border-b-2 border-t-2 py-3">
                     <p className="text-sm text-gray-500">Or sign up with your favourite providers:</p>
                     {providerNames.map((providerName) => (

@@ -25,7 +25,9 @@ const ForgotPasswordSchema = z.object({
 
 export async function action({ request }: ActionFunctionArgs) {
     const formData = await request.formData();
+
     checkHoneypot(formData);
+
     const submission = await parseWithZod(formData, {
         schema: ForgotPasswordSchema.superRefine(async (data, ctx) => {
             const user = await prisma.user.findFirst({
@@ -45,9 +47,11 @@ export async function action({ request }: ActionFunctionArgs) {
         }),
         async: true,
     });
+
     if (submission.status !== 'success') {
         return json({ result: submission.reply() }, { status: submission.status === 'error' ? 400 : 200 });
     }
+
     const { usernameOrEmail } = submission.value;
 
     const user = await prisma.user.findFirstOrThrow({
@@ -80,7 +84,7 @@ function ForgotPasswordEmail({ onboardingUrl, otp }: { onboardingUrl: string; ot
         <E.Html lang="en" dir="ltr">
             <E.Container>
                 <h1>
-                    <E.Text>Epic Notes Password Reset</E.Text>
+                    <E.Text>Password Reset</E.Text>
                 </h1>
                 <p>
                     <E.Text>
@@ -114,13 +118,13 @@ export default function ForgotPasswordRoute() {
     });
 
     return (
-        <div className="container pb-32 pt-20">
+        <div className="container">
             <div className="flex flex-col justify-center">
                 <div className="text-center">
-                    <h1 className="text-h1">Forgot Password</h1>
-                    <p className="text-body-md mt-3">No worries, we'll send you reset instructions.</p>
+                    <h1 className="h1">Forgot Password</h1>
+                    <p className="text-body-md">No worries, we'll send you reset instructions.</p>
                 </div>
-                <div className="mx-auto mt-16 min-w-full max-w-sm sm:min-w-[368px]">
+                <div className="mx-auto w-72 max-w-full">
                     <forgotPassword.Form method="POST" {...getFormProps(form)}>
                         <HoneypotInputs />
                         <div>
@@ -148,15 +152,8 @@ export default function ForgotPasswordRoute() {
                             </StatusButton>
                         </div>
                     </forgotPassword.Form>
-                    <Link to="/login" className="text-body-sm mt-11 text-center font-bold">
-                        Back to Login
-                    </Link>
                 </div>
             </div>
         </div>
     );
-}
-
-export function ErrorBoundary() {
-    return <GeneralErrorBoundary />;
 }

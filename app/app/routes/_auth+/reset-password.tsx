@@ -74,12 +74,12 @@ export default function ResetPasswordPage() {
     });
 
     return (
-        <div className="container flex flex-col justify-center pb-32 pt-20">
+        <div className="container flex flex-col justify-center">
             <div className="text-center">
-                <h1 className="text-h1">Password Reset</h1>
-                <p className="text-body-md mt-3">Hi, {data.resetPasswordUsername}. No worries. It happens all the time.</p>
+                <h1 className="h1">Password Reset</h1>
+                <p className="text-body-md">Hi, {data.resetPasswordUsername}. No worries. It happens all the time.</p>
             </div>
-            <div className="mx-auto mt-16 min-w-full max-w-sm sm:min-w-[368px]">
+            <div className="mx-auto min-w-full max-w-sm sm:min-w-[368px]">
                 <Form method="POST" {...getFormProps(form)}>
                     <Field
                         labelProps={{
