@@ -1,22 +1,51 @@
 import * as aws from '@pulumi/aws';
-import * as awsx from '@pulumi/awsx';
 import * as pulumi from '@pulumi/pulumi';
-import * as fs from 'fs';
-import * as mime from 'mime';
 
-// Create an S3 bucket for image storage
 const bucket = new aws.s3.BucketV2('imageBucket', {
     bucket: 'my-image-resize-bucket',
-    acl: aws.s3.CannedAcl.PublicRead,
     forceDestroy: true,
 });
 
-// // Add a sample image (optional)
-// new aws.s3.BucketObject("sampleImage", {
-//   bucket: bucket,
-//   source: new pulumi.asset.FileAsset("path/to/sample.jpg"),
-//   contentType: mime.getType("jpg") || undefined,
-// });
+new aws.s3.BucketOwnershipControls('imageBucketOwnershipControls', {
+    bucket: bucket.id,
+    rule: {
+        objectOwnership: 'BucketOwnerEnforced',
+    },
+});
+
+new aws.s3.BucketPublicAccessBlock('imageBucketPublicAccessBlock', {
+    bucket: bucket.id,
+    blockPublicAcls: false,
+    blockPublicPolicy: false,
+    ignorePublicAcls: false,
+    restrictPublicBuckets: false,
+});
+
+// Add bucket policy for public read access
+new aws.s3.BucketPolicy('imageBucketPolicy', {
+    bucket: bucket.id,
+    policy: bucket.arn.apply((bucketArn) =>
+        JSON.stringify({
+            Version: '2012-10-17',
+            Statement: [
+                {
+                    Sid: 'PublicReadGetObject',
+                    Effect: 'Allow',
+                    Principal: '*',
+                    Action: 's3:GetObject',
+                    Resource: [`${bucketArn}/*`],
+                },
+            ],
+        }),
+    ),
+});
+
+// Add a sample image (optional)
+new aws.s3.BucketObject('sampleImage', {
+    bucket: bucket.id,
+    source: new pulumi.asset.FileAsset('assets/sample.jpg'),
+    contentType: 'image/jpeg',
+});
 
 const lambdaEdgeRole = new aws.iam.Role('lambdaEdgeRole', {
     assumeRolePolicy: JSON.stringify({
@@ -38,7 +67,7 @@ new aws.iam.RolePolicyAttachment('lambdaBasicExecution', {
     policyArn: aws.iam.ManagedPolicies.AWSLambdaBasicExecutionRole,
 });
 
-// Define the Lambda@Edge function
+// Define the Lambda@Edge function using the provider correctly
 const resizeLambda = new aws.lambda.Function('resizeLambda', {
     code: new pulumi.asset.AssetArchive({
         '.': new pulumi.asset.FileArchive('../resizeLambda'),
@@ -51,10 +80,52 @@ const resizeLambda = new aws.lambda.Function('resizeLambda', {
     publish: true,
 });
 
+const lambdaS3Policy = new aws.iam.Policy('lambdaS3Policy', {
+    policy: bucket.arn.apply((bucketArn) =>
+        JSON.stringify({
+            Version: '2012-10-17',
+            Statement: [
+                {
+                    Effect: 'Allow',
+                    Action: [
+                        's3:GetObject',
+                        's3:PutObject',
+                        's3:HeadObject', //used for existence checks
+                    ],
+                    Resource: [`${bucketArn}/*`],
+                },
+                {
+                    Effect: 'Allow',
+                    Action: ['s3:ListBucket'],
+                    Resource: [`${bucketArn}`],
+                },
+            ],
+        }),
+    ),
+});
+
+const lambdaEdgeLoggingPolicy = new aws.iam.Policy('lambdaEdgeLoggingPolicy', {
+    policy: JSON.stringify({
+        Version: '2012-10-17',
+        Statement: [
+            {
+                Effect: 'Allow',
+                Action: ['logs:CreateLogGroup', 'logs:CreateLogStream', 'logs:PutLogEvents'],
+                Resource: ['arn:aws:logs:us-east-1:*:log-group:/aws/lambda/*', 'arn:aws:logs:*:*:log-group:/aws/lambda/us-east-1.*'],
+            },
+        ],
+    }),
+});
+
+new aws.iam.RolePolicyAttachment('lambdaEdgeLoggingAccess', {
+    role: lambdaEdgeRole.name,
+    policyArn: lambdaEdgeLoggingPolicy.arn,
+});
+
 // Attach policies to Lambda role
 new aws.iam.RolePolicyAttachment('lambdaS3Access', {
     role: lambdaEdgeRole.name,
-    policyArn: aws.iam.ManagedPolicies.AmazonS3ReadOnlyAccess,
+    policyArn: lambdaS3Policy.arn,
 });
 
 // Create the CloudFront distribution
@@ -63,6 +134,10 @@ const cloudfrontDistribution = new aws.cloudfront.Distribution('imageResizerCDN'
         {
             domainName: bucket.bucketRegionalDomainName,
             originId: bucket.id,
+            s3OriginConfig: {
+                // Add this configuration
+                originAccessIdentity: '', // Leave empty for public bucket
+            },
         },
     ],
     defaultCacheBehavior: {
@@ -70,8 +145,9 @@ const cloudfrontDistribution = new aws.cloudfront.Distribution('imageResizerCDN'
         viewerProtocolPolicy: 'redirect-to-https',
         lambdaFunctionAssociations: [
             {
-                eventType: 'origin-response',
+                eventType: 'origin-request',
                 lambdaArn: resizeLambda.qualifiedArn,
+                includeBody: false,
             },
         ],
         allowedMethods: ['GET', 'HEAD', 'OPTIONS'],
@@ -82,6 +158,10 @@ const cloudfrontDistribution = new aws.cloudfront.Distribution('imageResizerCDN'
                 forward: 'none',
             },
         },
+        compress: true,
+        minTtl: 0,
+        defaultTtl: 3600,
+        maxTtl: 86400,
     },
     enabled: true,
     restrictions: {
@@ -98,6 +178,7 @@ const cloudfrontDistribution = new aws.cloudfront.Distribution('imageResizerCDN'
 });
 
 // Export bucket and CloudFront URLs
+export const bucketUrn = bucket.arn;
 export const bucketUrl = bucket.bucketDomainName;
 export const cloudfrontUrl = cloudfrontDistribution.domainName;
 export const resizeLambdaArn = resizeLambda.role;
