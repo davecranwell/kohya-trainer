@@ -1,8 +1,10 @@
-- [x] fix deleting unused gpus not working because we're searching our database for Ids but giving instanceIds in the query
-- [ ] fix --headless handle which is causing bug in docker on vast. Might have alreayd fixed this?
-- [x] Limit number of images uploaded per training
-- [ ] Limit filesize of individual training images
-- [ ] Allow training images to be deleted
-- [ ] Allow choosing of base model from civitai API
-- [x] Filter SSE by the user
-- [x] prevent duplicate image upload
+-   [x] fix deleting unused gpus not working because we're searching our database for Ids but giving instanceIds in the query
+-   [ ] fix --headless handle which is causing bug in docker on vast. Might have alreayd fixed this?
+-   [x] Limit number of images uploaded per training
+-   [ ] Limit filesize of individual training images
+-   [ ] Allow training images to be deleted
+-   [ ] Allow choosing of base model from civitai API
+-   [x] Filter SSE by the user
+-   [x] prevent duplicate image upload
+-   [x] Do infra as code with pulumi
+-   [ ] Add HTTPS

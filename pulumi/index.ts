@@ -1,5 +1,4 @@
 import * as pulumi from '@pulumi/pulumi';
-
 import * as networking from './networking';
 import { rdsInstance } from './database';
 // import { bucket } from './storage';
@@ -8,11 +7,11 @@ import { rdsInstance } from './database';
 import * as app from './app';
 
 // Export all required values
-// export const bastionPublicIp = networking.bastionHost.publicIp;
-// export const bastionHostDBCommand = pulumi.interpolate`ssh -i ~/.ssh/aws-ec2 -L ${rdsInstance.port}:${rdsInstance.endpoint}:${rdsInstance.port} ec2-user@${bastionHost.publicIp}`;
-// export const rdsEndpoint = rdsInstance.endpoint;
-// export const rdsPort = rdsInstance.port;
-// export const rdsUsername = rdsInstance.username;
+export const bastionPublicIp = networking.bastionHost.publicIp;
+export const bastionHostDBCommand = pulumi.interpolate`ssh -i ~/.ssh/aws-ec2 -L ${rdsInstance.port}:${rdsInstance.endpoint} ec2-user@${networking.bastionHost.publicIp}`;
+export const rdsEndpoint = rdsInstance.endpoint;
+export const rdsPort = rdsInstance.port;
+export const rdsUsername = rdsInstance.username;
 // export const bucketUrn = bucket.arn;
 // export const bucketUrl = bucket.bucketDomainName;
 // export const cloudfrontUrl = cloudfrontDistribution.domainName;

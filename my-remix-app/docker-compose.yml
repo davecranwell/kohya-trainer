@@ -2,26 +2,19 @@ volumes:
     pg-data:
 
 services:
-    app:
-        image: my-remix-app:latest
+    postgres:
+        image: postgres:12
         ports:
-            - 3000:3000
+            - 5432:5432
+        volumes:
+            - /pg-data:/pg-data
         environment:
-            PORT: 3000
+            POSTGRES_USER: postgres
+            POSTGRES_PASSWORD: postgres
+            POSTGRES_DB: modeller
+            PGDATA: /pg-data
 
-    # postgres:
-    #     image: postgres:12
-    #     ports:
-    #         - 5432:5432
-    #     volumes:
-    #         - /pg-data:/pg-data
-    #     environment:
-    #         POSTGRES_USER: postgres
-    #         POSTGRES_PASSWORD: postgres
-    #         POSTGRES_DB: trainerapp
-    #         PGDATA: /pg-data
-
-    # adminer:
-    #     image: adminer
-    #     ports:
-    #         - 8090:8080
+    adminer:
+        image: adminer
+        ports:
+            - 8090:8080

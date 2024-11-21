@@ -17,7 +17,7 @@ ssh-keygen -t rsa -b 4096 -C "dave@davecranwell.com" -f ~/.ssh/id_rsa -N ""
 
 Wherever `modeller/dev` exists, this refers to Pulumi ESC's syntax of `<project-name>/<environment-name>`
 
-````bash
+```bash
 esc login
 esc env init modeller/dev
 esc env init modeller/prod
@@ -25,13 +25,11 @@ esc env init modeller/prod
 
 It seems that whenever you create a new environment, you have to manually move it to the `modeller` project by using `esc env edit modeller/dev`
 
-
-
 ### List envs:
 
 ```bash
 esc env list
-````
+```
 
 ### Store env values:
 

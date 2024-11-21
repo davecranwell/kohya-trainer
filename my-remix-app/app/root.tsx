@@ -2,6 +2,7 @@ import { Links, Meta, Outlet, Scripts, ScrollRestoration } from '@remix-run/reac
 import type { LinksFunction } from '@remix-run/node';
 
 import { useNonce } from './util/nonce.provider';
+import { GeneralErrorBoundary } from './components/general-error-boundary';
 
 import './tailwind.css';
 
@@ -18,7 +19,7 @@ export const links: LinksFunction = () => [
     },
 ];
 
-export function Layout({ children }: { children: React.ReactNode }) {
+export function Document({ children }: { children: React.ReactNode }) {
     const nonce = useNonce();
 
     return (
@@ -55,7 +56,7 @@ export function ErrorBoundary() {
     // to give the user a better UX.
 
     return (
-        <Document nonce={nonce}>
+        <Document>
             <GeneralErrorBoundary />
         </Document>
     );

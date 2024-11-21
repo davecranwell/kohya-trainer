@@ -2,6 +2,7 @@ import * as aws from '@pulumi/aws';
 import * as awsx from '@pulumi/awsx';
 import * as pulumi from '@pulumi/pulumi';
 import { vpc } from './networking';
+import { bucket } from './storage';
 
 // Get Pulumi config to manage environment-specific values
 const config = new pulumi.Config();
@@ -88,41 +89,13 @@ const listener = new aws.lb.Listener(`${appName}-listener`, {
     ],
 });
 
-// const loadBalancer = new awsx.lb.ApplicationLoadBalancer(
-//     `${appName}-lb`,
-//     {
-//         subnetIds: vpc.publicSubnetIds,
-//         securityGroups: [albSecGroup.id],
-//         defaultTargetGroup: {
-//             port: containerPort, // Forward traffic to the container port
-//             protocol: 'HTTP',
-//             targetType: 'ip', // Required for Fargate tasks
-//             healthCheck: {
-//                 path: '/healthcheck', // Ensure this matches your app's endpoint
-//                 port: containerPort.toString(),
-//                 protocol: 'HTTP',
-//                 interval: 60,
-//                 timeout: 10,
-//                 healthyThreshold: 2,
-//                 unhealthyThreshold: 2,
-//                 matcher: '200-404',
-//             },
-//         },
-//         listener: {
-//             port: 80, // ALB listens on port 80
-//             protocol: 'HTTP',
-//         },
-//     },
-//     { dependsOn: [albSecGroup] },
-// );
-
-const fargateSecGroup = new aws.ec2.SecurityGroup(`${appName}-fargate-sg`, {
+export const fargateSecGroup = new aws.ec2.SecurityGroup(`${appName}-fargate-sg`, {
     vpcId: vpc.vpcId,
     ingress: [
         {
             protocol: 'tcp',
             fromPort: 0,
-            toPort: 65535,
+            toPort: 65535, // TODO fix this
             cidrBlocks: ['0.0.0.0/0'], // turning this off means I can't see the tasks at their public IPs
             securityGroups: [albSecGroup.id],
         },
@@ -154,7 +127,36 @@ export const fargateService = new awsx.ecs.FargateService(`${appName}-service`, 
                     protocol: 'tcp',
                 },
             ],
-            environment: [{ name: 'PORT', value: containerPort.toString() }],
+            environment: [
+                {
+                    name: 'PORT',
+                    value: containerPort.toString(),
+                },
+                {
+                    name: 'SESSION_SECRET',
+                    value: config.require('SESSION_SECRET'),
+                },
+                { name: 'AWS_REGION', value: 'us-east-1' },
+                { name: 'BUCKET_NAME', value: bucket.bucket },
+                { name: 'ALLOW_INDEXING', value: 'false' },
+                { name: 'USE_CRON', value: 'false' },
+                {
+                    name: 'DATABASE_URL',
+                    value: config.require('DATABASE_URL'),
+                },
+                {
+                    name: 'VAST_API_KEY',
+                    value: config.require('VAST_API_KEY'),
+                },
+                {
+                    name: 'VAST_WEB_USER',
+                    value: 'admin',
+                },
+                {
+                    name: 'VAST_WEB_PASSWORD',
+                    value: config.require('VAST_WEB_PASSWORD'),
+                },
+            ],
         },
     },
     networkConfiguration: {
