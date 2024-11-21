@@ -25,6 +25,8 @@ esc env init modeller/prod
 
 It seems that whenever you create a new environment, you have to manually move it to the `modeller` project by using `esc env edit modeller/dev`
 
+
+
 ### List envs:
 
 ```bash
@@ -38,6 +40,13 @@ The `pulumiConfig` prefix is required by Pulumi to put it into the section acces
 ```bash
 esc env set modeller/dev pulumiConfig.myNonSecretValue foo
 esc env set modeller/dev pulumiConfig.mySecretValue demo-password-123 --secret
+```
+
+### Necessary pulumi config
+
+```bash
+pulumi config set appName=<app-name>
+pulumi config set containerPort=<port>
 ```
 
 ### Read env values unencrypted:
@@ -64,6 +73,13 @@ CLI default client region: us-east-1
 ```bash
 aws sso login --sso-session=davecranwell
 pulumi up
+```
+
+## Information about the stack and outputs
+
+```bash
+pulumi stack ls
+pulumi stack output
 ```
 
 ## Destroying

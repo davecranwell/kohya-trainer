@@ -1,8 +1,5 @@
-# environment connects you to pulumi ESC
-environment:
-    # This has to be the same name as the pulumi ESC <project-name>/<environment-name>
-    - modeller/dev
 config:
-    aws:region: us-east-1
-    aws:profile:
-        secure: AAABAJ/7CHtgDEpCOL6IBvFrPwijhmai39xs0zaCq3XSCiZ/YaQCfAsF9ILxagBdRTZ48DxmVHCyAO3yjchhXA==
+  modeller:appName: modeller
+  modeller:containerPort: "3000"
+  aws:region: us-east-1
+  aws:profile: davecranwell-dev

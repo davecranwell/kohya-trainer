@@ -1,6 +1,7 @@
 import * as aws from '@pulumi/aws';
 import * as pulumi from '@pulumi/pulumi';
-import { vpc, publicSubnet1, publicSubnet2, bastionSecurityGroupId } from './networking';
+import { vpc, bastionSecurityGroupId } from './networking';
+import { fargateSecGroup } from './app';
 
 const config = new pulumi.Config();
 
@@ -8,7 +9,7 @@ const config = new pulumi.Config();
  * RDS Security Group Configuration
  */
 const rdsSecurityGroup = new aws.ec2.SecurityGroup('rds-security-group', {
-    vpcId: vpc.id,
+    vpcId: vpc.vpc.id,
     description: 'Security group for RDS PostgreSQL instance',
     ingress: [
         {
@@ -16,6 +17,14 @@ const rdsSecurityGroup = new aws.ec2.SecurityGroup('rds-security-group', {
             fromPort: 5432,
             toPort: 5432,
             securityGroups: [bastionSecurityGroupId],
+            description: 'Allow PostgreSQL access from Bastion host so developers can connect to the database',
+        },
+        {
+            protocol: 'tcp',
+            fromPort: 5432,
+            toPort: 5432,
+            securityGroups: [fargateSecGroup.id],
+            description: 'Allow PostgreSQL access from fargate containers',
         },
     ],
     egress: [
@@ -32,7 +41,7 @@ const rdsSecurityGroup = new aws.ec2.SecurityGroup('rds-security-group', {
 });
 
 const rdsSubnetGroup = new aws.rds.SubnetGroup('rds-subnet-group', {
-    subnetIds: [publicSubnet1.id, publicSubnet2.id],
+    subnetIds: vpc.publicSubnetIds,
     tags: {
         Name: 'RDS subnet group',
     },
@@ -59,11 +68,14 @@ export const rdsInstance = new aws.rds.Instance('postgres-instance', {
     dbName: 'modeller',
     username: 'modeller',
     password: config.requireSecret('DB_PASSWORD'),
-    skipFinalSnapshot: false,
+    skipFinalSnapshot: true,
+    storageEncrypted: true,
     publiclyAccessible: false,
+    backupRetentionPeriod: 0,
     vpcSecurityGroupIds: [rdsSecurityGroup.id],
     dbSubnetGroupName: rdsSubnetGroup.name,
     parameterGroupName: dbParameterGroup.name,
     performanceInsightsEnabled: true,
     performanceInsightsRetentionPeriod: 7,
+    finalSnapshotIdentifier: 'postgres-final-snapshot',
 });

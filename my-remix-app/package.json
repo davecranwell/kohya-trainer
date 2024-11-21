@@ -9,7 +9,8 @@
         "lint": "eslint --ignore-path .gitignore --cache --cache-location ./node_modules/.cache/eslint .",
         "start": "NODE_ENV=production remix-serve ./build/server/index.js",
         "typecheck": "tsc",
-        "prisma:migrate": "prisma migrate dev"
+        "prisma:migrate": "prisma migrate dev",
+        "docker:build": "docker build -t my-remix-app:latest . "
     },
     "dependencies": {
         "@prisma/client": "^5.22.0",
