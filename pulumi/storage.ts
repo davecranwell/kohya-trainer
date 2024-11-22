@@ -13,14 +13,6 @@ new aws.s3.BucketOwnershipControls('imageBucketOwnershipControls', {
     },
 });
 
-new aws.s3.BucketPublicAccessBlock('imageBucketPublicAccessBlock', {
-    bucket: bucket.id,
-    blockPublicAcls: false,
-    blockPublicPolicy: false,
-    ignorePublicAcls: false,
-    restrictPublicBuckets: false,
-});
-
 new aws.s3.BucketPolicy('imageBucketPolicy', {
     bucket: bucket.id,
     policy: bucket.arn.apply((bucketArn) =>
@@ -37,4 +29,12 @@ new aws.s3.BucketPolicy('imageBucketPolicy', {
             ],
         }),
     ),
+});
+
+new aws.s3.BucketPublicAccessBlock('imageBucketPublicAccessBlock', {
+    bucket: bucket.id,
+    blockPublicAcls: false,
+    blockPublicPolicy: false,
+    ignorePublicAcls: false,
+    restrictPublicBuckets: false,
 });

@@ -69,9 +69,9 @@ const targetGroup = new aws.lb.TargetGroup(`${appName}-tg`, {
         port: 'traffic-port',
         protocol: 'HTTP',
         healthyThreshold: 2,
-        unhealthyThreshold: 5,
-        timeout: 25,
-        interval: 30,
+        unhealthyThreshold: 2,
+        timeout: 15,
+        interval: 20,
         matcher: '200-405',
     },
 });

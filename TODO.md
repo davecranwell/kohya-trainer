@@ -8,3 +8,5 @@
 -   [x] prevent duplicate image upload
 -   [x] Do infra as code with pulumi
 -   [ ] Add HTTPS
+-   [ ] Convert S3 upload process to use signed urls and front-end upload
+-   [ ] Set up code pipeline

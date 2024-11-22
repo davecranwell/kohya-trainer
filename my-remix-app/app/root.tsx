@@ -19,7 +19,7 @@ export const links: LinksFunction = () => [
     },
 ];
 
-export function Document({ children }: { children: React.ReactNode }) {
+export function Layout({ children }: { children: React.ReactNode }) {
     const nonce = useNonce();
 
     return (
@@ -56,8 +56,8 @@ export function ErrorBoundary() {
     // to give the user a better UX.
 
     return (
-        <Document>
+        <Layout>
             <GeneralErrorBoundary />
-        </Document>
+        </Layout>
     );
 }
