@@ -10,20 +10,33 @@
         "start": "NODE_ENV=production remix-serve ./build/server/index.js",
         "typecheck": "tsc",
         "prisma:migrate": "prisma migrate dev",
+        "prisma:seed": "prisma migrate reset --force",
         "docker:build": "docker build -t my-remix-app:latest . "
     },
     "dependencies": {
+        "@auth/core": "^0.37.4",
+        "@conform-to/react": "^1.2.2",
+        "@conform-to/zod": "^1.2.2",
+        "@headlessui/react": "^2.2.0",
         "@prisma/client": "^5.22.0",
+        "@radix-ui/react-checkbox": "^1.1.2",
+        "@radix-ui/react-icons": "^1.3.2",
+        "@radix-ui/react-label": "^2.1.0",
         "@remix-run/node": "^2.13.1",
         "@remix-run/react": "^2.13.1",
         "@remix-run/serve": "^2.13.1",
+        "@types/bcryptjs": "^2.4.6",
         "address": "^2.0.3",
         "axios": "^1.7.7",
+        "bcryptjs": "^2.4.3",
         "chalk": "^5.3.0",
+        "class-variance-authority": "^0.7.0",
         "close-with-grace": "^2.1.0",
+        "clsx": "^2.1.1",
         "dotenv": "^16.4.5",
         "express-rate-limit": "^7.4.1",
         "helmet": "^8.0.0",
+        "input-otp": "^1.4.1",
         "isbot": "^4.1.0",
         "node-cron": "^3.0.3",
         "prisma": "^5.22.0",
@@ -31,7 +44,10 @@
         "react-dom": "^18.2.0",
         "remix-auth": "^3.7.0",
         "remix-auth-form": "^1.5.0",
-        "remix-auth-socials": "^2.1.0"
+        "remix-auth-google": "^2.0.0",
+        "remix-auth-socials": "^2.1.0",
+        "remix-utils": "^7.7.0",
+        "tiny-invariant": "^1.3.3"
     },
     "devDependencies": {
         "@remix-run/dev": "^2.13.1",
@@ -60,6 +76,9 @@
         "typescript": "^5.1.6",
         "vite": "^5.1.0",
         "vite-tsconfig-paths": "^4.2.1"
+    },
+    "prisma": {
+        "seed": "tsx ./prisma/seed.ts"
     },
     "engines": {
         "node": ">=20.0.0"

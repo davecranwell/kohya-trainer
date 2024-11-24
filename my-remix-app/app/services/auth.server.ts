@@ -1,57 +1,57 @@
+import invariant from 'tiny-invariant';
+import { redirect } from '@remix-run/node';
 import { Authenticator } from 'remix-auth';
 import { FormStrategy } from 'remix-auth-form';
+import { safeRedirect } from 'remix-utils/safe-redirect';
+import { GoogleStrategy } from 'remix-auth-google';
 
-import { sessionStorage } from '~/services/session.server';
+import { sessionStorage, getSession, destroySession } from '~/services/session.server';
+import { verifyEmailPassword, findOrCreateUser } from '~/services/account.server';
 
-type User = {
+export type User = {
     id: string;
-    email: string;
 };
 
-// Create an instance of the authenticator, pass a generic with what
-// strategies will return and will store in the session
 export const authenticator = new Authenticator<User>(sessionStorage);
 
 authenticator.use(
+    new GoogleStrategy(
+        {
+            clientID: '',
+            clientSecret: '',
+            callbackURL: 'http://localhost:3000/auth/google/callback',
+        },
+        async ({ accessToken, refreshToken, extraParams, profile }) => {
+            // Get the user data from your DB or API using the tokens and profile
+            return await findOrCreateUser({ email: profile.emails[0].value, name: profile.displayName });
+        },
+    ),
+);
+
+authenticator.use(
     new FormStrategy(async ({ form, context }) => {
-        // Here you can use `form` to access and input values from the form.
-        // and also use `context` to access more things from the server
-        let email = form.get('email');
-        let password = form.get('password');
+        const email = form.get('email');
+        const password = form.get('password');
 
-        // You can validate the inputs however you want
-        invariant(typeof email === 'string', 'username must be a string');
-        invariant(email.length > 0, 'username must not be empty');
-
+        invariant(typeof email === 'string', 'email must be a string');
+        invariant(email.length > 0, 'email must not be empty');
         invariant(typeof password === 'string', 'password must be a string');
         invariant(password.length > 0, 'password must not be empty');
 
-        // And if you have a password you should hash it
-        let hashedPassword = await hash(password);
-
-        // And finally, you can find, or create, the user
-        let user = await findOrCreateUser(email, hashedPassword);
-
-        // And return the user as the Authenticator expects it
-        return user;
+        return await verifyEmailPassword(email, password);
     }),
+    'email-pass',
 );
 
-// // get the user data or redirect to /login if it failed
-// let user = await authenticator.isAuthenticated(request, {
-//   failureRedirect: "/login",
-// });
-
-// // if the user is authenticated, redirect to /dashboard
-// await authenticator.isAuthenticated(request, {
-//   successRedirect: "/dashboard",
-// });
-
-// // get the user or null, and do different things in your loader/action based on
-// // the result
-// let user = await authenticator.isAuthenticated(request);
-// if (user) {
-//   // here the user is authenticated
-// } else {
-//   // here the user is not authenticated
-// }
+export async function logout(
+    {
+        request,
+        redirectTo = '/',
+    }: {
+        request: Request;
+        redirectTo?: string;
+    },
+    responseInit?: ResponseInit,
+) {
+    await authenticator.logout(request, { redirectTo: safeRedirect(redirectTo) });
+}

@@ -1,20 +1,11 @@
-import { faker } from '@faker-js/faker';
-import { promiseHash } from 'remix-utils/promise';
+import prisma from '~/services/db.server';
 
-import { prisma } from '#app/utils/db.server.ts';
-import { MOCK_CODE_GITHUB } from '#app/utils/providers/constants';
-import { cleanupDb, createPassword, createUser, getNoteImages, getUserImages, img } from '#tests/db-utils.ts';
-import { insertGitHubUser } from '#tests/mocks/github.ts';
+import { createPassword } from './db-utils';
 
 async function seed() {
     console.log('🌱 Seeding...');
-    console.time(`🌱 Database has been seeded`);
 
-    console.time('🧹 Cleaned up the database...');
-    // await cleanupDb(prisma);
-    console.timeEnd('🧹 Cleaned up the database...');
-
-    console.time('🔑 Created permissions...');
+    console.log('🔑 Creating permissions...');
     const entities = ['user', 'training'];
     const actions = ['create', 'read', 'update', 'delete'];
     const accesses = ['own', 'any'] as const;
@@ -28,9 +19,9 @@ async function seed() {
         }
     }
     await prisma.permission.createMany({ data: permissionsToCreate });
-    console.timeEnd('🔑 Created permissions...');
+    console.log('🔑 Created permissions...');
 
-    console.time('👑 Created roles...');
+    console.log('👑 Creating roles...');
     await prisma.role.create({
         data: {
             name: 'admin',
@@ -53,53 +44,18 @@ async function seed() {
             },
         },
     });
-    console.timeEnd('👑 Created roles...');
+    console.log('👑 Created roles...');
 
-    const totalUsers = 0;
-    console.time(`👤 Created ${totalUsers} users...`);
-    // const noteImages = await getNoteImages()
-    // const userImages = await getUserImages()
-
-    for (let index = 0; index < totalUsers; index++) {
-        const userData = createUser();
-        await prisma.user
-            .create({
-                select: { id: true },
-                data: {
-                    ...userData,
-                    password: { create: createPassword(userData.username) },
-                    // image: { create: userImages[index % userImages.length] },
-                    roles: { connect: { name: 'user' } },
-                    // trainings: {
-                    // 	create: Array.from({
-                    // 		length: faker.number.int({ min: 1, max: 3 }),
-                    // 	}).map(() => ({
-                    // 		name: faker.lorem.slug(),
-                    // 		content: faker.
-                    // 		images: {
-                    // 			create: Array.from({
-                    // 				length: faker.number.int({ min: 1, max: 3 }),
-                    // 			}).map(() => {
-                    // 				const imgNumber = faker.number.int({ min: 0, max: 9 })
-                    // 				const img = noteImages[imgNumber]
-                    // 				if (!img) {
-                    // 					throw new Error(`Could not find image #${imgNumber}`)
-                    // 				}
-                    // 				return img
-                    // 			}),
-                    // 		},
-                    // 	})),
-                    // },
-                },
-            })
-            .catch((e) => {
-                console.error('Error creating a user:', e);
-                return null;
-            });
-    }
-    console.timeEnd(`👤 Created ${totalUsers} users...`);
-
-    // console.time(`🐨 Created admin user "kody"`)
+    console.log(`👤 Creating users...`);
+    await prisma.user.create({
+        data: {
+            email: 'dave@davecranwell.com',
+            password: { create: createPassword('password') },
+            name: 'Dave Cranwell',
+            roles: { connect: [{ name: 'admin' }] },
+        },
+    });
+    console.log(`👤 Created users`);
 
     // const kodyImages = await promiseHash({
     // 	kodyUser: img({ filepath: './tests/fixtures/images/user/kody.png' }),
@@ -161,9 +117,9 @@ async function seed() {
     // 		},
     // 	},
     // })
-    // console.timeEnd(`🐨 Created admin user "kody"`)
+    // console.log(`🐨 Created admin user "kody"`)
 
-    console.timeEnd(`🌱 Database has been seeded`);
+    console.log(`🌱 Database has been seeded`);
 }
 
 seed()
@@ -174,9 +130,3 @@ seed()
     .finally(async () => {
         await prisma.$disconnect();
     });
-
-// we're ok to import from the test directory in this file
-/*
-eslint
-	no-restricted-imports: "off",
-*/
