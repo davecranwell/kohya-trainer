@@ -1,5 +1,6 @@
 import type { ActionFunctionArgs, LoaderFunctionArgs } from '@remix-run/node';
-import { Form, json, Link, useActionData, useLoaderData } from '@remix-run/react';
+import { Form, json, useActionData, useLoaderData } from '@remix-run/react';
+import { Fieldset } from '@headlessui/react';
 import { getZodConstraint, parseWithZod } from '@conform-to/zod';
 import { getFormProps, getInputProps, useForm } from '@conform-to/react';
 import { z } from 'zod';
@@ -11,8 +12,6 @@ import { ErrorList, Field } from '~/components/forms';
 import { SocialButton } from '~/components/social-button';
 import { StatusButton } from '~/components/status-button';
 import { useIsPending } from '~/util/hooks';
-import { Button } from '~/components/button';
-import { Fieldset } from '@headlessui/react';
 
 const loginSchema = z.object({
     email: z
@@ -24,6 +23,7 @@ const loginSchema = z.object({
         .string({ required_error: 'Password is required' })
         .min(10, { message: 'Password is too short' })
         .max(100, { message: 'Password is too long' }),
+    confirmPassword: z.string({ required_error: 'Confirm password is required' }),
 });
 
 export async function action({ request }: ActionFunctionArgs) {
@@ -82,21 +82,25 @@ export default function Login() {
                         inputProps={{
                             ...getInputProps(fields.password, { type: 'password' }),
                             autoFocus: true,
-                            autoComplete: 'current-password',
+                            autoComplete: 'new-password',
                         }}
                         errors={fields.password.errors}
                     />
+                    <Field
+                        labelProps={{ children: 'Confirm Password' }}
+                        inputProps={{
+                            ...getInputProps(fields.confirmPassword, { type: 'password' }),
+                            autoFocus: true,
+                            autoComplete: 'new-password',
+                        }}
+                        errors={fields.confirmPassword.errors}
+                    />
                     <StatusButton type="submit" status={isSubmitting ? 'pending' : 'idle'}>
-                        Sign In
+                        Sign up
                     </StatusButton>
                 </Fieldset>
             </Form>
-
-            <SocialButton provider={'google'} label="Login with Google" />
-
-            <Button asChild>
-                <Link to="/sign-up">Create an account</Link>
-            </Button>
+            <SocialButton provider={'google'} label="Sign up with Google" />
         </div>
     );
 }

@@ -1,8 +1,9 @@
 import { Links, Meta, Outlet, Scripts, ScrollRestoration } from '@remix-run/react';
 import type { LinksFunction } from '@remix-run/node';
 
-import { useNonce } from './util/nonce.provider';
-import { GeneralErrorBoundary } from './components/general-error-boundary';
+import { useNonce } from '~/util/nonce.provider';
+import { GeneralErrorBoundary } from '~/components/general-error-boundary';
+import { TooltipProvider } from '~/components/tooltip';
 
 import './tailwind.css';
 
@@ -31,7 +32,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 <Links />
             </head>
             <body>
-                {children}
+                <TooltipProvider delayDuration={100} skipDelayDuration={500}>
+                    {children}
+                </TooltipProvider>
                 <ScrollRestoration nonce={nonce} />
                 <Scripts nonce={nonce} />
             </body>

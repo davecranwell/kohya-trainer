@@ -63,12 +63,14 @@ export function ComboBoxField({
     errors,
     className,
     options,
+    help,
 }: {
     labelProps: React.LabelHTMLAttributes<HTMLLabelElement>;
     inputProps: React.InputHTMLAttributes<HTMLInputElement>;
     errors?: ListOfErrors;
     className?: string;
     options: Option[];
+    help?: string;
 }) {
     const fallbackId = useId();
     const id = inputProps.id ?? fallbackId;
@@ -84,6 +86,7 @@ export function ComboBoxField({
                 aria-describedby={errorId}
                 {...inputProps}
             />
+            {help && <p className="mt-3 text-sm text-gray-500">{help}</p>}
             <div className="pt-1">{errorId ? <ErrorList id={errorId} errors={errors} /> : null}</div>
         </div>
     );
@@ -135,11 +138,13 @@ export function TextareaField({
     textareaProps,
     errors,
     className,
+    help,
 }: {
     labelProps: React.LabelHTMLAttributes<HTMLLabelElement>;
     textareaProps: React.TextareaHTMLAttributes<HTMLTextAreaElement>;
     errors?: ListOfErrors;
     className?: string;
+    help?: string;
 }) {
     const fallbackId = useId();
     const id = textareaProps.id ?? textareaProps.name ?? fallbackId;
@@ -148,6 +153,7 @@ export function TextareaField({
         <div className={className}>
             <Label htmlFor={id} {...labelProps} />
             <Textarea id={id} aria-invalid={errorId ? true : undefined} aria-describedby={errorId} {...textareaProps} />
+            {help && <p className="mt-3 text-sm text-gray-500">{help}</p>}
             <div className="pt-1">{errorId ? <ErrorList id={errorId} errors={errors} /> : null}</div>
         </div>
     );
@@ -158,6 +164,7 @@ export function CheckboxField({
     buttonProps,
     errors,
     className,
+    help,
 }: {
     labelProps: JSX.IntrinsicElements['label'];
     buttonProps: CheckboxProps & {
@@ -167,6 +174,7 @@ export function CheckboxField({
     };
     errors?: ListOfErrors;
     className?: string;
+    help?: string;
 }) {
     const { key, defaultChecked, ...checkboxProps } = buttonProps;
     const fallbackId = useId();
@@ -205,6 +213,7 @@ export function CheckboxField({
                 />
                 <label htmlFor={id} {...labelProps} className="text-body-xs self-center" />
             </div>
+            {help && <p className="mt-3 text-sm text-gray-500">{help}</p>}
             <div className="pt-1">{errorId ? <ErrorList id={errorId} errors={errors} /> : null}</div>
         </div>
     );
