@@ -1,0 +1,47 @@
+name: Deploy to AWS Fargate
+
+on:
+    issue_comment:
+        types: [created]
+
+jobs:
+    deploy:
+        if: |
+            github.event.issue.pull_request != null &&
+            github.event.comment.body == 'deploy'
+        runs-on: ubuntu-latest
+        permissions:
+            id-token: write
+            contents: read
+
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4
+
+            - name: Authenticate with AWS
+              uses: aws-actions/configure-aws-credentials@v3
+              with:
+                  role-to-assume: arn:aws:iam::156041424020:role/github-oidc-role-86262ca
+                  aws-region: us-east-1
+
+            - name: Log into ECR
+              run: aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin <ECR_URI>
+
+            - name: Build Docker image
+              run: |
+                  docker build -t <IMAGE_NAME>:latest .
+                  docker tag <IMAGE_NAME>:latest <ECR_URI>/<IMAGE_NAME>:latest
+
+            - name: Push Docker image to ECR
+              run: |
+                  docker push <ECR_URI>/<IMAGE_NAME>:latest
+
+            - name: Install Pulumi
+              uses: pulumi/actions-install-pulumi-cli@v3
+
+            - name: Update ECS service with Pulumi
+              env:
+                  PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
+              run: |
+                  pulumi stack select dev
+                  pulumi up --yes

@@ -5,6 +5,7 @@ import { rdsInstance } from './database';
 // import { cloudfrontDistribution } from './cdn';
 // import { resizeLambda } from './lambda';
 import * as app from './app';
+import * as githubActions from './github-actions';
 
 // Export all required values
 export const bastionPublicIp = networking.bastionHost.publicIp;
@@ -18,3 +19,4 @@ export const rdsUsername = rdsInstance.username;
 // export const appUrl = url;
 // export const vpc = networking.vpc;
 export const appUrl = app.url;
+export const githubOidcRole = githubActions.githubOidcRole;
