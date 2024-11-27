@@ -4,4 +4,3 @@ config:
     modeller:appName: modeller
     modeller:containerPort: '3000'
     aws:region: us-east-1
-    aws:profile: davecranwell-dev

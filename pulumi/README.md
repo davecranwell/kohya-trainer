@@ -5,6 +5,7 @@
 ```bash
 curl -fsSL https://get.pulumi.com | sh
 curl -fsSL https://get.pulumi.com/esc/install.sh | sh
+export AWS_PROFILE=davecranwell-dev
 ```
 
 ### Setup EC2 keypair
