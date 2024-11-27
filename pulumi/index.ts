@@ -18,5 +18,6 @@ export const rdsUsername = rdsInstance.username;
 // export const cloudfrontUrl = cloudfrontDistribution.domainName;
 // export const appUrl = url;
 // export const vpc = networking.vpc;
+export const repository = app.repository.url;
 export const appUrl = app.url;
 export const githubOidcRole = githubActions.githubOidcRole;

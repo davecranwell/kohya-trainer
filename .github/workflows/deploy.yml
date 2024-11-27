@@ -1,6 +1,7 @@
 name: Deploy to AWS Fargate
 
 on:
+    workflow_dispatch:
     pull_request:
         types: [closed]
         paths:
@@ -31,12 +32,12 @@ jobs:
 
             - name: Build Docker image
               run: |
-                  docker build -t <IMAGE_NAME>:latest .
-                  docker tag <IMAGE_NAME>:latest <ECR_URI>/<IMAGE_NAME>:latest
+                  docker build -t modeller:latest .
+                  docker tag modeller:latest 156041424020.dkr.ecr.us-east-1.amazonaws.com/modeller-repo-1f858f9/modeller:latest
 
             - name: Push Docker image to ECR
               run: |
-                  docker push <ECR_URI>/<IMAGE_NAME>:latest
+                  docker push 156041424020.dkr.ecr.us-east-1.amazonaws.com/modeller-repo-1f858f9/modeller:latest
 
             - name: Install Pulumi
               uses: pulumi/actions@v6

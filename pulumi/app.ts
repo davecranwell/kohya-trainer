@@ -9,12 +9,14 @@ const config = new pulumi.Config();
 const appName = config.require('appName');
 const containerPort = config.requireNumber('containerPort');
 
-const repository = new awsx.ecr.Repository(`${appName}-repo`, {
+export const repository = new awsx.ecr.Repository(`${appName}-repo`, {
     forceDelete: true, // Allows cleanup during development - remove in production
 });
 
 const image = new awsx.ecr.Image(`${appName}-image`, {
     repositoryUrl: repository.url,
+    imageName: `${appName}`,
+    imageTag: 'latest',
     context: '../my-remix-app',
     platform: 'linux/amd64',
     dockerfile: '../my-remix-app/Dockerfile',

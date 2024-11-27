@@ -62,7 +62,7 @@ const dbParameterGroup = new aws.rds.ParameterGroup('postgres-params', {
 
 export const rdsInstance = new aws.rds.Instance('postgres-instance', {
     engine: 'postgres',
-    engineVersion: '15.5',
+    engineVersion: '15.7',
     instanceClass: 'db.t3.micro',
     allocatedStorage: 20,
     dbName: 'modeller',
