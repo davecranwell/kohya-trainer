@@ -1,14 +1,16 @@
 name: Deploy to AWS Fargate
 
 on:
-    issue_comment:
-        types: [created]
+    pull_request:
+        types: [closed]
+        paths:
+            # Only trigger when files in my-remix-app directory change
+            - 'my-remix-app/**'
 
 jobs:
     deploy:
-        if: |
-            github.event.issue.pull_request != null &&
-            github.event.comment.body == 'deploy'
+        # Only run this job if the PR was merged (not just closed)
+        if: github.event.pull_request.merged == true
         runs-on: ubuntu-latest
         permissions:
             id-token: write
