@@ -39,7 +39,7 @@ jobs:
                   docker push <ECR_URI>/<IMAGE_NAME>:latest
 
             - name: Install Pulumi
-              uses: pulumi/actions-install-pulumi-cli@v3
+              uses: pulumi/actions@v6
 
             - name: Update ECS service with Pulumi
               env:
