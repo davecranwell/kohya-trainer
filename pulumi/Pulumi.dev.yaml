@@ -4,3 +4,5 @@ config:
     modeller:appName: modeller
     modeller:containerPort: '3000'
     aws:region: us-east-1
+    # We can't use this next line because it conflicts with Github Actions which has no concept of a profile
+    # aws:profile: davecranwell-dev

@@ -42,13 +42,6 @@ jobs:
               run: npm ci
               working-directory: ./pulumi
 
-            - name: Debug AWS Credentials
-              run: |
-                  echo "AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID:0:4}...redacted"
-                  echo "AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY:0:4}...redacted"
-                  echo "AWS_SESSION_TOKEN=${AWS_SESSION_TOKEN:0:4}...redacted"
-                  echo "AWS_REGION=$AWS_REGION"
-
             - name: Install Pulumi & Deploy
               uses: pulumi/actions@v6
               with:
