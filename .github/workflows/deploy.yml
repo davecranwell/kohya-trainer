@@ -30,13 +30,11 @@ jobs:
             - name: Log into ECR
               run: aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 156041424020.dkr.ecr.us-east-1.amazonaws.com/modeller-repo-1f858f9
 
-            - name: Build Docker image
+            - name: Build & Push Docker image
+              working-directory: ./my-remix-app
               run: |
                   docker build -t modeller:latest .
                   docker tag modeller:latest 156041424020.dkr.ecr.us-east-1.amazonaws.com/modeller-repo-1f858f9/modeller:latest
-
-            - name: Push Docker image to ECR
-              run: |
                   docker push 156041424020.dkr.ecr.us-east-1.amazonaws.com/modeller-repo-1f858f9/modeller:latest
 
             - name: Install Pulumi
@@ -44,5 +42,6 @@ jobs:
               with:
                   command: up
                   stack-name: dev
+                  work-dir: ./pulumi
               env:
                   PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
