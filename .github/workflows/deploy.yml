@@ -28,7 +28,7 @@ jobs:
                   aws-region: us-east-1
 
             - name: Log into ECR
-              run: aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin <ECR_URI>
+              run: aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 156041424020.dkr.ecr.us-east-1.amazonaws.com/modeller-repo-1f858f9
 
             - name: Build Docker image
               run: |
