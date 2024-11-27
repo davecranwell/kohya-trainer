@@ -43,10 +43,5 @@ jobs:
               with:
                   command: up
                   stack-name: dev
-
-            - name: Update ECS service with Pulumi
               env:
                   PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
-              run: |
-                  pulumi stack select dev
-                  pulumi up --yes
