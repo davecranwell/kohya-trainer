@@ -36,7 +36,9 @@ jobs:
                   docker build -t modeller-repo-1f858f9:latest .
                   docker tag modeller-repo-1f858f9:latest 156041424020.dkr.ecr.us-east-1.amazonaws.com/modeller-repo-1f858f9:latest
                   docker push 156041424020.dkr.ecr.us-east-1.amazonaws.com/modeller-repo-1f858f9:latest
-
+            - name: Install Pulumi dependencies
+              run: npm ci
+              working-directory: ./pulumi
             - name: Install Pulumi
               uses: pulumi/actions@v6
               with:
