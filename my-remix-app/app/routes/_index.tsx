@@ -5,5 +5,5 @@ export const meta: MetaFunction = () => {
 };
 
 export default function Index() {
-    return <div>hi. A tweak</div>;
+    return <div>hi test</div>;
 }
