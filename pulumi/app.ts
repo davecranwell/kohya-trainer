@@ -1,6 +1,7 @@
 import * as aws from '@pulumi/aws';
 import * as awsx from '@pulumi/awsx';
 import * as pulumi from '@pulumi/pulumi';
+
 import { vpc } from './networking';
 import { bucket } from './storage';
 
@@ -13,14 +14,23 @@ export const repository = new awsx.ecr.Repository(`${appName}-repo`, {
     forceDelete: true, // Allows cleanup during development - remove in production
 });
 
-const image = new awsx.ecr.Image(`${appName}-image`, {
-    repositoryUrl: repository.url,
-    imageName: `${appName}`,
-    imageTag: 'latest',
-    context: '../my-remix-app',
-    platform: 'linux/amd64',
-    dockerfile: '../my-remix-app/Dockerfile',
-});
+// const image = new awsx.ecr.Image(`${appName}-image`, {
+//     repositoryUrl: repository.url,
+//     imageName: `${appName}`,
+//     imageTag: 'latest',
+//     context: '../my-remix-app',
+//     platform: 'linux/amd64',
+//     dockerfile: '../my-remix-app/Dockerfile',
+// });
+
+const image = {
+    /*
+     * We'll reference a pre-built image instead of building it via Pulumi
+     * This avoids the NAT Gateway requirement for image building
+     * You'll need to build and push the image manually or via CI/CD
+     */
+    imageUri: pulumi.interpolate`${repository.url}:latest`,
+};
 
 const cluster = new aws.ecs.Cluster(`${appName}-cluster`);
 
@@ -51,13 +61,39 @@ const albSecGroup = new aws.ec2.SecurityGroup(`${appName}-alb-sg`, {
     ],
 });
 
-const loadBalancer = new aws.lb.LoadBalancer(`${appName}-lb`, {
-    internal: false,
-    loadBalancerType: 'application',
-    securityGroups: [albSecGroup.id],
-    subnets: vpc.publicSubnetIds,
-    enableDeletionProtection: false,
+export const fargateSecGroup = new aws.ec2.SecurityGroup(`${appName}-fargate-sg`, {
+    vpcId: vpc.vpcId,
+    ingress: [
+        {
+            protocol: 'tcp',
+            fromPort: containerPort, // was0
+            toPort: containerPort, // was 65535, // TODO fix this
+            cidrBlocks: ['0.0.0.0/0'], // turning this off means I can't see the tasks at their public IPs
+            securityGroups: [albSecGroup.id],
+        },
+    ],
+    egress: [
+        // allow all outbound traffic
+        {
+            protocol: '-1',
+            fromPort: 0,
+            toPort: 0,
+            cidrBlocks: ['0.0.0.0/0'],
+        },
+    ],
 });
+
+const loadBalancer = new aws.lb.LoadBalancer(
+    `${appName}-lb`,
+    {
+        internal: false,
+        loadBalancerType: 'application',
+        securityGroups: [albSecGroup.id],
+        subnets: vpc.publicSubnetIds,
+        enableDeletionProtection: false,
+    },
+    { dependsOn: [albSecGroup] },
+);
 
 // Create target group separately
 const targetGroup = new aws.lb.TargetGroup(`${appName}-tg`, {
@@ -79,85 +115,73 @@ const targetGroup = new aws.lb.TargetGroup(`${appName}-tg`, {
 });
 
 // Create listener
-const listener = new aws.lb.Listener(`${appName}-listener`, {
-    loadBalancerArn: loadBalancer.arn,
-    port: 80,
-    protocol: 'HTTP',
-    defaultActions: [
-        {
-            type: 'forward',
-            targetGroupArn: targetGroup.arn,
-        },
-    ],
-});
-
-export const fargateSecGroup = new aws.ec2.SecurityGroup(`${appName}-fargate-sg`, {
-    vpcId: vpc.vpcId,
-    ingress: [
-        {
-            protocol: 'tcp',
-            fromPort: 0,
-            toPort: 65535, // TODO fix this
-            cidrBlocks: ['0.0.0.0/0'], // turning this off means I can't see the tasks at their public IPs
-            securityGroups: [albSecGroup.id],
-        },
-    ],
-    egress: [
-        // allow all outbound traffic
-        {
-            protocol: '-1',
-            fromPort: 0,
-            toPort: 0,
-            cidrBlocks: ['0.0.0.0/0'],
-        },
-    ],
-});
-
-export const fargateService = new awsx.ecs.FargateService(`${appName}-service`, {
-    cluster: cluster.arn,
-    desiredCount: 2,
-    taskDefinitionArgs: {
-        container: {
-            name: appName,
-            image: image.imageUri,
-            cpu: 128,
-            memory: 512,
-            essential: true,
-            portMappings: [
-                {
-                    containerPort: containerPort, // Container's exposed port
-                    protocol: 'tcp',
-                },
-            ],
-            environment: [
-                { name: 'PORT', value: containerPort.toString() },
-                { name: 'SESSION_SECRET', value: config.require('SESSION_SECRET') },
-                { name: 'AWS_REGION', value: 'us-east-1' },
-                { name: 'BUCKET_NAME', value: bucket.bucket },
-                { name: 'ALLOW_INDEXING', value: 'false' },
-                { name: 'USE_CRON', value: 'false' },
-                { name: 'GOOGLE_CLIENT_ID', value: config.require('GOOGLE_CLIENT_ID') },
-                { name: 'GOOGLE_CLIENT_SECRET', value: config.require('GOOGLE_CLIENT_SECRET') },
-                { name: 'DATABASE_URL', value: config.require('DATABASE_URL') },
-                { name: 'VAST_API_KEY', value: config.require('VAST_API_KEY') },
-                { name: 'VAST_WEB_USER', value: 'admin' },
-                { name: 'VAST_WEB_PASSWORD', value: config.require('VAST_WEB_PASSWORD') },
-            ],
-        },
+const listener = new aws.lb.Listener(
+    `${appName}-listener`,
+    {
+        loadBalancerArn: loadBalancer.arn,
+        port: 80,
+        protocol: 'HTTP',
+        defaultActions: [
+            {
+                type: 'forward',
+                targetGroupArn: targetGroup.arn,
+            },
+        ],
     },
-    networkConfiguration: {
-        subnets: vpc.publicSubnetIds,
-        securityGroups: [fargateSecGroup.id],
-        assignPublicIp: true,
-    },
-    loadBalancers: [
-        {
-            targetGroupArn: targetGroup.arn,
-            containerName: appName,
-            containerPort: containerPort, // Link to the container's port
+    { dependsOn: [targetGroup, loadBalancer] },
+);
+
+export const fargateService = new awsx.ecs.FargateService(
+    `${appName}-service`,
+    {
+        cluster: cluster.arn,
+        desiredCount: 1,
+        taskDefinitionArgs: {
+            container: {
+                name: appName,
+                image: image.imageUri,
+                cpu: 128,
+                memory: 512,
+                essential: true,
+                portMappings: [
+                    {
+                        containerPort: containerPort, // Container's exposed port
+                        protocol: 'tcp',
+                    },
+                ],
+                environment: [
+                    { name: 'PORT', value: containerPort.toString() },
+                    { name: 'SESSION_SECRET', value: config.require('SESSION_SECRET') },
+                    { name: 'AWS_REGION', value: 'us-east-1' },
+                    { name: 'AWS_S3_BUCKET_NAME', value: bucket.bucket },
+                    { name: 'AWS_ACCESS_KEY_ID', value: config.require('AWS_ACCESS_KEY_ID') },
+                    { name: 'AWS_SECRET_ACCESS_KEY', value: config.require('AWS_SECRET_ACCESS_KEY') },
+                    { name: 'ALLOW_INDEXING', value: 'false' },
+                    { name: 'USE_CRON', value: 'false' },
+                    { name: 'GOOGLE_CLIENT_ID', value: config.require('GOOGLE_CLIENT_ID') },
+                    { name: 'GOOGLE_CLIENT_SECRET', value: config.require('GOOGLE_CLIENT_SECRET') },
+                    { name: 'DATABASE_URL', value: config.require('DATABASE_URL') },
+                    { name: 'VAST_API_KEY', value: config.require('VAST_API_KEY') },
+                    { name: 'VAST_WEB_USER', value: 'admin' },
+                    { name: 'VAST_WEB_PASSWORD', value: config.require('VAST_WEB_PASSWORD') },
+                ],
+            },
         },
-    ],
-});
+        networkConfiguration: {
+            subnets: vpc.publicSubnetIds,
+            securityGroups: [fargateSecGroup.id],
+            assignPublicIp: true,
+        },
+        loadBalancers: [
+            {
+                targetGroupArn: targetGroup.arn,
+                containerName: appName,
+                containerPort: containerPort, // Link to the container's port
+            },
+        ],
+    },
+    { dependsOn: [targetGroup, loadBalancer, fargateSecGroup] },
+);
 
 export const url = pulumi.interpolate`http://${loadBalancer.dnsName}`;
 export const loadBalancerVpcId = loadBalancer.vpcId;

@@ -63,14 +63,18 @@ pulumi config get mySecretName
 ## AWS Configuration
 
 ```bash
-aws configure sso
+export AWS_PROFILE='name-of-accountrole-id' # e.g AdministratorAccess-1234567890
 ```
+
+`aws configure list` should return the profile name you just set with key and secret. If it doesn't log in and try again.
 
 SSO session name: davecranwell
 CLI default client region: us-east-1
 
 ```bash
-aws sso login --sso-session=davecranwell
+#aws sso login --sso-session=davecranwell # This only works with "aws:profile: davecranwell-dev" in the Pulumi.dev.yaml file, which we can't commit because it breaks Github actions
+aws configure  # this works better but you'll need to refer to your actual aws key/secret
+aws sso login --profile davecranwell-dev
 pulumi up
 ```
 
