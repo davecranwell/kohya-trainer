@@ -1,12 +1,12 @@
-import { invariantResponse } from '@epic-web/invariant';
 import { json, type LoaderFunctionArgs } from '@remix-run/node';
 import { useLoaderData } from '@remix-run/react';
 
-import { prisma } from '#app/utils/db.server.ts';
-import { requireUserWithPermission } from '#app/utils/permissions.server.ts';
-import { TrainingEditor } from './__training-editor.tsx';
+import prisma from '~/services/db.server';
+import { requireUserWithPermission } from '~/services/permissions.server';
 
-export { action } from './__training-editor.server.tsx';
+import { TrainingEditor } from '../util/training-editor';
+
+export { action } from '../util/training-editor.server';
 
 export async function loader({ request, params }: LoaderFunctionArgs) {
     const userId = await requireUserWithPermission(request, 'create:training:own');
@@ -24,7 +24,9 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
         },
     });
 
-    invariantResponse(training, 'Not found', { status: 404 });
+    if (!training) {
+        throw json('Not found', { status: 404 });
+    }
 
     return json({ training });
 }

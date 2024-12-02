@@ -63,8 +63,8 @@ app.use(
             directives: {
                 'font-src': ["'self'", 'fonts.gstatic.com'],
                 'frame-src': ["'self'"],
-                'img-src': ["'self'", 'data:'],
-                'connect-src': ["'self'", 'ws://localhost:24678'],
+                'img-src': ["'self'", 'data:', 'blob:'],
+                'connect-src': ["'self'", 'localhost:24678'],
                 'script-src': ["'strict-dynamic'", "'self'", (_, res) => `'nonce-${res.locals.cspNonce}'`],
                 'script-src-attr': [(_, res) => `'nonce-${res.locals.cspNonce}'`],
                 'upgrade-insecure-requests': null,

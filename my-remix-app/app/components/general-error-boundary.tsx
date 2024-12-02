@@ -16,7 +16,7 @@ export function GeneralErrorBoundary() {
     const params = useParams();
 
     return (
-        <div>
+        <div className="flex h-[calc(100vh-4rem)] w-full items-center justify-center">
             {isRouteErrorResponse(error) ? (
                 <p>
                     {IS_PROD ? (

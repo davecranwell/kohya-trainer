@@ -1,6 +1,5 @@
 import type { ActionFunctionArgs, LoaderFunctionArgs } from '@remix-run/node';
-import { Form, json, useActionData, useLoaderData } from '@remix-run/react';
-import { Fieldset } from '@headlessui/react';
+import { Form, json, Link, useActionData, useLoaderData } from '@remix-run/react';
 import { getZodConstraint, parseWithZod } from '@conform-to/zod';
 import { getFormProps, getInputProps, useForm } from '@conform-to/react';
 import { z } from 'zod';
@@ -8,10 +7,13 @@ import { AuthorizationError } from 'remix-auth';
 
 import { authenticator } from '~/services/auth.server';
 
-import { ErrorList, Field } from '~/components/forms';
+import { ErrorList, Field, Fieldset } from '~/components/forms';
 import { SocialButton } from '~/components/social-button';
 import { StatusButton } from '~/components/status-button';
+import { Button } from '~/components/button';
 import { useIsPending } from '~/util/hooks';
+import { Container } from '~/components/container';
+import { Divider } from '~/components/divider';
 
 const loginSchema = z.object({
     email: z
@@ -64,10 +66,10 @@ export default function Login() {
     });
 
     return (
-        <div>
+        <Container>
             <ErrorList id={form.errorId} errors={form.errors} />
             <Form method="post" {...getFormProps(form)}>
-                <Fieldset className="space-y-4">
+                <Fieldset>
                     <Field
                         labelProps={{ children: 'Email' }}
                         inputProps={{
@@ -95,12 +97,26 @@ export default function Login() {
                         }}
                         errors={fields.confirmPassword.errors}
                     />
-                    <StatusButton type="submit" status={isSubmitting ? 'pending' : 'idle'}>
+                    <StatusButton type="submit" status={isSubmitting ? 'pending' : 'idle'} size="full">
                         Sign up
                     </StatusButton>
                 </Fieldset>
             </Form>
+
+            <Divider title="Or with your favourite provider" />
+
             <SocialButton provider={'google'} label="Sign up with Google" />
-        </div>
+
+            <Divider />
+
+            <div className="flex justify-center text-sm">
+                <p>
+                    Already got an account?&nbsp;
+                    <Link to="/login" className="text-accent1">
+                        Login in now
+                    </Link>
+                </p>
+            </div>
+        </Container>
     );
 }

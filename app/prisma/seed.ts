@@ -37,7 +37,7 @@ async function seed() {
             permissions: {
                 connect: await prisma.permission.findMany({
                     select: { id: true },
-                    where: { access: 'any' },
+                    where: { OR: [{ access: 'any' }, { access: 'own' }] },
                 }),
             },
         },

@@ -2,6 +2,7 @@ import React, { useId } from 'react';
 import { useInputControl } from '@conform-to/react';
 import clsx from 'clsx';
 import { REGEXP_ONLY_DIGITS_AND_CHARS, type OTPInputProps } from 'input-otp';
+import { Fieldset as FieldsetHeadless } from '@headlessui/react';
 
 import { Checkbox, type CheckboxProps } from './checkbox';
 import { InputOTP, InputOTPGroup, InputOTPSeparator, InputOTPSlot } from './input-otp';
@@ -24,6 +25,10 @@ export function ErrorList({ id, errors }: { errors?: ListOfErrors; id?: string }
             ))}
         </ul>
     );
+}
+
+export function Fieldset({ children, className }: { children: React.ReactNode; className?: string }) {
+    return <FieldsetHeadless className={clsx('space-y-6', className)}>{children}</FieldsetHeadless>;
 }
 
 export function Field({
@@ -211,7 +216,7 @@ export function CheckboxField({
                     }}
                     type="button"
                 />
-                <label htmlFor={id} {...labelProps} className="text-body-xs self-center" />
+                <Label htmlFor={id} {...labelProps} className="mb-0" />
             </div>
             {help && <p className="mt-3 text-sm text-gray-500">{help}</p>}
             <div className="pt-1">{errorId ? <ErrorList id={errorId} errors={errors} /> : null}</div>

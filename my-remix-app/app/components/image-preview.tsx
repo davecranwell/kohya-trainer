@@ -1,6 +1,7 @@
+import { clsx } from 'clsx';
 import React from 'react';
 
-import { cn, getThumbnailKey } from '#app/utils/misc.js';
+import { getThumbnailKey } from '~/util/misc';
 
 interface ImagePreviewProps {
     id?: string;
@@ -13,7 +14,7 @@ interface ImagePreviewProps {
 
 export const ImagePreview: React.FC<ImagePreviewProps> = ({ id, name, url, uploadProgress, width = 200 }) => {
     return (
-        <div className={cn(`relative flex w-[${width}px] h-[${width}px] flex-none`)}>
+        <div className={clsx(`relative flex w-[${width}px] h-[${width}px] flex-none`)}>
             {url && (
                 <img
                     src={getThumbnailKey(url)}

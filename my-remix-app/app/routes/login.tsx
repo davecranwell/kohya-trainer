@@ -2,17 +2,19 @@ import type { ActionFunctionArgs, LoaderFunctionArgs } from '@remix-run/node';
 import { Form, json, Link, useActionData, useLoaderData } from '@remix-run/react';
 import { getZodConstraint, parseWithZod } from '@conform-to/zod';
 import { getFormProps, getInputProps, useForm } from '@conform-to/react';
+
 import { z } from 'zod';
 import { AuthorizationError } from 'remix-auth';
 
 import { authenticator } from '~/services/auth.server';
+import { useIsPending } from '~/util/hooks';
 
-import { ErrorList, Field } from '~/components/forms';
+import { ErrorList, Field, Fieldset } from '~/components/forms';
 import { SocialButton } from '~/components/social-button';
 import { StatusButton } from '~/components/status-button';
-import { useIsPending } from '~/util/hooks';
 import { Button } from '~/components/button';
-import { Fieldset } from '@headlessui/react';
+import { Container } from '~/components/container';
+import { Divider } from '~/components/divider';
 
 const loginSchema = z.object({
     email: z
@@ -22,7 +24,7 @@ const loginSchema = z.object({
         .max(100, { message: 'Email is too long' }),
     password: z
         .string({ required_error: 'Password is required' })
-        .min(10, { message: 'Password is too short' })
+        .min(8, { message: 'Password is too short' })
         .max(100, { message: 'Password is too long' }),
 });
 
@@ -42,7 +44,7 @@ export async function action({ request }: ActionFunctionArgs) {
     } catch (error) {
         if (error instanceof Response) return error;
         if (error instanceof AuthorizationError) {
-            return submission.reply({ formErrors: ['Invalid username or password'] });
+            return submission.reply({ formErrors: ['No account found with this email or password'] });
         }
     }
 }
@@ -64,10 +66,10 @@ export default function Login() {
     });
 
     return (
-        <div>
+        <Container>
             <ErrorList id={form.errorId} errors={form.errors} />
             <Form method="post" {...getFormProps(form)}>
-                <Fieldset className="space-y-4">
+                <Fieldset>
                     <Field
                         labelProps={{ children: 'Email' }}
                         inputProps={{
@@ -86,17 +88,23 @@ export default function Login() {
                         }}
                         errors={fields.password.errors}
                     />
-                    <StatusButton type="submit" status={isSubmitting ? 'pending' : 'idle'}>
+                    <StatusButton type="submit" status={isSubmitting ? 'pending' : 'idle'} size="full">
                         Sign In
                     </StatusButton>
                 </Fieldset>
             </Form>
 
-            <SocialButton provider={'google'} label="Login with Google" />
+            <Divider title="Or with your favourite provider" />
 
-            <Button asChild>
-                <Link to="/sign-up">Create an account</Link>
-            </Button>
-        </div>
+            <SocialButton provider={'google'} label="Log in with Google" />
+
+            <Divider />
+
+            <div className="flex justify-center text-sm">
+                <Button asChild variant="secondary" size="lg">
+                    <Link to="/sign-up">Create an account</Link>
+                </Button>
+            </div>
+        </Container>
     );
 }

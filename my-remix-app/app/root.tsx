@@ -1,5 +1,5 @@
-import { Links, Meta, Outlet, Scripts, ScrollRestoration } from '@remix-run/react';
-import type { LinksFunction } from '@remix-run/node';
+import { json, Links, Meta, Outlet, Scripts, ScrollRestoration } from '@remix-run/react';
+import type { LinksFunction, LoaderFunctionArgs } from '@remix-run/node';
 
 import { useNonce } from '~/util/nonce.provider';
 import { GeneralErrorBoundary } from '~/components/general-error-boundary';
@@ -20,6 +20,10 @@ export const links: LinksFunction = () => [
     },
 ];
 
+export async function loader({ request }: LoaderFunctionArgs) {
+    return json({});
+}
+
 export function Layout({ children }: { children: React.ReactNode }) {
     const nonce = useNonce();
 
@@ -31,12 +35,14 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 <Meta />
                 <Links />
             </head>
-            <body>
-                <TooltipProvider delayDuration={100} skipDelayDuration={500}>
-                    {children}
-                </TooltipProvider>
-                <ScrollRestoration nonce={nonce} />
-                <Scripts nonce={nonce} />
+            <body className="min-h-screen bg-gradient-to-br from-gray-950 via-gray-900 to-slate-900 text-gray-400">
+                <div className="mx-auto w-full max-w-4xl">
+                    <TooltipProvider delayDuration={100} skipDelayDuration={500}>
+                        <div className="p-8">{children}</div>
+                    </TooltipProvider>
+                    <ScrollRestoration nonce={nonce} />
+                    <Scripts nonce={nonce} />
+                </div>
             </body>
         </html>
     );

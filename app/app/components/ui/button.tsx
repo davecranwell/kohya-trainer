@@ -8,12 +8,12 @@ const buttonVariants = cva('rounded-full', {
     variants: {
         variant: {
             default:
-                'inline-flex items-center align-center rounded-md bg-primary px-3 py-2 font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary ',
+                'inline-flex items-center align-center rounded-md bg-primary px-3 py-2 font-semibold text-white shadow-sm hover:bg-primary-dark focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary ',
             destructive:
-                'rounded-md bg-red-600 px-3 py-2 font-semibold text-white shadow-sm hover:bg-red-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600 ',
+                'rounded-md bg-red-600 px-3 py-2 font-semibold text-white shadow-sm hover:bg-semantic-error focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-semantic-error-dark ',
             outline: 'rounded-md border border-input',
             secondary:
-                'rounded-md bg-secondary px-3 py-2 font-semibold shadow-sm hover:bg-grey-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary',
+                'rounded-md bg-secondary px-3 py-2 font-semibold shadow-sm hover:bg-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary',
             link: 'underline-offset-4 hover:underline',
         },
         size: {

@@ -3,7 +3,7 @@ import * as LabelPrimitive from '@radix-ui/react-label';
 import { cva, type VariantProps } from 'class-variance-authority';
 import clsx from 'clsx';
 
-const labelVariants = cva('block text-sm font-medium text-gray-900 mb-2');
+const labelVariants = cva('block font-medium text-gray-300 mb-2');
 
 const Label = React.forwardRef<
     React.ElementRef<typeof LabelPrimitive.Root>,

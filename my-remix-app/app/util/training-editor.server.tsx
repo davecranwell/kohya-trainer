@@ -2,15 +2,21 @@ import { parseWithZod } from '@conform-to/zod';
 import { json, type ActionFunctionArgs } from '@remix-run/node';
 import { z } from 'zod';
 
-import { requireUserId } from '#app/utils/auth.server.ts';
-import { prisma } from '#app/utils/db.server.ts';
-import { redirectWithToast } from '#app/utils/toast.server.js';
+import { requireUserWithPermission } from '~/services/permissions.server.js';
+import prisma from '~/services/db.server.js';
+import { redirectWithToast } from '~/services/toast.server';
 
-import { TrainingEditorSchema } from './__training-editor';
-import TrainingConfig from '#app/utils/training-config.json';
+import TrainingConfig from '~/util/training-config.json';
+
+export const TrainingEditorSchema = z.object({
+    id: z.string().optional(),
+    name: z.string().min(1).max(100),
+    triggerWord: z.string().min(4).max(10),
+    baseModel: z.string().url(),
+});
 
 export async function action({ request }: ActionFunctionArgs) {
-    const userId = await requireUserId(request);
+    const userId = await requireUserWithPermission(request, 'update:training:own');
     const formData = await request.formData();
 
     const submission = await parseWithZod(formData, {
@@ -44,7 +50,7 @@ export async function action({ request }: ActionFunctionArgs) {
     };
 
     const updateTraining = await prisma.training.upsert({
-        select: { id: true, owner: { select: { username: true } } },
+        select: { id: true, owner: { select: { email: true } } },
         where: { id: trainingId ?? '__new_training__' },
         create: {
             ownerId: userId,

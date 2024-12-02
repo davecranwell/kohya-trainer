@@ -9,27 +9,26 @@ import {
     unstable_composeUploadHandlers,
 } from '@remix-run/node';
 import { useEventSource } from 'remix-utils/sse/react';
-import { invariantResponse } from '@epic-web/invariant';
-import { Resource } from 'sst';
 
-import { FileUploadPreview, ImageWithMetadata } from '#app/components/ui/FileUploadPreview';
-import { Progress, uploadStreamToS3 } from '#app/utils/s3-upload.server.js';
-import { emitter } from '#app/utils/emitter.server';
-import { Button } from '#app/components/ui/button.js';
-import { requireUserId } from '#app/utils/auth.server.js';
-import { prisma } from '#app/utils/db.server.ts';
-import { requireUserWithPermission } from '#app/utils/permissions.server.js';
-import { GeneralErrorBoundary } from '#app/components/error-boundary.js';
-import { sanitiseTagArray } from '#app/utils/misc.js';
-import { ImagePreview } from '#app/components/ui/ImagePreview.js';
-import { Label } from '#app/components/ui/label.js';
-import { MultiComboBox } from '#app/components/ui/multi-combo-box.js';
-import { redirectWithToast } from '#app/utils/toast.server.js';
+import prisma from '~/services/db.server';
+import { requireUserWithPermission } from '~/services/permissions.server';
+import { Progress, uploadStreamToS3 } from '~/services/s3-upload.server';
+
+import { emitter } from '~/util/emitter.server';
+import { sanitiseTagArray } from '~/util/misc';
+import { redirectWithToast } from '~/services/toast.server';
+
+import { FileUploadPreview, ImageWithMetadata } from '~/components/file-upload-preview';
+import { Button } from '~/components/button';
+import { ImagePreview } from '~/components/image-preview';
+import { Label } from '~/components/forms/label';
+import { MultiComboBox } from '~/components/forms/multi-combo-box';
 
 const MAX_IMAGES = 50;
 
 export const action = async ({ params, request }: ActionFunctionArgs) => {
-    const userId = await requireUserId(request);
+    const userId = await requireUserWithPermission(request, 'update:training:own');
+
     const trainingId = params.id;
 
     // Get all the image we already have in the DB
@@ -39,7 +38,9 @@ export const action = async ({ params, request }: ActionFunctionArgs) => {
         },
     });
 
-    invariantResponse(trainingId, 'Not found', { status: 404 });
+    if (!trainingId) {
+        throw json('Not found', { status: 404 });
+    }
 
     const s3UploaderHandler: UploadHandler = async (field) => {
         const { name, data, filename, contentType } = field;
@@ -107,7 +108,9 @@ export async function loader({ params, request }: LoaderFunctionArgs) {
         },
     });
 
-    invariantResponse(training, 'Not found', { status: 404 });
+    if (!training) {
+        throw json('Not found', { status: 404 });
+    }
 
     const images = await prisma.trainingImage.findMany({
         select: {
@@ -168,7 +171,7 @@ export default function ImageUpload() {
                 Update
             </Button>
 
-            {data.images.length < 1 && <h2 className="mb-4 text-2xl font-bold tracking-tight text-gray-900">Upload some training images</h2>}
+            {data.images.length < 1 && <h2 className="mb-4 text-2xl font-bold tracking-tight text-white">Upload some training images</h2>}
             <FileUploadPreview
                 key={`${data.trainingId}-preview`}
                 acceptedFileTypes={['image/png', 'image/jpeg', 'text/plain']}

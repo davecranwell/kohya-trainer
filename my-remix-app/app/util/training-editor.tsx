@@ -3,12 +3,16 @@ import { getZodConstraint, parseWithZod } from '@conform-to/zod';
 import { type Training } from '@prisma/client';
 import { type SerializeFrom } from '@remix-run/node';
 import { Form, useActionData } from '@remix-run/react';
+import { InfoCircledIcon } from '@radix-ui/react-icons';
 import { z } from 'zod';
-import { ErrorList, Field } from '#app/components/forms.tsx';
-import { Button } from '#app/components/ui/button.tsx';
-import { StatusButton } from '#app/components/ui/status-button.tsx';
-import { useIsPending } from '#app/utils/misc.tsx';
-import { type action } from './__training-editor.server';
+
+import { useIsPending } from '~/util/hooks';
+import { type action } from './training-editor.server';
+
+import { ErrorList, Field } from '~/components/forms';
+import { Button } from '~/components/button';
+import { StatusButton } from '~/components/status-button';
+import { Container } from '~/components/container';
 
 export const TrainingEditorSchema = z.object({
     id: z.string().optional(),
@@ -39,38 +43,39 @@ export function TrainingEditor({ training }: { training?: SerializeFrom<Pick<Tra
     const { key: baseModelKey, ...baseModelProps } = getInputProps(fields.baseModel, { type: 'text' });
 
     return (
-        <div>
+        <Container>
             <Form method="POST" {...getFormProps(form)} encType="multipart/form-data">
                 {training ? <input type="hidden" name="id" value={training.id} /> : null}
                 <div className="w-100 space-y-8 border-b border-gray-900/10 pb-12">
                     <div className="grid grid-cols-2 gap-4 border-b border-gray-900/10 pb-12">
                         <Field
-                            labelProps={{ children: 'Title' }}
+                            labelProps={{ children: 'Name' }}
                             inputProps={{
                                 autoFocus: true,
                                 ...nameProps,
                             }}
                             errors={fields.name.errors}
-                            help="A title to identify your training in the list of trainings."
+                            help="Give your Lora a name to identify it later."
                         />
                     </div>
                     <div className="grid grid-cols-2 gap-4 border-b border-gray-900/10 pb-12">
                         <Field
-                            labelProps={{ children: 'Trigger Word' }}
+                            labelProps={{ children: 'Trigger word(s)' }}
                             inputProps={{
                                 ...triggerWordProps,
                             }}
                             errors={fields.triggerWord.errors}
                             help="e.g 'ohxw'. 4-10 characters long"
                         />
-                        <p className="mt-1 basis-1/2 text-sm leading-6 text-gray-600">
-                            The word(s) that will trigger the Lora to be activated while generating an image
+                        <p className="mt-1 basis-1/2 text-sm leading-6">
+                            <InfoCircledIcon className="inline" />
+                            The word(s) to activate the Lora while generating an image.
                             <br />
                             <br />
-                            When training a person, you should use a trigger word that is specific to that person, e.g 'ohxw man' for a man, or 'ohxw
-                            cat' for a pet cat. If your trigger word is too common in the base model, your training will have to overcome the meaning
-                            the base model has given to that word. This is why non-words can be useful in training brand new concepts, or those where you'd prefer
-                            less room for interpretation.
+                            When training a person, use a trigger word that is unique to them but unknown to the base model, e.g 'ohxw man' for a man,
+                            or 'ohxw cat' for a pet cat. If your trigger word is known in the base model, your training will have to fight the base
+                            model's existing understanding of that word. Non-words like "ohxw" are therefore useful as your base model is unlikely to
+                            already understand them.
                             <br />
                         </p>
                     </div>
@@ -83,17 +88,17 @@ export function TrainingEditor({ training }: { training?: SerializeFrom<Pick<Tra
                             errors={fields.baseModel.errors}
                             help=""
                         />
-                        <p className="text-sm leading-6 text-gray-600">
-                            Your lora will always take some of its characteristics from the base model, so your choice of base model greatly affects
-                            the results of the Lora you will create. The ideas you train into your lora through your training images will have to
-                            compete with whatever styles, concepts and content are common in your base model.
+                        <p className="text-sm leading-6">
+                            <InfoCircledIcon className="inline" />
+                            Like a remix of your favourite song, your Lora will always slightly resemble your base model. Your choice of base model
+                            greatly affects all the results of using your Lora so choose a base model that is similar to the output you want.
                         </p>
                     </div>
                 </div>
                 <ErrorList id={form.errorId} errors={form.errors} />
 
                 <div className="mt-6 flex items-center justify-end gap-x-6">
-                    <Button variant="secondary" {...form.reset.getButtonProps()}>
+                    <Button variant="ghost" {...form.reset.getButtonProps()}>
                         Reset
                     </Button>
                     <StatusButton form={form.id} type="submit" disabled={isPending} status={isPending ? 'pending' : 'idle'}>
@@ -101,6 +106,6 @@ export function TrainingEditor({ training }: { training?: SerializeFrom<Pick<Tra
                     </StatusButton>
                 </div>
             </Form>
-        </div>
+        </Container>
     );
 }

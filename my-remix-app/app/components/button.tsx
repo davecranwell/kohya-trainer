@@ -3,25 +3,26 @@ import { Slot } from '@radix-ui/react-slot';
 import { cva, type VariantProps } from 'class-variance-authority';
 import { clsx } from 'clsx';
 
-const buttonVariants = cva('rounded-full', {
+const buttonVariants = cva('inline-flex items-center justify-center rounded-lg transition-all duration-300', {
     variants: {
         variant: {
-            default:
-                'inline-flex items-center align-center rounded-md bg-primary px-3 py-2 font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary ',
-            destructive:
-                'rounded-md bg-red-600 px-3 py-2 font-semibold text-white shadow-sm hover:bg-red-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600 ',
-            outline: 'rounded-md border border-input',
-            secondary:
-                'rounded-md bg-secondary px-3 py-2 font-semibold shadow-sm hover:bg-grey-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary',
-            link: 'underline-offset-4 hover:underline',
+            default: 'bg-primary hover:bg-primary-dark text-white',
+            secondary: 'bg-accent1 hover:bg-accent1-dark text-white',
+            tertiary: 'bg-accent2 hover:bg-accent2-dark text-white',
+            ghost: 'border border-stroke bg-black/40 text-gray-300 backdrop-blur-sm hover:bg-black/60',
+            success: 'bg-semantic-success hover:bg-semantic-success-dark text-white',
+            info: 'bg-semantic-info hover:bg-semantic-info-dark text-white',
+            warning: 'bg-semantic-warning hover:bg-semantic-warning-dark text-white',
+            error: 'bg-semantic-error hover:bg-semantic-error-dark text-white',
         },
         size: {
             default: 'h-10 px-4 py-2',
             wide: 'px-24 py-5',
-            sm: 'h-9 rounded-md px-3',
-            lg: 'h-11 rounded-md px-8',
-            pill: 'px-12 py-3 leading-3',
-            icon: 'h-10 w-10',
+            sm: 'h-9 px-3',
+            lg: 'h-11 px-8',
+            pill: 'px-2 py-2 leading-3',
+            icon: 'h-8 w-8',
+            full: 'w-full py-2',
         },
     },
     defaultVariants: {
