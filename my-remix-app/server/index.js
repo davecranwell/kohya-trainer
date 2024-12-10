@@ -10,13 +10,16 @@ import rateLimit from 'express-rate-limit';
 import helmet from 'helmet';
 import morgan from 'morgan';
 
-import { assignGpuToTraining } from './cron/createGpuInstance.js';
-import { shutdownInactiveGpus } from './cron/shutdownInactiveGpus.js';
+import { assignGpuToTraining } from './tasks/createGpuInstance.js';
+import { shutdownInactiveGpus } from './tasks/shutdownInactiveGpus.js';
+
+import { taskSubscription } from './taskQueue.js';
 
 const MODE = process.env.NODE_ENV ?? 'development';
 const IS_PROD = MODE === 'production';
 const ALLOW_INDEXING = process.env.ALLOW_INDEXING !== 'false';
 const USE_CRON = process.env.USE_CRON !== 'false';
+const USE_QUEUE = process.env.USE_QUEUE !== 'false';
 const PORT = process.env.PORT || 3000;
 
 const app = express();
@@ -165,9 +168,20 @@ const server = app.listen(PORT, () => {
     console.log(`🚀 We have liftoff!`);
     console.log(`http://localhost:${PORT}`);
 
-    if (USE_CRON) {
-        assignGpuToTraining();
-        shutdownInactiveGpus();
+    console.log('USE_CRON', USE_CRON);
+    console.log('USE_QUEUE', USE_QUEUE);
+
+    if (USE_QUEUE) {
+        taskSubscription((body) => {
+            switch (body.task) {
+                case 'allocateGpu':
+                    assignGpuToTraining(body.trainingId);
+                    break;
+                case 'deallocateGpu':
+                    shutdownInactiveGpus(body.trainingId);
+                    break;
+            }
+        }, 5000);
     }
 });
 

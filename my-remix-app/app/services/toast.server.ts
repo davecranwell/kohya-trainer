@@ -6,7 +6,7 @@ import { combineHeaders } from '~/util/misc';
 export const toastKey = 'toast';
 
 const ToastSchema = z.object({
-    description: z.string(),
+    description: z.string().optional(),
     id: z.string().default(() => cuid()),
     title: z.string().optional(),
     type: z.enum(['message', 'success', 'error']).default('message'),

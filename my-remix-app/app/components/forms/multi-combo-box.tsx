@@ -1,9 +1,10 @@
 import * as React from 'react';
 import { useEffect, useState } from 'react';
 import { Combobox, ComboboxInput, ComboboxButton, ComboboxOption, ComboboxOptions } from '@headlessui/react';
-import { Cross1Icon, ArrowDownIcon, PlusIcon } from '@radix-ui/react-icons';
+import { Cross1Icon, ArrowDownIcon, PlusIcon, TargetIcon, QuoteIcon } from '@radix-ui/react-icons';
 
 import { commaSeparatedStringToArray } from '~/util/misc';
+import { TaggingDirective } from '@aws-sdk/client-s3';
 
 type Props = {
     name: string;
@@ -42,19 +43,19 @@ export const MultiComboBox: React.FC<Props> = ({ ...props }) => {
     const unSelectedItems = filteredItems?.filter((item) => !selected.find((selected) => item === selected)) || [];
 
     return (
-        <div className="rounded bg-white p-2">
+        <div className="rounded rounded-lg border border-gray-800 bg-black/40 p-2">
             {selected.length > 0 && (
                 <ul className="flex flex-wrap">
                     {selected.map((option: Option, index) => (
                         <li
                             key={`${props.name}-${option}-${index}`}
-                            className="group relative mb-1 mr-1 flex items-center items-stretch whitespace-nowrap rounded bg-gray-200 p-1 text-xs hover:bg-gray-300">
+                            className="bg-accent1-dark group relative mb-1 mr-1 flex items-center items-stretch whitespace-nowrap rounded rounded-full p-1 px-2 text-xs text-white">
                             <span>{option}</span>
                             <span
                                 title={`Remove ${option}`}
                                 onClick={() => handleRemove(option)}
-                                className="absolute inset-0 flex hidden w-full cursor-pointer content-center items-center justify-center justify-items-center justify-items-stretch justify-self-center rounded bg-gray-300 opacity-90 group-hover:block">
-                                <Cross1Icon className="text-primary m-auto group-hover:text-red-600" aria-label={`Remove ${option}`} />
+                                className="bg-primary-dark absolute inset-0 flex hidden w-full cursor-pointer content-center items-center justify-center justify-items-center justify-items-stretch justify-self-center rounded rounded-full group-hover:block">
+                                <Cross1Icon className="group-hover:text-semantic-error m-auto text-primary" aria-label={`Remove ${option}`} />
                             </span>
                         </li>
                     ))}
@@ -68,35 +69,37 @@ export const MultiComboBox: React.FC<Props> = ({ ...props }) => {
                         https://headlessui.com/react/combobox#using-with-html-forms  */}
 
                         <input type="hidden" name={props.name} value={value} />
-                        <div className="dropdown w-full">
-                            <div>
-                                <div className="relative w-full">
-                                    <ComboboxInput
-                                        placeholder="Choose tags or type to add new ones"
-                                        value={query}
-                                        onChange={(event) => {
-                                            setQuery(event.target.value);
-                                        }}
-                                        className="focus:ring-primary block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset sm:max-w-xs sm:text-sm sm:leading-6"
-                                    />
-                                    <ComboboxButton className="absolute inset-y-0 right-0 z-0 flex w-8 items-center">
-                                        <ArrowDownIcon className="text-gray-500" />
-                                    </ComboboxButton>
-                                </div>
-                            </div>
+                        <div className="dropdown relative w-full">
+                            <ComboboxInput
+                                placeholder="Choose tags or type to add new ones"
+                                value={query}
+                                onChange={(event) => {
+                                    setQuery(event.target.value);
+                                }}
+                                className="block w-full rounded-md border-0 bg-transparent py-1.5 text-white focus:ring-primary"
+                            />
+                            <ComboboxButton className="absolute inset-y-0 right-0 z-0 flex w-8 items-center">
+                                <ArrowDownIcon className="text-gray-500" />
+                            </ComboboxButton>
 
-                            <ComboboxOptions className="dropdown-content absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm">
+                            <ComboboxOptions className="dropdown-content absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded-md bg-black py-1 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm">
                                 {query.length > 0 && (
-                                    <ComboboxOption value={query} className="flex p-1 data-[focus]:bg-blue-100">
-                                        <PlusIcon className="mr-1 text-gray-500" /> Add <span className="font-bold">"{query}"</span>
+                                    <ComboboxOption value={query} className="data-[focus]:bg-primary-dark flex items-center p-1 text-left text-white">
+                                        <PlusIcon className="mr-1 text-white" /> Add <span className="font-bold">"{query}"</span>
                                     </ComboboxOption>
                                 )}
                                 {unSelectedItems.length > 0 &&
-                                    unSelectedItems.map((option, index) => (
-                                        <ComboboxOption key={`${option}-${index}`} value={option} className="p-1 text-left data-[focus]:bg-blue-100">
-                                            {option}
-                                        </ComboboxOption>
-                                    ))}
+                                    unSelectedItems
+                                        .filter((option) => option.length > 0)
+                                        .map((option, index) => (
+                                            <ComboboxOption
+                                                key={`${option}-${index}`}
+                                                value={option}
+                                                className="data-[focus]:bg-primary-dark flex items-center p-1 text-left text-white">
+                                                <QuoteIcon className="mr-1 text-primary" />
+                                                {option}
+                                            </ComboboxOption>
+                                        ))}
                             </ComboboxOptions>
                         </div>
                     </>

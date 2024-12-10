@@ -1,4 +1,9 @@
+import { useEffect } from 'react';
 import { useFormAction, useNavigation } from '@remix-run/react';
+import { toast as showToast } from 'sonner';
+
+import { type Toast } from '~/services/toast.server';
+
 /**
  * Returns true if the current navigation is submitting the current route's
  * form. Defaults to the current route's form action and method POST.
@@ -22,4 +27,17 @@ export function useIsPending({
     const navigation = useNavigation();
     const isPendingState = state === 'non-idle' ? navigation.state !== 'idle' : navigation.state === state;
     return isPendingState && navigation.formAction === (formAction ?? contextualFormAction) && navigation.formMethod === formMethod;
+}
+
+export function useToast(toast?: Toast | null) {
+    useEffect(() => {
+        if (toast) {
+            setTimeout(() => {
+                showToast[toast.type](toast.title, {
+                    id: toast.id,
+                    description: toast.description,
+                });
+            }, 0);
+        }
+    }, [toast]);
 }

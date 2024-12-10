@@ -1,18 +1,49 @@
 import { json, type LoaderFunctionArgs } from '@remix-run/node';
-import { NavLink, Outlet, useLoaderData } from '@remix-run/react';
+import { type ActionFunctionArgs } from '@remix-run/node';
+import { Form, NavLink, Outlet, useLoaderData } from '@remix-run/react';
 import { ImageIcon, LightningBoltIcon, Pencil1Icon, UploadIcon } from '@radix-ui/react-icons';
 
 import { requireUserWithPermission } from '~/services/permissions.server';
 import prisma from '~/services/db.server.js';
+import { redirectWithToast } from '~/services/toast.server';
+import * as trainingService from '~/services/training.server';
 import { getThumbnailKey } from '~/util/misc';
 
 import { StatusIndicator, type StatusType } from '~/components/status-indicator';
 import { EmptyState } from '~/components/empty-state';
 import { Button } from '~/components/button';
 import Progress from '~/components/progress';
+import clsx from 'clsx';
+
+export async function action({ request, params }: ActionFunctionArgs) {
+    const userId = await requireUserWithPermission(request, 'update:training:own');
+
+    const formData = await request.formData();
+    const trainingId = formData.get('trainingId');
+
+    if (typeof trainingId !== 'string') {
+        return json({ error: 'Invalid training ID' }, { status: 400 });
+    }
+
+    try {
+        await trainingService.startTraining(trainingId);
+    } catch (error) {
+        return redirectWithToast(
+            `/training`,
+            {
+                type: 'success',
+                title: 'Training started',
+                description: 'Grab a snack and check back in a few minutes.',
+            },
+            { status: 302 },
+        );
+    }
+
+    return null;
+}
 
 export async function loader({ request }: LoaderFunctionArgs) {
-    const userId = await requireUserWithPermission(request, 'read:training:own');
+    const userId = await requireUserWithPermission(request, 'update:training:own');
 
     const trainings = await prisma.training.findMany({
         select: {
@@ -54,7 +85,7 @@ export default function TrainingPage() {
                         key={training.id}
                         className="relative flex flex-col justify-between gap-x-6 space-y-4 rounded-xl border border-gray-800 bg-black/20 p-6 hover:bg-black">
                         <div className="flex w-full">
-                            <div className="flex w-full min-w-0 flex-col gap-x-4 sm:flex-row">
+                            <div className="flex w-full min-w-0 flex-1 flex-col gap-x-4 sm:flex-row">
                                 <div className="flex-auto">
                                     <h2 className="font-semibold leading-6 text-white">
                                         <NavLink to={`/training/${training.id}`}>
@@ -72,17 +103,20 @@ export default function TrainingPage() {
                                         </NavLink>
                                     </p>
                                 </div>
-                                <div className="flex-auto px-6">
-                                    <Progress value={training.status} />
-                                </div>
                             </div>
-                            <div className="flex shrink-0 items-center gap-x-4">
-                                <div className="hidden sm:flex sm:flex-col sm:items-end">
-                                    <p className="text-sm leading-6 text-gray-900"></p>
-
-                                    <StatusIndicator status={training.status as StatusType} />
-                                </div>
-                                {/* <ChevronRightIcon aria-hidden="true" className="h-5 w-5 flex-none text-gray-400" /> */}
+                            <div className={clsx('flex w-full flex-1 flex-row', !training.status && 'items-center justify-end')}>
+                                {!training.status ? (
+                                    <Form method="POST">
+                                        <input type="hidden" name="trainingId" value={training.id} />
+                                        <Button variant="default" type="submit">
+                                            Start training
+                                        </Button>
+                                    </Form>
+                                ) : (
+                                    <div className="flex-auto px-6">
+                                        <Progress value={training.status} />
+                                    </div>
+                                )}
                             </div>
                         </div>
                         <div className="w-fullitems-center flex justify-between border-t border-gray-800 pt-4">

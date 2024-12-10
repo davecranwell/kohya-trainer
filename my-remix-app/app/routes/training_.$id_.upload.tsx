@@ -90,8 +90,7 @@ export const action = async ({ params, request }: ActionFunctionArgs) => {
 
     return redirectWithToast(`/training/${params.id}/upload`, {
         type: 'success',
-        title: 'Success',
-        description: 'Training images have been updated.',
+        title: 'Training images have been updated',
     });
 };
 
@@ -167,11 +166,8 @@ export default function ImageUpload() {
 
     return (
         <Form key={data.trainingId} id={data.trainingId} method="post" encType="multipart/form-data" className="relative">
-            <Button type="submit" disabled={data.images.length >= MAX_IMAGES} className="fixed top-0">
-                Update
-            </Button>
-
             {data.images.length < 1 && <h2 className="mb-4 text-2xl font-bold tracking-tight text-white">Upload some training images</h2>}
+
             <FileUploadPreview
                 key={`${data.trainingId}-preview`}
                 acceptedFileTypes={['image/png', 'image/jpeg', 'text/plain']}
@@ -205,10 +201,66 @@ export default function ImageUpload() {
                 )}
             </FileUploadPreview>
 
+            <Button type="submit" disabled={data.images.length >= MAX_IMAGES}>
+                Update
+            </Button>
+
             {data.images.length > 0 && (
                 <>
-                    <h2 className="text-2xl font-bold tracking-tight text-gray-900">Your training images</h2>
-                    <ul role="list" className="mt-4 space-y-2 divide-y divide-gray-300">
+                    <h2 className="text-2xl font-bold tracking-tight text-white">Your training images</h2>
+                    <h3 className="text-lg font-bold tracking-tight text-white">Tagging tips</h3>
+                    <ol className="text-sm">
+                        <li>Tags help the model identify what in the image it already knows, from the things it doesn't which should be learned.</li>
+                        <li>
+                            Tags should be <strong>one or two words</strong>, not phrases and should only be things that are visible in the image.
+                            Tagging things that can't be seen will confuse the model.
+                        </li>
+                        <li>
+                            <strong>Tag things you might want to change when using your Lora to generate images.</strong> Don't tag things you want to
+                            be fixed. e.g If images are yourself, and you have brown hair, tagging the hair as "brunette" or "brown" can indicate this
+                            is a changeable property. If brown hair should never change, don't tag it.
+                        </li>
+                        <li>Avoid overly general or vague tags. e.g "person", "picture", "skin", "light" are too vague.</li>
+                        <li>
+                            Do not tag things that are irrelevant to the subject you're trying to train. e.g If you are uploading images of a car,
+                            don't use too many tags related to the background.
+                        </li>
+                        <li>Your tags will automatically include your chosen keywords. You don't need to include these.</li>
+                        <li>Be consistent in the tags you use. If you tag hair as "brunette" in one image, don't tag it as "brown" in another.</li>
+                        <li>
+                            Try to ensure your tags describe a few common details, such as:
+                            <ul>
+                                <li>
+                                    The <strong>quality or type</strong> of photo e.g <code>professional</code> or <code>amateur</code>,{' '}
+                                    <code>selfie</code> etc
+                                </li>
+                                <li>
+                                    <strong>Details about the camera</strong> used e.g <code>canon</code>, <code>nikon</code>, <code>50mm</code>,{' '}
+                                    <code>f1.8</code>
+                                </li>
+                                <li>
+                                    <strong>The setting of the photo</strong> e.g <code>sunset</code>, <code>night</code>
+                                </li>
+                                <li>
+                                    Types of <strong>clothing, or surface details</strong> e.g <code>t-shirt</code>, <code>hoodie</code>,{' '}
+                                    <code>tattoos</code>, <code>rusted</code>, <code>scratched</code>
+                                </li>
+                                <li>
+                                    Lighting styles e.g <code>soft lighting</code>, <code>hard lighting</code> (nb: "soft" or "hard" would be too
+                                    general)
+                                </li>
+                                <li>
+                                    Background e.g <code>beach</code>, <code>city</code>
+                                </li>
+                                <li>
+                                    Any name-able pose or action e.g <code>sitting</code>, <code>standing</code>, <code>lying down</code>,{' '}
+                                    <code>waving</code>
+                                </li>
+                            </ul>
+                        </li>
+                    </ol>
+
+                    <ul role="list" className="mt-4 space-y-4 divide-y divide-gray-800">
                         {data.images.map((image) => (
                             <li key={image.id} className="flex flex-row pt-2">
                                 <ImagePreview

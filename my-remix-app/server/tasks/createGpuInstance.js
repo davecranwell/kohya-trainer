@@ -1,15 +1,14 @@
-import cron from 'node-cron';
 import { PrismaClient } from '@prisma/client';
 import axios from 'axios';
 
 const prisma = new PrismaClient();
 
 // Function to create a new GPU instance using Vast API
-export async function createGpuInstance() {
+async function createGpuInstance(trainingId) {
     // find instances available:
     // This query string is discoverable from the Network tab here: https://cloud.vast.ai/create/
     const query = {
-        disk_space: { gte: 33.82457729796413 },
+        disk_space: { gte: 30 },
         reliability2: { gte: 0.950212931632136 },
         duration: { gte: 37094.045571940405 },
         verified: { eq: true },
@@ -17,7 +16,7 @@ export async function createGpuInstance() {
         num_gpus: { gte: 1, lte: 1 },
         gpu_totalram: { gte: 23987.58004237308, lte: 51418.50343976141 },
         dlperf: { lte: 51.840222312450926 },
-        sort_option: { '0': ['dph_total', 'asc'], '1': ['total_flops', 'asc'] },
+        sort_option: { 0: ['dph_total', 'asc'], 1: ['total_flops', 'asc'] },
         gpu_name: { in: ['RTX 3090 Ti', 'RTX 3090', 'RTX 4090', 'RTX 4090D', 'RTX 4080S', 'RTX 4080'] },
         order: [
             ['dph_total', 'asc'],
@@ -58,6 +57,9 @@ export async function createGpuInstance() {
                     WEB_ENABLE_HTTPS: 'true',
                     WEB_USER: process.env.VAST_WEB_USER,
                     WEB_PASSWORD: process.env.VAST_WEB_PASSWORD,
+                    WEBHOOK_SECRET: process.env.WEBHOOK_SECRET,
+                    WEBHOOK_URL: process.env.WEBHOOK_URL,
+                    S3_PRESIGNED_URL: '',
                     KOHYA_ARGS: '',
                     TENSORBOARD_ARGS: '--logdir /opt/kohya_ss/logs',
                     AUTO_UPDATE: 'false',
@@ -111,42 +113,29 @@ export async function createGpuInstance() {
 }
 
 // Function to assign GPU to pending training sessions
-export async function assignGpuToTraining() {
+export async function assignGpuToTraining(trainingId) {
     try {
         const pendingTraining = await prisma.training.findFirst({
-            where: { status: 'pending' },
-            orderBy: { createdAt: 'asc' },
+            where: { id: trainingId, status: 'pendingGpu' },
         });
 
-        if (pendingTraining) {
-            const availableGpu = await prisma.gpu.findFirst({
-                where: { status: 'running', training: null },
-            });
-
-            if (availableGpu) {
-                await prisma.training.update({
-                    where: { id: pendingTraining.id },
-                    data: {
-                        status: 'active',
-                        gpuId: availableGpu.id,
-                        updatedAt: new Date(),
-                    },
-                });
-
-                console.log(`Assigned GPU ${availableGpu.id} to training ${pendingTraining.id}`);
-            } else {
-                await createGpuInstance();
-            }
+        if (!pendingTraining) {
+            return false;
         }
+
+        await createGpuInstance(trainingId);
+
+        await prisma.training.update({
+            where: { id: pendingTraining.id },
+            data: {
+                status: 'pendingImages',
+                gpuId: availableGpu.id,
+                updatedAt: new Date(),
+            },
+        });
+
+        console.log(`Assigned GPU ${availableGpu.id} to training ${pendingTraining.id}`);
     } catch (error) {
         console.error('Error assigning GPU to training:', error);
     }
-}
-
-const USE_CRON = process.env.USE_CRON !== 'false';
-
-if (USE_CRON) {
-    // Schedule cron jobs
-    cron.schedule('*/30 * * * * *', assignGpuToTraining); // Run every 30 seconds
-    console.log('GPU Manager createGpuInstance/assignGpuToTraining job scheduled');
 }

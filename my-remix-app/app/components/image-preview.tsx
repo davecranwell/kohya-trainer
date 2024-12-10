@@ -21,7 +21,7 @@ export const ImagePreview: React.FC<ImagePreviewProps> = ({ id, name, url, uploa
                     width={width}
                     height={width}
                     alt={`Preview ${name}`}
-                    className={`m-auto block w-[${width}px] rounded border border-gray-300 object-contain text-center`}
+                    className={`m-auto block w-[${width}px] rounded border border-gray-800 object-contain text-center`}
                 />
             )}
             {!id && (

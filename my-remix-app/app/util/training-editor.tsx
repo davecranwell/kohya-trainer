@@ -46,7 +46,7 @@ export function TrainingEditor({ training }: { training?: SerializeFrom<Pick<Tra
         <Container>
             <Form method="POST" {...getFormProps(form)} encType="multipart/form-data">
                 {training ? <input type="hidden" name="id" value={training.id} /> : null}
-                <div className="w-100 space-y-8 border-b border-gray-900/10 pb-12">
+                <div className="space-y-8 border-b border-gray-900/10 pb-12">
                     <div className="grid grid-cols-2 gap-4 border-b border-gray-900/10 pb-12">
                         <Field
                             labelProps={{ children: 'Name' }}

@@ -143,9 +143,9 @@ export const FileUploadPreview: React.FC<FileUploadPreviewProps> = ({
                 onDragEnd={() => setIsDraggedOver(false)}
                 className={clsx(
                     `rounded border-2 border-dashed p-4`,
-                    isDraggedOver && maxImages < imageCount && 'border-red-500',
-                    isDraggedOver && maxImages >= imageCount && 'border-blue-500',
-                    !isDraggedOver && 'border-gray-300',
+                    isDraggedOver && maxImages < imageCount && 'border-semantic-error',
+                    isDraggedOver && maxImages >= imageCount && 'border-semantic-success',
+                    !isDraggedOver && 'border-accent2-dark',
                 )}
                 onClick={(e) => {
                     e.target === dragDropRef.current && fileInputRef.current?.click();

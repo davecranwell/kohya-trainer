@@ -49,7 +49,7 @@ const uploadStream = async ({
         client: s3Client,
         params: {
             Bucket: process.env.AWS_S3_BUCKET_NAME!,
-            Key: `${userId}/${trainingId}/${Key}`,
+            Key: `${userId}/${trainingId}/images/${Key}`,
             Body: await convertToBuffer(data),
             ContentType,
         },
