@@ -1,0 +1,10 @@
+{
+    "name": "zip",
+    "version": "1.0.0",
+    "description": "A lambda function to zip images uploaded to S3",
+    "main": "index.mjs",
+    "dependencies": {
+        "@aws-sdk/client-s3": "^3.705.0",
+        "archiver": "^7.0.1"
+    }
+}
