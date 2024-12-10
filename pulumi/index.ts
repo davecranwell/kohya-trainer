@@ -2,7 +2,7 @@ import * as pulumi from '@pulumi/pulumi';
 
 import * as networking from './networking';
 import { rdsInstance } from './database';
-import { bucket } from './storage';
+import { bucket, accessKeyId, secretAccessKey } from './storage';
 // import { cloudfrontDistribution } from './cdn';
 // import { resizeLambda } from './lambda';
 import * as app from './app';
@@ -20,3 +20,7 @@ export const bucketUrl = bucket.bucketDomainName;
 export const repository = app.repository.url;
 export const appUrl = app.url;
 export const githubOidcRole = githubActions.githubOidcRole;
+export const s3AccessKeyId = accessKeyId;
+export const s3SecretAccessKey = secretAccessKey;
+export const queueUrl = app.queueUrl;
+export const queueArn = app.queueArn;

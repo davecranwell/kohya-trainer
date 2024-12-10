@@ -63,10 +63,18 @@ pulumi config get mySecretName
 ## AWS Configuration
 
 ```bash
+aws configure sso
+
+SSO session name (Recommended): davecranwell
+SSO start URL [None]: https://davecranwellaws.awsapps.com/start/
+SSO region [None]: us-east-1
+```
+
+```bash
 export AWS_PROFILE='name-of-accountrole-id' # e.g AdministratorAccess-1234567890
 ```
 
-`aws configure list` should return the profile name you just set with key and secret. If it doesn't log in and try again.
+`aws configure list` should return the profile name you just set with key and secret. If it doesn't log in and try again. `aws configure  list --profile AdministratorAccess-1234567890` will show it unless you set it as default using `export AWS_PROFILE=AdministratorAccess-1234567890`
 
 SSO session name: davecranwell
 CLI default client region: us-east-1
@@ -74,7 +82,7 @@ CLI default client region: us-east-1
 ```bash
 #aws sso login --sso-session=davecranwell # This only works with "aws:profile: davecranwell-dev" in the Pulumi.dev.yaml file, which we can't commit because it breaks Github actions
 aws configure  # this works better but you'll need to refer to your actual aws key/secret
-aws sso login --profile davecranwell-dev
+aws sso login --profile AdministratorAccess-1234567890
 pulumi up
 ```
 
@@ -96,6 +104,24 @@ pulumi destroy
 ```bash
 pulumi config set --secretdbPassword=<password>
 ```
+
+## Pushing container updates
+
+aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 156041424020.dkr.ecr.us-east-1.amazonaws.com
+
+# 2. Build the image
+
+docker build -t my-remix-app ./my-remix-app
+
+# 3. Tag the image with your ECR repository URL
+
+# The URL format is: <account-id>.dkr.ecr.<region>.amazonaws.com/<repo-name>
+
+docker tag my-remix-app:latest 156041424020.dkr.ecr.us-east-1.amazonaws.com/modeller-repo-616f7bc:latest
+
+# 4. Push the image
+
+docker push 156041424020.dkr.ecr.us-east-1.amazonaws.com/modeller-repo-616f7bc:latest
 
 ## Debuging
 
