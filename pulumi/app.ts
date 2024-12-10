@@ -131,12 +131,60 @@ const listener = new aws.lb.Listener(
     { dependsOn: [targetGroup, loadBalancer] },
 );
 
+export const queue = new aws.sqs.Queue(`${appName}-queue`, {
+    // AWS recommends setting a message retention period to prevent accidental loss of messages
+    messageRetentionSeconds: 2 * 24 * 60 * 60, // 2 days (14 days is max)
+    // Enable server-side encryption for security best practices
+    sqsManagedSseEnabled: true,
+});
+
+const sqsPolicy = new aws.iam.Policy(`${appName}-sqs-policy`, {
+    description: 'Policy for ECS tasks to access SQS queue',
+    policy: queue.arn.apply((queueArn) =>
+        JSON.stringify({
+            Version: '2012-10-17',
+            Statement: [
+                {
+                    Effect: 'Allow',
+                    Action: ['sqs:SendMessage', 'sqs:ReceiveMessage', 'sqs:DeleteMessage', 'sqs:GetQueueAttributes'],
+                    Resource: queueArn,
+                },
+            ],
+        }),
+    ),
+});
+
+// Add this after the queue definition and before the fargateService
+const taskRole = new aws.iam.Role(`${appName}-task-role`, {
+    assumeRolePolicy: JSON.stringify({
+        Version: '2012-10-17',
+        Statement: [
+            {
+                Action: 'sts:AssumeRole',
+                Effect: 'Allow',
+                Principal: {
+                    Service: 'ecs-tasks.amazonaws.com',
+                },
+            },
+        ],
+    }),
+});
+
+// Attach the SQS policy to the task role
+const taskRolePolicyAttachment = new aws.iam.RolePolicyAttachment(`${appName}-task-role-policy`, {
+    role: taskRole.name,
+    policyArn: sqsPolicy.arn,
+});
+
 export const fargateService = new awsx.ecs.FargateService(
     `${appName}-service`,
     {
         cluster: cluster.arn,
         desiredCount: 1,
         taskDefinitionArgs: {
+            taskRole: {
+                roleArn: taskRole.arn,
+            },
             container: {
                 name: appName,
                 image: image.imageUri,
@@ -156,6 +204,7 @@ export const fargateService = new awsx.ecs.FargateService(
                     { name: 'AWS_S3_BUCKET_NAME', value: bucket.bucket },
                     { name: 'AWS_ACCESS_KEY_ID', value: config.require('AWS_ACCESS_KEY_ID') },
                     { name: 'AWS_SECRET_ACCESS_KEY', value: config.require('AWS_SECRET_ACCESS_KEY') },
+                    { name: 'AWS_SQS_QUEUE_URL', value: queue.url },
                     { name: 'ALLOW_INDEXING', value: 'false' },
                     { name: 'USE_CRON', value: 'false' },
                     { name: 'GOOGLE_CLIENT_ID', value: config.require('GOOGLE_CLIENT_ID') },
@@ -164,6 +213,7 @@ export const fargateService = new awsx.ecs.FargateService(
                     { name: 'VAST_API_KEY', value: config.require('VAST_API_KEY') },
                     { name: 'VAST_WEB_USER', value: 'admin' },
                     { name: 'VAST_WEB_PASSWORD', value: config.require('VAST_WEB_PASSWORD') },
+                    // { name: 'AWS_SQS_QUEUE_ARN', value: queue.arn },
                 ],
             },
         },
@@ -191,3 +241,6 @@ export const networkingVpcId = vpc.vpcId;
 // Also log the subnets being used
 export const loadBalancerSubnets = loadBalancer.subnets;
 export const vpcPublicSubnets = vpc.publicSubnetIds;
+
+export const queueUrl = queue.url;
+export const queueArn = queue.arn;
