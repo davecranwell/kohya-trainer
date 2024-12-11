@@ -2,9 +2,11 @@ import { json, type LoaderFunctionArgs } from '@remix-run/node';
 import { type ActionFunctionArgs } from '@remix-run/node';
 import { Form, NavLink, Outlet, useLoaderData } from '@remix-run/react';
 import { ImageIcon, LightningBoltIcon, Pencil1Icon, UploadIcon } from '@radix-ui/react-icons';
+import clsx from 'clsx';
+
+import prisma from '../../prisma/db.server';
 
 import { requireUserWithPermission } from '~/services/permissions.server';
-import prisma from '~/services/db.server.js';
 import { redirectWithToast } from '~/services/toast.server';
 import * as trainingService from '~/services/training.server';
 import { getThumbnailKey } from '~/util/misc';
@@ -13,7 +15,6 @@ import { StatusIndicator, type StatusType } from '~/components/status-indicator'
 import { EmptyState } from '~/components/empty-state';
 import { Button } from '~/components/button';
 import Progress from '~/components/progress';
-import clsx from 'clsx';
 
 export async function action({ request, params }: ActionFunctionArgs) {
     const userId = await requireUserWithPermission(request, 'update:training:own');
@@ -27,6 +28,7 @@ export async function action({ request, params }: ActionFunctionArgs) {
 
     try {
         await trainingService.startTraining(trainingId);
+        console.log('test');
     } catch (error) {
         return redirectWithToast(
             `/training`,

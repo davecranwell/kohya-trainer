@@ -5,7 +5,7 @@
     "type": "module",
     "scripts": {
         "build": "remix vite:build",
-        "dev": "node ./server/index.js",
+        "dev": "tsx ./server/index.ts",
         "lint": "eslint --ignore-path .gitignore --cache --cache-location ./node_modules/.cache/eslint .",
         "start": "NODE_ENV=production remix-serve ./build/server/index.js",
         "typecheck": "tsc",

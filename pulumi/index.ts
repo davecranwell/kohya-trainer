@@ -2,7 +2,8 @@ import * as pulumi from '@pulumi/pulumi';
 
 import * as networking from './networking';
 import { rdsInstance } from './database';
-import { bucket, accessKeyId, secretAccessKey } from './storage';
+import { bucket } from './storage';
+import { accessKeyId, secretAccessKey } from './user';
 // import { cloudfrontDistribution } from './cdn';
 // import { resizeLambda } from './lambda';
 import * as app from './app';

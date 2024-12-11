@@ -1,7 +1,8 @@
 import { json, type LoaderFunctionArgs } from '@remix-run/node';
 import { useLoaderData } from '@remix-run/react';
 
-import prisma from '~/services/db.server';
+import prisma from '../../prisma/db.server';
+
 import { requireUserWithPermission } from '~/services/permissions.server';
 
 import { TrainingEditor } from '../util/training-editor';

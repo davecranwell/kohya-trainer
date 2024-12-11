@@ -2,8 +2,9 @@ import { parseWithZod } from '@conform-to/zod';
 import { json, type ActionFunctionArgs } from '@remix-run/node';
 import { z } from 'zod';
 
+import prisma from '../../prisma/db.server';
+
 import { requireUserWithPermission } from '~/services/permissions.server.js';
-import prisma from '~/services/db.server.js';
 import { redirectWithToast } from '~/services/toast.server';
 
 import TrainingConfig from '~/util/training-config.json';

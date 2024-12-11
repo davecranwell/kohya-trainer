@@ -1,19 +1,35 @@
 import 'dotenv/config';
 import crypto from 'node:crypto';
 import { createRequestHandler } from '@remix-run/express';
-import { ip as ipAddress } from 'address';
-import chalk from 'chalk';
 import closeWithGrace from 'close-with-grace';
 import compression from 'compression';
 import express from 'express';
 import rateLimit from 'express-rate-limit';
 import helmet from 'helmet';
 import morgan from 'morgan';
+import type { ServerBuild } from '@remix-run/node';
+import type { Request, Response } from 'express';
+
+// Extend Express types to include locals
+declare global {
+    namespace Express {
+        interface Locals {
+            cspNonce: string;
+        }
+    }
+}
 
 import { assignGpuToTraining } from './tasks/createGpuInstance.js';
 import { shutdownInactiveGpus } from './tasks/shutdownInactiveGpus.js';
+import { zipImages } from './tasks/zipImages.js';
 
 import { taskSubscription } from './taskQueue.js';
+
+// Add type for the task body
+type TaskBody = {
+    task: 'zipImages' | 'allocateGpu' | 'deallocateGpu';
+    trainingId: string;
+};
 
 const MODE = process.env.NODE_ENV ?? 'development';
 const IS_PROD = MODE === 'production';
@@ -28,11 +44,14 @@ app.use(compression());
 
 app.disable('x-powered-by');
 
+// Create dev server first so we can use it in the request handler
 const viteDevServer = IS_PROD
     ? undefined
     : await import('vite').then((vite) =>
           vite.createServer({
               server: { middlewareMode: true },
+              // Required for HMR to work properly
+              appType: 'custom',
           }),
       );
 
@@ -67,9 +86,9 @@ app.use(
                 'font-src': ["'self'", 'fonts.gstatic.com'],
                 'frame-src': ["'self'"],
                 'img-src': ["'self'", 'data:', 'blob:'],
-                'connect-src': ["'self'", 'localhost:24678'],
-                'script-src': ["'strict-dynamic'", "'self'", (_, res) => `'nonce-${res.locals.cspNonce}'`],
-                'script-src-attr': [(_, res) => `'nonce-${res.locals.cspNonce}'`],
+                'connect-src': ["'self'", 'ws://localhost:*'],
+                'script-src': ["'strict-dynamic'", "'self'", (_, res) => `'nonce-${(res as Response).locals.cspNonce}'`],
+                'script-src-attr': [(_, res) => `'nonce-${(res as Response).locals.cspNonce}'`],
                 'upgrade-insecure-requests': null,
             },
         },
@@ -122,18 +141,17 @@ app.use((req, res, next) => {
     return generalRateLimit(req, res, next);
 });
 
-async function getBuild() {
+async function getBuild(): Promise<{ build: ServerBuild | null; error: Error | null }> {
     try {
         const build = viteDevServer
             ? await viteDevServer.ssrLoadModule('virtual:remix/server-build')
             : // eslint-disable-next-line import/no-unresolved
               await import('../build/server/index.js');
 
-        return { build: build, error: null };
+        return { build: build as ServerBuild, error: null };
     } catch (error) {
-        // Catch error and return null to make express happy and avoid an unrecoverable crash
         console.error('Error creating build:', error);
-        return { error: error, build: null };
+        return { error: error as Error, build: null };
     }
 }
 
@@ -148,18 +166,18 @@ if (!ALLOW_INDEXING) {
 app.all(
     '*',
     createRequestHandler({
-        getLoadContext: (req, res) => ({
+        getLoadContext: (req: Request, res: Response) => ({
             cspNonce: res.locals.cspNonce,
             serverBuild: getBuild(),
         }),
         mode: MODE,
+        // Ensure we handle the build properly and never return null
         build: async () => {
             const { error, build } = await getBuild();
-            // gracefully "catch" the error
-            if (error) {
-                throw error;
+            if (error || !build) {
+                throw error || new Error('Failed to load build');
             }
-            return build;
+            return build as ServerBuild;
         },
     }),
 );
@@ -172,14 +190,17 @@ const server = app.listen(PORT, () => {
     console.log('USE_QUEUE', USE_QUEUE);
 
     if (USE_QUEUE) {
-        taskSubscription((body) => {
+        taskSubscription((body: TaskBody) => {
             switch (body.task) {
+                case 'zipImages':
+                    zipImages(body.trainingId);
+                    break;
                 case 'allocateGpu':
                     assignGpuToTraining(body.trainingId);
                     break;
-                case 'deallocateGpu':
-                    shutdownInactiveGpus(body.trainingId);
-                    break;
+                // case 'deallocateGpu':
+                //     shutdownInactiveGpus(body.trainingId);
+                //     break;
             }
         }, 5000);
     }

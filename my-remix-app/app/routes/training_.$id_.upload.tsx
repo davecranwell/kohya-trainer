@@ -10,7 +10,8 @@ import {
 } from '@remix-run/node';
 import { useEventSource } from 'remix-utils/sse/react';
 
-import prisma from '~/services/db.server';
+import prisma from '../../prisma/db.server';
+
 import { requireUserWithPermission } from '~/services/permissions.server';
 import { Progress, uploadStreamToS3 } from '~/services/s3-upload.server';
 

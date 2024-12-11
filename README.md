@@ -9,6 +9,8 @@ sequenceDiagram
     participant Civitai
 
     User->>S3: Uploads training images
+    User->>User: Presses "Start" button
+    User->>Task: [Task: zipImages] Creates zip of images
     User->>Task: [Task: allocateGpu] Triggers training start
     activate Vast
     Task->>Vast: Starts GPU instance
@@ -48,8 +50,11 @@ stateDiagram-v2
 All the things that must happen before training can begin
 
 -   User must have uploaded all their images
+    -   Presses "Start"
 -   A zip must have been created of all those images
+    -   [Task: zipImages]
 -   The GPU must be allocated and active and must have been told
+    -   [Task: allocateGpu]
     -   the presignedURL of that zip,
     -   the model to download,
     -   the civitai API key to use,

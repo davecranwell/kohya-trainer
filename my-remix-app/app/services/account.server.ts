@@ -1,6 +1,7 @@
 import bcrypt from 'bcryptjs';
 
-import prisma from '~/services/db.server';
+import prisma from '../../prisma/db.server';
+
 import { getSessionExpirationDate } from '~/services/session.server';
 
 import type { User } from './auth.server';

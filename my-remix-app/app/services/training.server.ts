@@ -1,26 +1,11 @@
 import { SQS } from '@aws-sdk/client-sqs';
 
-import prisma from '~/services/db.server';
-
-// allocateGpu
-// fetchImages
-// fetchModel
-// beginTraining
-// downloadModel
-
-export async function beginTraining(trainingId: string) {
-    // training logic
-
-    return await prisma.training.update({
-        where: { id: trainingId },
-        data: { status: 'training' },
-    });
-}
+import prisma from '../../prisma/db.server';
 
 export async function fetchImages(trainingId: string) {
     // fetching logic...
 
-    createTask({ task: 'fetchModel' });
+    createTask({ task: 'fetchModel', trainingId });
 
     return await prisma.training.update({
         where: { id: trainingId },
@@ -31,7 +16,7 @@ export async function fetchImages(trainingId: string) {
 export async function allocateGpu(trainingId: string) {
     // allocation logic...
 
-    createTask({ task: 'fetchImages' });
+    createTask({ task: 'fetchImages', trainingId });
 
     return await prisma.training.update({
         where: { id: trainingId },
@@ -40,11 +25,13 @@ export async function allocateGpu(trainingId: string) {
 }
 
 export async function startTraining(trainingId: string) {
-    createTask({ task: 'allocateGpu' });
+    const nextState = 'zipImages';
+
+    createTask({ task: nextState, trainingId });
 
     return await prisma.training.update({
         where: { id: trainingId },
-        data: { status: 'pendingGpu' },
+        data: { status: nextState },
     });
 }
 

@@ -2,7 +2,7 @@ import { json } from '@remix-run/node'; // or cloudflare/deno
 import type { MetaFunction } from '@remix-run/node';
 import { type LoaderFunctionArgs } from '@remix-run/node';
 
-import prisma from '../services/db.server';
+import prisma from '../../prisma/db.server';
 
 export async function loader({ request }: LoaderFunctionArgs) {
     try {

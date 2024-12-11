@@ -1,5 +1,6 @@
 import * as aws from '@pulumi/aws';
 import * as pulumi from '@pulumi/pulumi';
+import { s3User, createS3PolicyForBucket } from './user';
 
 export const bucket = new aws.s3.BucketV2('imageBucket', {
     bucket: 'my-image-resize-bucket',
@@ -41,31 +42,8 @@ new aws.s3.BucketPublicAccessBlock('imageBucketPublicAccessBlock', {
     restrictPublicBuckets: false,
 });
 
-/* Create a user for the app to use */
-const s3User = new aws.iam.User('s3AppUser', {
-    name: 's3-app-user',
-    forceDestroy: true, // Deletes the user even if it has resources (e.g., access keys)
-});
-
-const s3UserAccessKey = new aws.iam.AccessKey('s3UserAccessKey', {
-    user: s3User.name,
-});
-
-const s3Policy = bucket.id.apply((bucketName) => {
-    return new aws.iam.Policy('s3Policy', {
-        description: 'S3 access policy for the web app user',
-        policy: JSON.stringify({
-            Version: '2012-10-17',
-            Statement: [
-                {
-                    Effect: 'Allow',
-                    Action: ['s3:PutObject', 's3:GetObject', 's3:DeleteObject'],
-                    Resource: `arn:aws:s3:::${bucketName}/*`,
-                },
-            ],
-        }),
-    });
-});
+// Attach S3 policy to the user
+const s3Policy = bucket.id.apply(createS3PolicyForBucket);
 
 // Attach the policy to the user
 s3Policy.apply(
@@ -76,9 +54,8 @@ s3Policy.apply(
         }),
 );
 
-// Export the access key and secret
-export const accessKeyId = s3UserAccessKey.id;
-export const secretAccessKey = s3UserAccessKey.secret;
+// Export the user for use in other files
+export { s3User } from './user';
 
 // Create IAM role for Lambda
 const lambdaRole = new aws.iam.Role('zipLambdaRole', {

@@ -1,4 +1,4 @@
-import prisma from '~/services/db.server';
+import prisma from '../prisma/db.server';
 
 import { createPassword } from './db-utils';
 

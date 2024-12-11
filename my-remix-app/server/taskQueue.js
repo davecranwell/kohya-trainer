@@ -14,8 +14,6 @@ async function pollMessages(handler) {
         });
 
         if (data.Messages) {
-            console.log('Messages received:', data.Messages.length);
-
             for (const message of data.Messages) {
                 // Process message logic here
                 await handler(JSON.parse(message.Body));
@@ -23,7 +21,7 @@ async function pollMessages(handler) {
                 try {
                     await sqs.deleteMessage({
                         QueueUrl: queueUrl,
-                        ReceiptHandle: message.receiptHandle,
+                        ReceiptHandle: message.ReceiptHandle,
                     });
                 } catch (error) {
                     console.error('Error deleting message:', error);
