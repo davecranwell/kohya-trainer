@@ -34,7 +34,6 @@ Training statuses:
 ```mermaid
 stateDiagram-v2
     [*] --> pending
-    pending --> stalled
     pending --> pendingGpu
     pendingGpu --> pendingImages
     pendingGpu --> stalled
@@ -107,4 +106,12 @@ source venv/bin/activate
 pip install torch==2.1.2 torchvision==0.16.2 --index-url https://download.pytorch.org/whl/cu118
 pip install --upgrade -r requirements.txt
 pip install xformers==0.0.23.post1 --index-url https://download.pytorch.org/whl/cu118
+```
+
+# Building Kohya_docker
+
+```
+docker build . -t xcession2k/kohya_rest:latest --build-arg KOHYA_BUILD_REF=main
+docker login
+docker push xcession2k/kohya_rest:latest
 ```

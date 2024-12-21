@@ -14,6 +14,8 @@ async function pollMessages(handler) {
         });
 
         if (data.Messages) {
+            console.log('Messages received:', data.Messages.length);
+
             for (const message of data.Messages) {
                 // Process message logic here
                 await handler(JSON.parse(message.Body));

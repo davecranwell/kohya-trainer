@@ -10,6 +10,12 @@ import morgan from 'morgan';
 import type { ServerBuild } from '@remix-run/node';
 import type { Request, Response } from 'express';
 
+import { subscribeToTasks } from '#/lib/task.server.js';
+
+// import { assignGpuToTraining } from './tasks/createGpuInstance.js';
+// import { shutdownInactiveGpus } from './tasks/shutdownInactiveGpus.js';
+// import { zipImages } from './tasks/zipImages.js';
+
 // Extend Express types to include locals
 declare global {
     namespace Express {
@@ -18,18 +24,6 @@ declare global {
         }
     }
 }
-
-import { assignGpuToTraining } from './tasks/createGpuInstance.js';
-import { shutdownInactiveGpus } from './tasks/shutdownInactiveGpus.js';
-import { zipImages } from './tasks/zipImages.js';
-
-import { taskSubscription } from './taskQueue.js';
-
-// Add type for the task body
-type TaskBody = {
-    task: 'zipImages' | 'allocateGpu' | 'deallocateGpu';
-    trainingId: string;
-};
 
 const MODE = process.env.NODE_ENV ?? 'development';
 const IS_PROD = MODE === 'production';
@@ -182,27 +176,12 @@ app.all(
     }),
 );
 
-const server = app.listen(PORT, () => {
+const server = app.listen(PORT, async () => {
     console.log(`🚀 We have liftoff!`);
     console.log(`http://localhost:${PORT}`);
 
-    console.log('USE_CRON', USE_CRON);
-    console.log('USE_QUEUE', USE_QUEUE);
-
     if (USE_QUEUE) {
-        taskSubscription((body: TaskBody) => {
-            switch (body.task) {
-                case 'zipImages':
-                    zipImages(body.trainingId);
-                    break;
-                case 'allocateGpu':
-                    assignGpuToTraining(body.trainingId);
-                    break;
-                // case 'deallocateGpu':
-                //     shutdownInactiveGpus(body.trainingId);
-                //     break;
-            }
-        }, 5000);
+        subscribeToTasks();
     }
 });
 

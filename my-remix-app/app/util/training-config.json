@@ -1,8 +1,8 @@
 {
-    "logging_dir": "logs/training",
-    "output_dir": "outputs/model",
-    "pretrained_model_name_or_path": "runs/pretrained",
-    "train_data_dir": "train_data",
+    "logging_dir": "absolute/path/to/logging/dir",
+    "output_dir": "absolute/path/to/outputs/dir",
+    "pretrained_model_name_or_path": "absolute/path/to/checkpoint/file",
+    "train_data_dir": "absolute/path/to/training_images/dir",
 
     "network_module": "networks.lora",
     "adaptive_noise_scale": 0,

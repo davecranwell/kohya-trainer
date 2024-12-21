@@ -1,13 +1,12 @@
 import { json, type LoaderFunctionArgs } from '@remix-run/node';
 import { useLoaderData } from '@remix-run/react';
 
-import prisma from '../../prisma/db.server';
+import prisma from '#/prisma/db.server';
 
 import { requireUserWithPermission } from '~/services/permissions.server';
 
-import { TrainingEditor } from '../util/training-editor';
-
-export { action } from '../util/training-editor.server';
+import { TrainingEditor } from '~/util/training-editor';
+export { action } from '~/util/training-editor.server';
 
 export async function loader({ request, params }: LoaderFunctionArgs) {
     const userId = await requireUserWithPermission(request, 'create:training:own');

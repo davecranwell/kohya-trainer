@@ -4,11 +4,11 @@ import { Form, NavLink, Outlet, useLoaderData } from '@remix-run/react';
 import { ImageIcon, LightningBoltIcon, Pencil1Icon, UploadIcon } from '@radix-ui/react-icons';
 import clsx from 'clsx';
 
-import prisma from '../../prisma/db.server';
+import prisma from '#/prisma/db.server';
+import { startTraining } from '#/lib/task.server';
 
 import { requireUserWithPermission } from '~/services/permissions.server';
 import { redirectWithToast } from '~/services/toast.server';
-import * as trainingService from '~/services/training.server';
 import { getThumbnailKey } from '~/util/misc';
 
 import { StatusIndicator, type StatusType } from '~/components/status-indicator';
@@ -26,22 +26,29 @@ export async function action({ request, params }: ActionFunctionArgs) {
         return json({ error: 'Invalid training ID' }, { status: 400 });
     }
 
-    try {
-        await trainingService.startTraining(trainingId);
-        console.log('test');
-    } catch (error) {
-        return redirectWithToast(
-            `/training`,
-            {
-                type: 'success',
-                title: 'Training started',
-                description: 'Grab a snack and check back in a few minutes.',
-            },
-            { status: 302 },
-        );
+    //prevent duplicate tasks
+    const training = await prisma.training.findUnique({
+        where: { id: trainingId },
+    });
+
+    if (training?.status) {
+        return json({ error: 'Training already started' }, { status: 400 });
     }
 
-    return null;
+    try {
+        const start = await startTraining(trainingId, userId);
+        if (start) {
+            return redirectWithToast(
+                `/training`,
+                {
+                    type: 'success',
+                    title: 'Training started',
+                    description: 'Grab a snack and check back in a few minutes.',
+                },
+                { status: 302 },
+            );
+        }
+    } catch (error) {}
 }
 
 export async function loader({ request }: LoaderFunctionArgs) {
