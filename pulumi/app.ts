@@ -213,6 +213,7 @@ export const fargateService = new awsx.ecs.FargateService(
                     { name: 'ALLOW_INDEXING', value: 'false' },
                     { name: 'USE_CRON', value: 'true' },
                     { name: 'USE_QUEUE', value: 'true' },
+                    { name: 'ZIP_IMAGES_LAMBDA_NAME', value: config.require('ZIP_IMAGES_LAMBDA_NAME') },
                     { name: 'GOOGLE_CLIENT_ID', value: config.require('GOOGLE_CLIENT_ID') },
                     { name: 'GOOGLE_CLIENT_SECRET', value: config.require('GOOGLE_CLIENT_SECRET') },
                     { name: 'DATABASE_URL', value: config.require('DATABASE_URL') },

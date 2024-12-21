@@ -1,6 +1,7 @@
 import * as aws from '@pulumi/aws';
 
-/* Create a user for the app to use. It will need to access S3, execute lambdas and subscribe to sqs */
+/* Create a user for the app to use. It will need to access S3, execute lambdas and subscribe to sqs
+It's badly named as it's not only a user of S3. */
 export const s3User = new aws.iam.User('s3AppUser', {
     name: 's3-app-user',
     forceDestroy: true, // Deletes the user even if it has resources (e.g., access keys)

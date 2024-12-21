@@ -54,9 +54,6 @@ s3Policy.apply(
         }),
 );
 
-// Export the user for use in other files
-export { s3User } from './user';
-
 // Create IAM role for Lambda
 const lambdaRole = new aws.iam.Role('zipLambdaRole', {
     assumeRolePolicy: JSON.stringify({
@@ -113,6 +110,31 @@ const lambda = new aws.lambda.Function('zipLambda', {
             BUCKET_NAME: bucket.id,
         },
     },
+});
+
+// Add policy allowing S3user to invoke Lambda
+// This is needed because our application architecture requires the backend to trigger
+// the zip Lambda function directly using AWS SDK credentials
+const lambdaInvokePolicy = lambda.arn.apply(
+    (lambdaArn) =>
+        new aws.iam.Policy('lambdaInvokePolicy', {
+            policy: JSON.stringify({
+                Version: '2012-10-17',
+                Statement: [
+                    {
+                        Effect: 'Allow',
+                        Action: 'lambda:InvokeFunction',
+                        Resource: lambdaArn,
+                    },
+                ],
+            }),
+        }),
+);
+
+// Attach the Lambda invoke policy to the S3 user
+new aws.iam.UserPolicyAttachment('lambdaInvokeUserPolicyAttachment', {
+    user: s3User.name,
+    policyArn: lambdaInvokePolicy.arn,
 });
 
 // Export the Lambda ARN for reference
