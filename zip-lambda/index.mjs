@@ -10,29 +10,22 @@ import archiver from 'archiver';
 export const handler = async (event, context) => {
     const s3 = new S3Client({ region: 'us-east-1' });
 
-    // the bucket name and key are passed in from the event body as a JSON object when invoked
+    // the bucket name and key are passed in from the event as a JSON object when invoked
     // object expected: { bucket: my-bucket-name=without-domain, key: one-folder/two-folder-with-final-slash/ }
-    const { bucket, key } = JSON.parse(event.body);
+    const { bucket, key } = event;
 
     const zipKey = `${key}zip/output.zip`;
     const tmpOutputPath = `/tmp/output.zip`;
 
     // if the zip already exists, overwrite it with a new zip
-    try {
-        await s3.send(new DeleteObjectCommand({ Bucket: bucketName, Key: zipKey }));
-        console.log(`Deleted existing ZIP file: ${zipKey}`);
-    } catch (err) {
-        if (err.name !== 'NoSuchKey') {
-            console.warn(`No existing ZIP file to delete: ${zipKey}`);
-        }
-    }
+    await s3.send(new DeleteObjectCommand({ Bucket: bucket, Key: zipKey }));
+    console.log(`Deleted existing ZIP file: ${zipKey}`);
 
     try {
-        // List objects in the specified prefix
         const listedObjects = await s3.send(new ListObjectsV2Command({ Bucket: bucket, Prefix: key }));
 
         if (!listedObjects.Contents || listedObjects.Contents.length === 0) {
-            return { message: 'No files found to zip.' };
+            throw new Error('No files found to zip.');
         }
 
         // Download files to /tmp
