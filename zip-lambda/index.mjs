@@ -50,6 +50,11 @@ export const handler = async (event, context) => {
         const output = fs.createWriteStream(tmpOutputPath);
         const archive = archiver('zip', { zlib: { level: 9 } });
 
+        const streamFinished = new Promise((resolve, reject) => {
+            output.on('close', resolve);
+            output.on('error', reject);
+        });
+
         archive.pipe(output);
 
         for (const obj of listedObjects.Contents) {
@@ -59,6 +64,7 @@ export const handler = async (event, context) => {
         }
 
         await archive.finalize();
+        await streamFinished;
 
         // Upload ZIP back to S3
         const zipData = fs.readFileSync(tmpOutputPath);
