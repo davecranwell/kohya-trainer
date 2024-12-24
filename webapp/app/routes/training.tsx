@@ -2,6 +2,7 @@ import { json, type LoaderFunctionArgs } from '@remix-run/node';
 import { type ActionFunctionArgs } from '@remix-run/node';
 import { Form, NavLink, Outlet, useLoaderData } from '@remix-run/react';
 import { ImageIcon, LightningBoltIcon, Pencil1Icon, UploadIcon } from '@radix-ui/react-icons';
+import { useEventSource } from 'remix-utils/sse/react';
 import clsx from 'clsx';
 
 import prisma from '#/prisma/db.server';
@@ -84,6 +85,20 @@ export async function loader({ request }: LoaderFunctionArgs) {
 
 export default function TrainingPage() {
     const data = useLoaderData<typeof loader>();
+    const progressMessage = useEventSource(`/sse/${data.userId}`, { event: data.userId });
+
+    useEffect(() => {
+        if (!progressMessage) return;
+
+        const progressParsed = JSON.parse(progressMessage) as Progress;
+        const key = progressParsed.Key.split('/').pop() || progressParsed.Key;
+        const newProgress = {
+            ...uploadProgress,
+            [key]: (progressParsed.loaded / progressParsed.total) * 100,
+        };
+
+        setUploadProgress(newProgress);
+    }, [progressMessage]);
 
     return (
         <div>
