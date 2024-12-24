@@ -1,0 +1,53 @@
+{
+    "id": "", // REMOVED BEFORE TRAINING - the id of the training session
+    "webhook_url": "", // REMOVED BEFORE TRAINING - the webhook url to call when the training is complete
+    "training_images_url": "", // REMOVED BEFORE TRAINING - the url of the s3 zip of training images and captions
+    "checkpoint_url": "", // REMOVED BEFORE TRAINING - the url of the checkpoint from civitai
+    "checkpoint_filename": "", // REMOVED BEFORE TRAINING - the filename of the checkpoint from civitai: important we set this explicitly and get the right value from civitai
+    "civitai_key": "", // REMOVED BEFORE TRAINING - the civitai key
+    "trigger_word": "", // REMOVED BEFORE TRAINING - the trigger word and class e.g "ohxw man"
+
+    // Core params
+    "output_name": "", // should be same as the name of the training or the first of the trigger word and class e.g "ohxw"
+    "sdxl": true, // likely to change
+    "sdxl_cache_text_encoder_outputs": false,
+    "train_batch_size": 4, // might need to tweak this
+    "network_module": "networks.lora", // the name of the thing we're creating
+    "clip_skip": 1, // depends on the model but most models don't say, perhaps leave as 1 for now
+    "epoch": 20, // should be calculated based on the number of images and the learning rate
+    "flip_aug": false,
+    "fp8_base": false,
+    "full_bf16": false,
+    "full_fp16": false,
+    "keep_tokens": 2, // depends on the trigger word and class (ohxw man = 2 tokens you must keep)
+    "max_resolution": "1024,1024",
+
+    // metadata
+    "metadata_author": "", // this will be nice to provide - an opportunity for a vanity tag of our own?
+    "metadata_description": "", // this will be nice to provide, should include name of the model used as this affects results so much
+    "metadata_license": "", // ignore fo rnow
+    "metadata_tags": "", // this will be nice to provide, perhaps per trigger word and class?
+    "metadata_title": "", // this will be nice to provide, perhaps the trigger word
+
+    // bucketting
+    "bucket_reso_steps": 64,
+    "min_bucket_reso": 256,
+    "max_bucket_reso": 2048,
+
+    // network, optimiser and lr scheduler
+    "learning_rate": 0.0004, // should change with different subjects
+    "text_encoder_lr": 0.0004, // one of the key things to change
+    "unet_lr": 0.0004, // one of the key things to change
+    "network_alpha": 16, // check this
+    "network_dim": 16, // check this
+    "optimizer_type": "Adafactor", // might need to change
+    "optimizer_args": "scale_parameter=False relative_step=False warmup_init=False",
+    "lr_scheduler": "cosine", // depends on optimiser, but not well understood
+
+    // sampling
+    "sample_every_n_epochs": 0, // we'll want to try setting this up, but perhaps not through this crap sampler which doesn't even do adetailer
+    "sample_every_n_steps": 0,
+    "sample_prompts": "",
+    "sample_sampler": "euler_a",
+    "seed": 0,
+}
