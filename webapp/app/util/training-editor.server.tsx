@@ -7,8 +7,6 @@ import prisma from '../../prisma/db.server';
 import { requireUserWithPermission } from '~/services/permissions.server.js';
 import { redirectWithToast } from '~/services/toast.server';
 
-import TrainingConfig from '~/util/training-config.json';
-
 export const TrainingEditorSchema = z.object({
     id: z.string().optional(),
     name: z.string().min(1).max(100),
@@ -43,6 +41,8 @@ export async function action({ request }: ActionFunctionArgs) {
     }
 
     const { id: trainingId, name, triggerWord, baseModel } = submission.value;
+
+    const TrainingConfig = await import('~/util/training-config.jsonc');
 
     const config = {
         ...TrainingConfig,

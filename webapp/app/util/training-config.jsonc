@@ -1,4 +1,7 @@
 {
+    // A cut-down version of the training confg used by kohya, only including the params we need to set.
+    // The rest are provided on the gpu side.
+
     "id": "", // REMOVED BEFORE TRAINING - the id of the training session
     "webhook_url": "", // REMOVED BEFORE TRAINING - the webhook url to call when the training is complete
     "training_images_url": "", // REMOVED BEFORE TRAINING - the url of the s3 zip of training images and captions
