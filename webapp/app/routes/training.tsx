@@ -5,7 +5,7 @@ import { ImageIcon, LightningBoltIcon, Pencil1Icon, UploadIcon } from '@radix-ui
 import clsx from 'clsx';
 
 import prisma from '#/prisma/db.server';
-import { startTraining } from '#/lib/task.server';
+import { enqueueTraining } from '#/lib/task.server';
 
 import { requireUserWithPermission } from '~/services/permissions.server';
 import { redirectWithToast } from '~/services/toast.server';
@@ -17,7 +17,7 @@ import { Button } from '~/components/button';
 import Progress from '~/components/progress';
 
 export async function action({ request, params }: ActionFunctionArgs) {
-    const userId = await requireUserWithPermission(request, 'update:training:own');
+    await requireUserWithPermission(request, 'update:training:own');
 
     const formData = await request.formData();
     const trainingId = formData.get('trainingId');
@@ -36,7 +36,7 @@ export async function action({ request, params }: ActionFunctionArgs) {
     }
 
     try {
-        const start = await startTraining(trainingId, userId);
+        const start = await enqueueTraining(trainingId);
         if (start) {
             return redirectWithToast(
                 `/training`,
