@@ -1,7 +1,7 @@
 import { PrismaClient, Training } from '@prisma/client';
 import axios from 'axios';
 
-import { TaskBody } from '../task.server';
+import type { TaskBody } from '../task.server';
 
 const prisma = new PrismaClient();
 
@@ -133,6 +133,8 @@ export async function assignGpuToTraining({ trainingId, zipKey }: TaskBody) {
         });
 
         console.log(`Assigned GPU ${gpuRecord.id} to training ${trainingId}`);
+
+        return true;
     } catch (error) {
         console.error('Error assigning GPU to training:', error);
     }
