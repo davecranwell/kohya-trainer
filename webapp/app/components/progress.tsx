@@ -1,6 +1,6 @@
 import { CheckCircledIcon, CheckIcon, SymbolIcon } from '@radix-ui/react-icons';
 
-export default function Progress() {
+export function Progress() {
     return (
         <div className="w-full py-4 sm:py-0">
             <div className="relative">
@@ -9,16 +9,16 @@ export default function Progress() {
                 </div>
                 <div className="z-2 relative flex w-full items-center justify-between">
                     <div className="flex flex-col items-center">
-                        <div className="bg-semantic-success flex h-8 w-8 items-center justify-center rounded-full text-white">
+                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-semantic-success text-white">
                             <CheckIcon />
                         </div>
-                        <span className="text-semantic-success absolute -bottom-6 whitespace-nowrap text-xs">Image upload</span>
+                        <span className="absolute -bottom-6 whitespace-nowrap text-xs text-semantic-success">Image upload</span>
                     </div>
                     <div className="flex flex-col items-center">
-                        <div className="bg-semantic-success flex h-8 w-8 items-center justify-center rounded-full text-white">
+                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-semantic-success text-white">
                             <CheckIcon />
                         </div>
-                        <span className="text-semantic-success absolute -bottom-6 whitespace-nowrap text-xs">Training setup</span>
+                        <span className="absolute -bottom-6 whitespace-nowrap text-xs text-semantic-success">Training setup</span>
                     </div>
                     <div className="flex flex-col items-center">
                         <div className="flex h-8 w-8 animate-bounce items-center justify-center rounded-full bg-primary text-white">

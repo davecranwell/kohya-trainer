@@ -18,9 +18,10 @@ export async function shutdownInactiveGpus() {
     });
     const liveInstances = response.data.instances;
 
-    console.log(`Live GPU instances: ${liveInstances.length ? liveInstances.map((instance) => instance.id).join(', ') : 'none'}`);
+    liveInstances.length &&
+        console.log(`Live GPU instances: ${liveInstances.length ? liveInstances.map((instance) => instance.id).join(', ') : 'none'}`);
 
-    if (!liveInstances.length) return;
+    //if (!liveInstances.length) return;
 
     // We want to delete instances whos IDs aren't linked in our gpu table
     const knownGpus = await prisma.gpu.findMany();
@@ -30,7 +31,7 @@ export async function shutdownInactiveGpus() {
         .filter((liveInstance) => !knownGpus.some((knownGpu) => knownGpu.instanceId.toString() === liveInstance.id.toString()))
         .map((liveInstance) => liveInstance.id.toString());
 
-    console.log(`Unknown GPU instances: ${unknownGpus.length ? unknownGpus.join(',') : 'none'}`);
+    unknownGpus.length && console.log(`Unknown GPU instances: ${unknownGpus.length ? unknownGpus.join(',') : 'none'}`);
 
     toShutDownIds.push(...unknownGpus);
 
@@ -49,7 +50,7 @@ export async function shutdownInactiveGpus() {
 
     const finishedTrainingIds = finishedTrainings.map((training) => training.gpu?.instanceId);
 
-    console.log(`Complete GPU instances: ${finishedTrainingIds.length ? finishedTrainingIds.join(',') : 'none'}`);
+    finishedTrainingIds.length && console.log(`Complete GPU instances: ${finishedTrainingIds.length ? finishedTrainingIds.join(',') : 'none'}`);
 
     toShutDownIds.push(...finishedTrainingIds);
 
@@ -69,43 +70,44 @@ export async function shutdownInactiveGpus() {
 
     const stalledGpuIds = stalledGpus.map((gpu) => gpu.instanceId);
 
-    console.log(`Stalled GPU instances: ${stalledGpuIds.length ? stalledGpuIds.join(',') : 'none'}`);
+    stalledGpuIds.length && console.log(`Stalled GPU instances: ${stalledGpuIds.length ? stalledGpuIds.join(',') : 'none'}`);
 
     toShutDownIds.push(...stalledGpuIds);
 
-    console.log(`Shutting down inactive GPU instances: ${toShutDownIds.join(', ')}`);
+    toShutDownIds.length && console.log(`Shutting down inactive GPU instances: ${toShutDownIds.join(', ')}`);
 
-    try {
-        for (const gpu of toShutDownIds) {
-            console.log(`Shutting down inactive GPU instance: ${gpu}`);
-
+    for (const gpu of toShutDownIds) {
+        console.log(`Shutting down inactive GPU instance: ${gpu}`);
+        try {
             await axios.delete(`https://console.vast.ai/api/v0/instances/${gpu}/`, {
                 headers: {
                     Authorization: `Bearer ${process.env.VAST_API_KEY}`,
                 },
             });
-
-            // set training using this gpu as onerror
-            await prisma.training.updateMany({
-                where: {
-                    gpu: {
-                        instanceId: gpu.toString(),
-                    },
-                },
-                data: {
-                    status: 'onerror',
-                },
-            });
-
-            // delete these gpus from the database
-            await prisma.gpu.deleteMany({
-                where: { instanceId: gpu.toString() },
-            });
-
-            console.log(`Shut down inactive GPU instance: ${gpu}`);
+        } catch (error) {
+            if (error.response.status !== 404) {
+                console.error('Error shutting down inactive GPUs:', error);
+            }
         }
-    } catch (error) {
-        console.error('Error shutting down inactive GPUs:', error);
+
+        // set training using this gpu as onerror
+        await prisma.training.updateMany({
+            where: {
+                gpu: {
+                    instanceId: gpu.toString(),
+                },
+            },
+            data: {
+                status: 'onerror',
+            },
+        });
+
+        // delete these gpus from the database
+        await prisma.gpu.deleteMany({
+            where: { instanceId: gpu.toString() },
+        });
+
+        console.log(`Shut down inactive GPU instance: ${gpu}`);
     }
 }
 

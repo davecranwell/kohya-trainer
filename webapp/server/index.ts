@@ -11,10 +11,7 @@ import type { ServerBuild } from '@remix-run/node';
 import type { Request, Response } from 'express';
 
 import { subscribeToTasks } from '#/lib/task.server.js';
-
-// import { assignGpuToTraining } from './tasks/createGpuInstance.js';
-// import { shutdownInactiveGpus } from './tasks/shutdownInactiveGpus.js';
-// import { zipImages } from './tasks/zipImages.js';
+import { shutdownInactiveGpus } from '#/lib/tasks/shutdownInactiveGpus.js';
 
 // Extend Express types to include locals
 declare global {
@@ -182,6 +179,10 @@ const server = app.listen(PORT, async () => {
 
     if (USE_QUEUE) {
         subscribeToTasks();
+    }
+
+    if (USE_CRON) {
+        shutdownInactiveGpus();
     }
 });
 

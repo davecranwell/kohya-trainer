@@ -1,28 +1,32 @@
 {
     // A cut-down version of the training confg used by kohya, only including the params we need to set.
+    // NB NONE OF THIS IS BEING USED UNLESS WE CHANGE THE API ON THE KOHYA SIDE TO ACCEPT EVERY ONE OF THESE VALUES
     // The rest are provided on the gpu side.
 
-    "id": "", // REMOVED BEFORE TRAINING - the id of the training session
-    "webhook_url": "", // REMOVED BEFORE TRAINING - the webhook url to call when the training is complete
-    "training_images_url": "", // REMOVED BEFORE TRAINING - the url of the s3 zip of training images and captions
-    "checkpoint_url": "", // REMOVED BEFORE TRAINING - the url of the checkpoint from civitai
-    "checkpoint_filename": "", // REMOVED BEFORE TRAINING - the filename of the checkpoint from civitai: important we set this explicitly and get the right value from civitai
-    "civitai_key": "", // REMOVED BEFORE TRAINING - the civitai key
-    "trigger_word": "", // REMOVED BEFORE TRAINING - the trigger word and class e.g "ohxw man"
+    "id": "", // REMOVE BEFORE TRAINING - the id of the training session
+    "webhook_url": "", // REMOVE BEFORE TRAINING - the webhook url to call when the training is complete
+    "training_images_url": "", // REMOVE BEFORE TRAINING - the url of the s3 zip of training images and captions
+    "checkpoint_url": "", // REMOVE BEFORE TRAINING - the url of the checkpoint from civitai
+    "checkpoint_filename": "", // REMOVE BEFORE TRAINING - the filename of the checkpoint from civitai: important we set this explicitly and get the right value from civitail
+    "civitai_key": "", // REMOVE BEFORE TRAINING - the civitai key
+    "trigger_word": "", // REMOVE BEFORE TRAINING - the trigger word and class e.g "ohxw man"
+    "upload_url": "", // REMOVE BEFORE TRAINING - the presignedurl of the s3 bucket to upload the checkpoint to
+    // "pretrained_model_name_or_path": "", // DO NOT SEND THIS - this is set on the gpu side
 
     // Core params
-    "output_name": "", // should be same as the name of the training or the first of the trigger word and class e.g "ohxw"
+    "LoRA_type": "Standard", // the type of lora we're making
+    "output_name": "", // the name of the files it creates should be same as the name of the training or the first of the trigger word and class e.g "ohxw"
     "sdxl": true, // likely to change
     "sdxl_cache_text_encoder_outputs": false,
-    "train_batch_size": 4, // might need to tweak this
+    "train_batch_size": 4, // might need to tweak this based on memory
     "network_module": "networks.lora", // the name of the thing we're creating
-    "clip_skip": 1, // depends on the model but most models don't say, perhaps leave as 1 for now
+    "clip_skip": 1, // depends on the model but most models don't say, perhaps leave as 1 for now.
     "epoch": 20, // should be calculated based on the number of images and the learning rate
     "flip_aug": false,
     "fp8_base": false,
     "full_bf16": false,
     "full_fp16": false,
-    "keep_tokens": 2, // depends on the trigger word and class (ohxw man = 2 tokens you must keep)
+    "keep_tokens": 2, // identifies how many tokens from the start should NOT experience caption/tag shuffling. The most important tokens should always be kept at the start i.e trigger and class
     "max_resolution": "1024,1024",
 
     // metadata
@@ -38,14 +42,14 @@
     "max_bucket_reso": 2048,
 
     // network, optimiser and lr scheduler
-    "learning_rate": 0.0004, // should change with different subjects
-    "text_encoder_lr": 0.0004, // one of the key things to change
+    //"learning_rate": 0.0004, // should change with different subjects, apparently is not used if text_encoder_lr and unet_lr are set
+    "text_encoder_lr": 0.00004, // one of the key things to change, should be 1/10 of the unet_lr for characters
     "unet_lr": 0.0004, // one of the key things to change
-    "network_alpha": 16, // check this
-    "network_dim": 16, // check this
+    "network_alpha": 16, //should be half of the network_dim
+    "network_dim": 32,
     "optimizer_type": "Adafactor", // might need to change
     "optimizer_args": "scale_parameter=False relative_step=False warmup_init=False",
-    "lr_scheduler": "cosine", // depends on optimiser, but not well understood
+    "lr_scheduler": "cosine", // cosine_with_restarts is another option
 
     // sampling
     "sample_every_n_epochs": 0, // we'll want to try setting this up, but perhaps not through this crap sampler which doesn't even do adetailer

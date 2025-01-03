@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { json, type LoaderFunctionArgs } from '@remix-run/node';
 import { type ActionFunctionArgs } from '@remix-run/node';
 import { Form, NavLink, Outlet, useLoaderData } from '@remix-run/react';
@@ -10,12 +11,11 @@ import { enqueueTraining } from '#/lib/task.server';
 
 import { requireUserWithPermission } from '~/services/permissions.server';
 import { redirectWithToast } from '~/services/toast.server';
-import { getThumbnailKey } from '~/util/misc';
 
 import { StatusIndicator, type StatusType } from '~/components/status-indicator';
 import { EmptyState } from '~/components/empty-state';
 import { Button } from '~/components/button';
-import Progress from '~/components/progress';
+import { Progress } from '~/components/progress';
 
 export async function action({ request, params }: ActionFunctionArgs) {
     await requireUserWithPermission(request, 'update:training:own');
@@ -92,12 +92,6 @@ export default function TrainingPage() {
 
         const progressParsed = JSON.parse(progressMessage) as Progress;
         const key = progressParsed.Key.split('/').pop() || progressParsed.Key;
-        const newProgress = {
-            ...uploadProgress,
-            [key]: (progressParsed.loaded / progressParsed.total) * 100,
-        };
-
-        setUploadProgress(newProgress);
     }, [progressMessage]);
 
     return (

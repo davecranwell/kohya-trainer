@@ -3,7 +3,7 @@ import axios from 'axios';
 import prisma from '#/prisma/db.server';
 import { SQS } from '@aws-sdk/client-sqs';
 
-export const awaitGpuReady = async ({ trainingId, userId }: { trainingId: string; userId: string }) => {
+export const awaitGpuReady = async ({ trainingId }: { trainingId: string }) => {
     // Get the training config from the database
     const trainingConfig = await prisma.training.findUnique({
         where: { id: trainingId },

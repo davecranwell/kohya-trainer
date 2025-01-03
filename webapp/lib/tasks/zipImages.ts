@@ -3,7 +3,7 @@ import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 
 import prisma from '#/prisma/db.server';
 
-export const zipImages = async ({ trainingId, userId }: { trainingId: string; userId: string }) => {
+export const zipImages = async ({ trainingId }: { trainingId: string }) => {
     const s3Client = new S3Client({
         region: process.env.AWS_REGION,
         credentials: {
@@ -11,6 +11,15 @@ export const zipImages = async ({ trainingId, userId }: { trainingId: string; us
             secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
         },
     });
+
+    const training = await prisma.training.findUnique({
+        where: { id: trainingId },
+        select: { ownerId: true },
+    });
+
+    if (!training?.ownerId) {
+        throw new Error('Training not found');
+    }
 
     // upload all the captions from the Images table for this training as .txt files named after their image filenames, to the same location on S3
     const images = await prisma.trainingImage.findMany({
@@ -27,7 +36,7 @@ export const zipImages = async ({ trainingId, userId }: { trainingId: string; us
         await s3Client.send(
             new PutObjectCommand({
                 Bucket: process.env.AWS_S3_BUCKET_NAME,
-                Key: `${userId}/${trainingId}/${image.name}.txt`,
+                Key: `${training?.ownerId}/${trainingId}/${image.name}.txt`,
                 Body: image.text,
             }),
         );
@@ -38,7 +47,7 @@ export const zipImages = async ({ trainingId, userId }: { trainingId: string; us
 
     const command = new InvokeCommand({
         FunctionName: process.env.ZIP_IMAGES_LAMBDA_NAME,
-        Payload: JSON.stringify({ bucket: process.env.AWS_S3_BUCKET_NAME, key: `${userId}/${trainingId}/` }),
+        Payload: JSON.stringify({ bucket: process.env.AWS_S3_BUCKET_NAME, key: `${training?.ownerId}/${trainingId}/` }),
     });
 
     const { Payload, LogResult, StatusCode } = await client.send(command);

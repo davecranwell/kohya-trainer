@@ -45,8 +45,7 @@ export async function action({ request }: ActionFunctionArgs) {
     const TrainingConfig = await import('~/util/training-config.jsonc');
 
     const config = {
-        ...TrainingConfig,
-        pretrained_model_name_or_path: baseModel,
+        ...TrainingConfig.default,
         output_name: triggerWord,
     };
 

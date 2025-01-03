@@ -6,7 +6,7 @@ import type { TaskBody } from '../task.server';
 const prisma = new PrismaClient();
 
 // Function to create a new GPU instance using Vast API
-async function createGpuInstance(training: Training, zipKey: string) {
+async function createGpuInstance(training: Training) {
     // find instances available:
     // This query string is discoverable from the Network tab here: https://cloud.vast.ai/create/
     const query = {
@@ -61,7 +61,7 @@ async function createGpuInstance(training: Training, zipKey: string) {
                 //WEBHOOK_SECRET: process.env.WEBHOOK_SECRET,
                 //WEBHOOK_URL: process.env.WEBHOOK_URL,
                 //TRAINING_ID: training.id,
-                ZIP_URL: `${process.env.AWS_S3_BUCKET_NAME}/${zipKey}`,
+                //ZIP_URL: `${process.env.AWS_S3_BUCKET_NAME}/${zipKey}`,
                 KOHYA_ARGS: '',
                 TENSORBOARD_ARGS: '--logdir /opt/kohya_ss/logs',
                 AUTO_UPDATE: 'false',
@@ -111,7 +111,7 @@ async function createGpuInstance(training: Training, zipKey: string) {
     });
 }
 
-export async function assignGpuToTraining({ trainingId, zipKey }: TaskBody) {
+export async function assignGpuToTraining({ trainingId }: { trainingId: string }) {
     try {
         const training = await prisma.training.findFirst({
             where: { id: trainingId, status: 'allocateGpu' },
@@ -121,12 +121,11 @@ export async function assignGpuToTraining({ trainingId, zipKey }: TaskBody) {
             return false;
         }
 
-        const gpuRecord = await createGpuInstance(training, zipKey);
+        const gpuRecord = await createGpuInstance(training);
 
         await prisma.training.update({
             where: { id: trainingId },
             data: {
-                status: 'pendingImages',
                 gpuId: gpuRecord.id,
                 updatedAt: new Date(),
             },

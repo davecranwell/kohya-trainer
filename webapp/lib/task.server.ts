@@ -10,7 +10,7 @@ import { startTraining } from './tasks/startTraining';
 
 // Add type for the task body
 export type TaskBody = {
-    task: 'zipImages' | 'allocateGpu' | 'deallocateGpu' | 'awaitGpuReady' | 'enqueueTraining' | 'startTraining';
+    task: 'zipImages' | 'allocateGpu' | 'deallocateGpu' | 'awaitGpuReady' | 'startTraining';
     trainingId: string;
     userId?: string;
     zipKey?: string;
@@ -26,7 +26,7 @@ export function subscribeToTasks() {
 
         switch (task) {
             case 'awaitGpuReady': {
-                const isReady = await awaitGpuReady(body);
+                const isReady = await awaitGpuReady({ trainingId });
                 if (isReady) {
                     await createTask({ task: 'startTraining', trainingId, userId });
                 } else {
@@ -37,7 +37,7 @@ export function subscribeToTasks() {
             }
 
             case 'zipImages': {
-                const zipKey = await zipImages(body);
+                const zipKey = await zipImages({ trainingId });
                 if (zipKey) {
                     await createTask({ task: 'allocateGpu', trainingId, userId, zipKey });
                 }
@@ -46,14 +46,8 @@ export function subscribeToTasks() {
             }
 
             case 'allocateGpu': {
-                await assignGpuToTraining(body);
+                await assignGpuToTraining({ trainingId });
                 await createTask({ task: 'awaitGpuReady', trainingId, userId }, 10);
-                break;
-            }
-
-            // Puts the training into the queue for all these shenanigans
-            case 'enqueueTraining': {
-                await enqueueTraining(trainingId);
                 break;
             }
 
