@@ -10,7 +10,8 @@ export type Preview = {
 };
 
 interface FileUploadPreviewProps extends React.HTMLAttributes<HTMLDivElement> {
-    acceptedFileTypes?: string[];
+    acceptedImageTypes?: string[];
+    acceptedTextTypes?: string[];
     previousImages: ImageWithMetadata[];
     maxImages: number;
     onDropped: ({ updatedImages, newImages, tags }: { updatedImages: ImageWithMetadata[]; newImages: ImageWithMetadata[]; tags: string[] }) => void;
@@ -28,7 +29,8 @@ export type ImageWithMetadata = {
 };
 
 export const FileUploadPreview: React.FC<FileUploadPreviewProps> = ({
-    acceptedFileTypes = ['image/png', 'image/jpeg'],
+    acceptedImageTypes = ['image/png', 'image/jpeg'],
+    acceptedTextTypes = ['text/plain'],
     children,
     previousImages,
     onDropped,
@@ -40,12 +42,18 @@ export const FileUploadPreview: React.FC<FileUploadPreviewProps> = ({
     const [isDraggedOver, setIsDraggedOver] = useState(false);
     const [imageCount, setImageCount] = useState(previousImages.length);
 
+    const isAcceptedFileAndNotPreviousImage = (file: File) =>
+        (acceptedImageTypes.includes(file.type) || acceptedTextTypes.includes(file.type)) &&
+        !previousImages.find((currentFile) => currentFile.name === file.name);
+
     const handleFiles = async (newFiles: FileList) => {
         setIsDraggedOver(false);
 
+        console.log('newFiles', newFiles);
+
         const previousImagesArr = previousImages || [];
-        const newImagesAr = Array.from(newFiles)
-            .filter((file) => acceptedFileTypes.includes(file.type) && !previousImagesArr.find((currentFile) => currentFile.name === file.name))
+        const newFilesArr = Array.from(newFiles)
+            .filter(isAcceptedFileAndNotPreviousImage)
             .map((newFile) => ({
                 file: newFile,
                 filenameNoExtension: newFile.name.split('.').slice(0, -1).join('.'),
@@ -55,28 +63,34 @@ export const FileUploadPreview: React.FC<FileUploadPreviewProps> = ({
                 url: URL.createObjectURL(newFile!),
             }));
 
-        if (!newImagesAr.length) return;
+        console.log('newFilesArr', newFilesArr);
+
+        if (!newFilesArr.length) return;
+
+        // get only the new images so we can return them to appear in the UI as un-uploaded images
+        const newImages = newFilesArr.filter((file) => acceptedImageTypes.includes(file.type));
 
         // Get all files (existing and new) with their metadata so we can split them into text and image files and annotate existing or new images with tags
-        const allFilesMeta: ImageWithMetadata[] = [...previousImagesArr, ...newImagesAr];
+        const allFilesMeta: ImageWithMetadata[] = [...previousImagesArr, ...newFilesArr];
         const textFiles = allFilesMeta.filter((fileMeta) => fileMeta.type === 'text/plain');
         const imageFiles = allFilesMeta.filter((fileMeta) => fileMeta.type !== 'text/plain');
 
-        await Promise.all(
+        const updatedImages = await Promise.all(
             textFiles.map(async (textFile) => {
                 return new Promise((resolve, reject) => {
                     const reader = new FileReader();
 
                     reader.onload = function (e: any) {
                         const matchingImage = imageFiles.find((imageFile) => imageFile.filenameNoExtension === textFile.filenameNoExtension);
-                        if (matchingImage) matchingImage.text = e.target?.result as string;
+                        if (matchingImage) {
+                            matchingImage.text = e.target?.result as string;
+                            resolve(matchingImage);
+                        }
                     };
                     reader.readAsText(textFile.file!);
                 });
             }),
         );
-
-        const updatedImageFiles = imageFiles; // todo: make work
 
         if (fileInputRef.current) {
             const dataTransfer = new DataTransfer();
@@ -87,11 +101,11 @@ export const FileUploadPreview: React.FC<FileUploadPreviewProps> = ({
             }
         }
 
-        setImageCount(imageCount + updatedImageFiles.length);
+        setImageCount(imageCount + newImages.length);
 
         onDropped({
-            updatedImages: updatedImageFiles,
-            newImages: newImagesAr,
+            updatedImages: updatedImages as ImageWithMetadata[],
+            newImages,
             tags: makeArrayUnique(imageFiles.map((image) => commaSeparatedStringToArray(image.text || '')).flat()) || [],
         });
     };
@@ -150,8 +164,8 @@ export const FileUploadPreview: React.FC<FileUploadPreviewProps> = ({
                 onClick={(e) => {
                     e.target === dragDropRef.current && fileInputRef.current?.click();
                 }}>
-                Drag and drop {acceptedFileTypes.map((type) => `*.${type.split(',')}`).join(', ')} files here or click to select image files. Any
-                *.txt files which match the filename of an image (minus the extension) will be used to tag that image.
+                Drag and drop {[...acceptedImageTypes, ...acceptedTextTypes].map((type) => `*.${type.split(',')}`).join(', ')} files here or click to
+                select image files. Any *.txt files which match the filename of an image (minus the extension) will be used to tag that image.
                 {children}
             </div>
         </div>

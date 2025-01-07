@@ -130,6 +130,7 @@ export async function loader({ params, request }: LoaderFunctionArgs) {
 
 export default function ImageUpload() {
     const { userId, images, trainingId } = useLoaderData<typeof loader>();
+    const [uploadedImages, setUploadedImages] = useState<ImageWithMetadata[]>(images as ImageWithMetadata[]);
     const [newImages, setNewImages] = useState<ImageWithMetadata[]>([]);
     const [uploadProgress, setUploadProgress] = useState<Record<string, number>>({});
     const progressMessage = useEventSource(`/sse/${userId}`, { event: userId });
@@ -148,6 +149,9 @@ export default function ImageUpload() {
         setUploadProgress(newProgress);
     }, [progressMessage]);
 
+    // updated images are those that have been given tags by the upload of a text file
+    // new images are those that have been uploaded brand new
+    // tags are all the tags that exist cross all images, new or old
     const handleNewImageDropped = ({
         updatedImages, // todo: make this work when uploading a text file
         newImages,
@@ -158,6 +162,13 @@ export default function ImageUpload() {
         tags: string[];
     }) => {
         setNewImages((prev) => [...prev, ...newImages] as ImageWithMetadata[]);
+        setUploadedImages(
+            (prev) =>
+                [
+                    ...prev.filter((image) => !updatedImages.find((updatedImage) => updatedImage.id === image.id)),
+                    ...updatedImages,
+                ] as ImageWithMetadata[],
+        );
         setAllTags(sanitiseTagArray([...allTags, ...tags]));
     };
 
@@ -167,12 +178,13 @@ export default function ImageUpload() {
 
     return (
         <Form key={trainingId} id={trainingId} method="post" encType="multipart/form-data" className="relative">
-            {images.length < 1 && <h2 className="mb-4 text-2xl font-bold tracking-tight text-white">Upload some training images</h2>}
+            {uploadedImages.length < 1 && <h2 className="mb-4 text-2xl font-bold tracking-tight text-white">Upload some training images</h2>}
 
             <FileUploadPreview
                 key={`${trainingId}-preview`}
-                acceptedFileTypes={['image/png', 'image/jpeg', 'text/plain']}
-                previousImages={images.map((image) => ({ ...image, filenameNoExtension: image.name.split('.').slice(0, -1).join('.') }))} // yuk hate this filenameNoExtension thing
+                acceptedImageTypes={['image/png', 'image/jpeg']}
+                acceptedTextTypes={['text/plain']}
+                previousImages={uploadedImages.map((image) => ({ ...image, filenameNoExtension: image.name.split('.').slice(0, -1).join('.') }))} // yuk hate this filenameNoExtension thing
                 maxImages={MAX_IMAGES}
                 onDropped={handleNewImageDropped}
                 className="mb-4">
@@ -183,7 +195,7 @@ export default function ImageUpload() {
                                 {newImages
                                     .filter((image) => uploadProgress[image.name] !== 100)
                                     .map((image) => (
-                                        <div key={image.url} className="mr-1 mt-1">
+                                        <div key={`new-${image.url}`} className="mr-1 mt-1">
                                             <ImagePreview
                                                 url={image.url}
                                                 name={image.name}
@@ -195,18 +207,18 @@ export default function ImageUpload() {
                                     ))}
                             </div>
                         </div>
-                        <Button type="submit" disabled={images.length >= MAX_IMAGES} className="mt-4">
+                        <Button type="submit" disabled={newImages.length >= MAX_IMAGES} className="mt-4">
                             Upload
                         </Button>
                     </>
                 )}
             </FileUploadPreview>
 
-            <Button type="submit" disabled={images.length >= MAX_IMAGES}>
+            <Button type="submit" disabled={newImages.length >= MAX_IMAGES}>
                 Update
             </Button>
 
-            {images.length > 0 && (
+            {uploadedImages.length > 0 && (
                 <>
                     <h2 className="text-2xl font-bold tracking-tight text-white">Your training images</h2>
                     <h3 className="text-lg font-bold tracking-tight text-white">Tagging tips</h3>
@@ -262,8 +274,8 @@ export default function ImageUpload() {
                     </ol>
 
                     <ul role="list" className="mt-4 space-y-4 divide-y divide-gray-800">
-                        {images.map((image) => (
-                            <li key={image.id} className="flex flex-row pt-2">
+                        {uploadedImages.map((image, index) => (
+                            <li key={`${image.id}-${index}`} className="flex flex-row pt-2">
                                 <ImagePreview
                                     url={image.url}
                                     name={image.name}
