@@ -80,25 +80,25 @@ export async function loader({ request }: LoaderFunctionArgs) {
         },
     });
 
-    return json({ trainings });
+    return json({ userId, trainings });
 }
 
 export default function TrainingPage() {
-    const data = useLoaderData<typeof loader>();
-    const progressMessage = useEventSource(`/sse/${data.userId}`, { event: data.userId });
+    const { userId, trainings } = useLoaderData<typeof loader>();
+    const progressMessage = useEventSource(`/sse/${userId}`, { event: userId });
 
     useEffect(() => {
         if (!progressMessage) return;
 
-        const progressParsed = JSON.parse(progressMessage) as Progress;
+        const progressParsed = JSON.parse(progressMessage);
         const key = progressParsed.Key.split('/').pop() || progressParsed.Key;
     }, [progressMessage]);
 
     return (
         <div>
-            {!data.trainings.length && <EmptyState actionUrl="/training/new" noun="trainings" actionText="Create a new training" ctaText="" />}
+            {!trainings.length && <EmptyState actionUrl="/training/new" noun="trainings" actionText="Create a new training" ctaText="" />}
             <ul role="list" className="space-y-8 overflow-hidden">
-                {data.trainings.map((training) => (
+                {trainings.map((training) => (
                     <li
                         key={training.id}
                         className="relative flex flex-col justify-between gap-x-6 space-y-4 rounded-xl border border-gray-800 bg-black/20 p-6 hover:bg-black">

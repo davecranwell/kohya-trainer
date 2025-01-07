@@ -58,7 +58,7 @@ export const action = async ({ params, request }: ActionFunctionArgs) => {
 
     const formData = await unstable_parseMultipartFormData(request, uploadHandler);
 
-    // For some reason formData.getAll('images') returns an array with a single File object, when empty.
+    // For some reason formgetAll('images') returns an array with a single File object, when empty.
     // We have filter that out.
     if (typeof formData.getAll('images')[0] === 'string') {
         //limit the number of images to MAX_IMAGES, minus the number of images we already have in the DB
@@ -129,11 +129,11 @@ export async function loader({ params, request }: LoaderFunctionArgs) {
 }
 
 export default function ImageUpload() {
-    const data = useLoaderData<typeof loader>();
+    const { userId, images, trainingId } = useLoaderData<typeof loader>();
     const [newImages, setNewImages] = useState<ImageWithMetadata[]>([]);
     const [uploadProgress, setUploadProgress] = useState<Record<string, number>>({});
-    const progressMessage = useEventSource(`/sse/${data.userId}`, { event: data.userId });
-    const [allTags, setAllTags] = useState<string[]>(sanitiseTagArray(data.images.map((image) => (image.text || '').split(',')).flat()));
+    const progressMessage = useEventSource(`/sse/${userId}`, { event: userId });
+    const [allTags, setAllTags] = useState<string[]>(sanitiseTagArray(images.map((image) => (image.text || '').split(',')).flat()));
 
     useEffect(() => {
         if (!progressMessage) return;
@@ -158,21 +158,21 @@ export default function ImageUpload() {
         tags: string[];
     }) => {
         setNewImages((prev) => [...prev, ...newImages] as ImageWithMetadata[]);
-        setAllTags(tags);
+        setAllTags(sanitiseTagArray([...allTags, ...tags]));
     };
 
     const handleTagChange = (tags: string[]) => {
-        setAllTags(tags);
+        setAllTags(sanitiseTagArray([...allTags, ...tags]));
     };
 
     return (
-        <Form key={data.trainingId} id={data.trainingId} method="post" encType="multipart/form-data" className="relative">
-            {data.images.length < 1 && <h2 className="mb-4 text-2xl font-bold tracking-tight text-white">Upload some training images</h2>}
+        <Form key={trainingId} id={trainingId} method="post" encType="multipart/form-data" className="relative">
+            {images.length < 1 && <h2 className="mb-4 text-2xl font-bold tracking-tight text-white">Upload some training images</h2>}
 
             <FileUploadPreview
-                key={`${data.trainingId}-preview`}
+                key={`${trainingId}-preview`}
                 acceptedFileTypes={['image/png', 'image/jpeg', 'text/plain']}
-                previousImages={data.images.map((image) => ({ ...image, filenameNoExtension: image.name.split('.').slice(0, -1).join('.') }))} // yuk hate this filenameNoExtension thing
+                previousImages={images.map((image) => ({ ...image, filenameNoExtension: image.name.split('.').slice(0, -1).join('.') }))} // yuk hate this filenameNoExtension thing
                 maxImages={MAX_IMAGES}
                 onDropped={handleNewImageDropped}
                 className="mb-4">
@@ -195,18 +195,18 @@ export default function ImageUpload() {
                                     ))}
                             </div>
                         </div>
-                        <Button type="submit" disabled={data.images.length >= MAX_IMAGES} className="mt-4">
+                        <Button type="submit" disabled={images.length >= MAX_IMAGES} className="mt-4">
                             Upload
                         </Button>
                     </>
                 )}
             </FileUploadPreview>
 
-            <Button type="submit" disabled={data.images.length >= MAX_IMAGES}>
+            <Button type="submit" disabled={images.length >= MAX_IMAGES}>
                 Update
             </Button>
 
-            {data.images.length > 0 && (
+            {images.length > 0 && (
                 <>
                     <h2 className="text-2xl font-bold tracking-tight text-white">Your training images</h2>
                     <h3 className="text-lg font-bold tracking-tight text-white">Tagging tips</h3>
@@ -262,7 +262,7 @@ export default function ImageUpload() {
                     </ol>
 
                     <ul role="list" className="mt-4 space-y-4 divide-y divide-gray-800">
-                        {data.images.map((image) => (
+                        {images.map((image) => (
                             <li key={image.id} className="flex flex-row pt-2">
                                 <ImagePreview
                                     url={image.url}

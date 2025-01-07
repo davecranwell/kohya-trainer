@@ -49,13 +49,13 @@ export const MultiComboBox: React.FC<Props> = ({ ...props }) => {
                     {selected.map((option: Option, index) => (
                         <li
                             key={`${props.name}-${option}-${index}`}
-                            className="bg-accent1-dark group relative mb-1 mr-1 flex items-center items-stretch whitespace-nowrap rounded rounded-full p-1 px-2 text-xs text-white">
+                            className="group relative mb-1 mr-1 flex items-center items-stretch whitespace-nowrap rounded rounded-full bg-accent1-dark p-1 px-2 text-xs text-white">
                             <span>{option}</span>
                             <span
                                 title={`Remove ${option}`}
                                 onClick={() => handleRemove(option)}
-                                className="bg-primary-dark absolute inset-0 flex hidden w-full cursor-pointer content-center items-center justify-center justify-items-center justify-items-stretch justify-self-center rounded rounded-full group-hover:block">
-                                <Cross1Icon className="group-hover:text-semantic-error m-auto text-primary" aria-label={`Remove ${option}`} />
+                                className="absolute inset-0 flex hidden w-full cursor-pointer content-center items-center justify-center justify-items-center justify-items-stretch justify-self-center rounded rounded-full bg-primary-dark group-hover:block">
+                                <Cross1Icon className="m-auto text-primary group-hover:text-semantic-error" aria-label={`Remove ${option}`} />
                             </span>
                         </li>
                     ))}
@@ -83,8 +83,8 @@ export const MultiComboBox: React.FC<Props> = ({ ...props }) => {
                             </ComboboxButton>
 
                             <ComboboxOptions className="dropdown-content absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded-md bg-black py-1 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm">
-                                {query.length > 0 && (
-                                    <ComboboxOption value={query} className="data-[focus]:bg-primary-dark flex items-center p-1 text-left text-white">
+                                {query.length > 0 && !unSelectedItems.includes(query) && (
+                                    <ComboboxOption value={query} className="flex items-center p-1 text-left text-white data-[focus]:bg-primary-dark">
                                         <PlusIcon className="mr-1 text-white" /> Add <span className="font-bold">"{query}"</span>
                                     </ComboboxOption>
                                 )}
@@ -95,7 +95,7 @@ export const MultiComboBox: React.FC<Props> = ({ ...props }) => {
                                             <ComboboxOption
                                                 key={`${option}-${index}`}
                                                 value={option}
-                                                className="data-[focus]:bg-primary-dark flex items-center p-1 text-left text-white">
+                                                className="flex items-center p-1 text-left text-white data-[focus]:bg-primary-dark">
                                                 <QuoteIcon className="mr-1 text-primary" />
                                                 {option}
                                             </ComboboxOption>
