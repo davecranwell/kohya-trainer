@@ -165,7 +165,7 @@ export const FileUploadPreview: React.FC<FileUploadPreviewProps> = ({
                     e.target === dragDropRef.current && fileInputRef.current?.click();
                 }}>
                 Drag and drop {[...acceptedImageTypes, ...acceptedTextTypes].map((type) => `*.${type.split(',')}`).join(', ')} files here or click to
-                select image files. Any *.txt files which match the filename of an image (minus the extension) will be used to tag that image.
+                select from your computer. Any *.txt files which match the filename of an image (minus the extension) will be used to tag that image.
                 {children}
             </div>
         </div>
