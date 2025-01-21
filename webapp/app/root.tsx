@@ -34,9 +34,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
 }
 
 export function Layout({ children }: { children: React.ReactNode }) {
-    const data = useLoaderData<typeof loader>();
     const nonce = useNonce();
-    const toast = useToast(data.toast);
 
     return (
         <html lang="en">

@@ -1,17 +1,19 @@
-import 'dotenv/config';
+import { config } from 'dotenv';
 import crypto from 'node:crypto';
-import { createRequestHandler } from '@remix-run/express';
+import cron from 'node-cron';
 import closeWithGrace from 'close-with-grace';
 import compression from 'compression';
 import express from 'express';
-import rateLimit from 'express-rate-limit';
 import helmet from 'helmet';
-import morgan from 'morgan';
-import type { ServerBuild } from '@remix-run/node';
+import pino from 'pino';
+import pinoHttp from 'pino-http';
+import rateLimit from 'express-rate-limit';
 import type { Request, Response } from 'express';
+import { createRequestHandler } from '@remix-run/express';
+import type { ServerBuild } from '@remix-run/node';
 
-import { subscribeToTasks } from '#/lib/task.server.js';
-import { shutdownInactiveGpus } from '#/lib/tasks/shutdownInactiveGpus.js';
+import { subscribeToTasks } from '../lib/task.server';
+import { shutdownInactiveGpus } from '../lib/tasks/shutdownInactiveGpus';
 
 // Extend Express types to include locals
 declare global {
@@ -29,25 +31,63 @@ const USE_CRON = process.env.USE_CRON !== 'false';
 const USE_QUEUE = process.env.USE_QUEUE !== 'false';
 const PORT = process.env.PORT || 3000;
 
+const logger = pino({
+    level: process.env.LOG_LEVEL || 'error',
+    transport: !IS_PROD
+        ? {
+              target: 'pino-pretty',
+              options: {
+                  colorize: true,
+                  ignore: 'pid,hostname',
+                  translateTime: 'SYS:standard',
+              },
+          }
+        : undefined,
+    formatters: {
+        level: (label) => {
+            return { level: label };
+        },
+    },
+    // Redact sensitive info from logs
+    redact: ['req.headers.authorization', 'req.headers.cookie'],
+});
+
+// Create HTTP logger middleware
+const httpLogger = pinoHttp({
+    logger,
+    // Generate request ID if not present in headers
+    genReqId: (req) => req.headers['x-request-id'] || crypto.randomBytes(16).toString('hex'),
+    customProps: (req, res) => ({
+        // Add any custom properties you want in every log
+        environment: MODE,
+    }),
+    // Skip logging health checks in production
+    autoLogging: {
+        ignore: (req) => IS_PROD && req.url === '/healthcheck',
+    },
+});
+
 const app = express();
 
 app.use(compression());
-
+app.use(httpLogger);
 app.disable('x-powered-by');
 
-// Create dev server first so we can use it in the request handler
-const viteDevServer = IS_PROD
-    ? undefined
-    : await import('vite').then((vite) =>
-          vite.createServer({
-              server: { middlewareMode: true },
-              // Required for HMR to work properly
-              appType: 'custom',
-          }),
-      );
+let viteDevServer: any;
 
-if (viteDevServer) {
-    app.use(viteDevServer.middlewares);
+if (!IS_PROD) {
+    // IFFE avoids complaints about top-level await in CJS format
+    // We have to use CJS due to the number of dependencies that are not ESM
+    (async () => {
+        viteDevServer = await import('vite').then((vite) =>
+            vite.createServer({
+                server: { middlewareMode: true },
+                // Required for HMR to work properly
+                appType: 'custom',
+            }),
+        );
+        app.use(viteDevServer.middlewares);
+    })();
 } else {
     // Remix fingerprints its assets so we can cache forever.
     app.use('/assets', express.static('build/client/assets', { immutable: true, maxAge: '1y' }));
@@ -55,10 +95,6 @@ if (viteDevServer) {
     // Everything else (like favicon.ico) is cached for an hour. You may want to be
     // more aggressive with this caching.
     app.use(express.static('build/client', { maxAge: '1h' }));
-}
-
-if (process.env.NODE_ENV === 'development') {
-    app.use(morgan('dev'));
 }
 
 app.use((req, res, next) => {
@@ -111,7 +147,7 @@ const strongRateLimit = rateLimit({
     max: 100 * maxMultiple,
 });
 
-const strongPaths = ['/login', '/signup', '/verify', '/reset-password'];
+const strongPaths = ['/login', '/sign-up', '/verify', '/reset-password'];
 
 const generalRateLimit = rateLimit(rateLimitDefault);
 
@@ -132,13 +168,27 @@ app.use((req, res, next) => {
     return generalRateLimit(req, res, next);
 });
 
+app.use((err: Error, req: Request, res: Response, next: Function) => {
+    req.log.error(
+        {
+            err,
+            request: {
+                url: req.url,
+                method: req.method,
+                ip: req.ip,
+                userAgent: req.get('user-agent'),
+            },
+        },
+        'Unhandled error',
+    );
+    next(err);
+});
+
 async function getBuild(): Promise<{ build: ServerBuild | null; error: Error | null }> {
     try {
-        const build = viteDevServer
-            ? await viteDevServer.ssrLoadModule('virtual:remix/server-build')
-            : // eslint-disable-next-line import/no-unresolved
-              await import('../build/server/index.js');
+        const build = IS_PROD ? await import('../build/server/index.js') : await viteDevServer.ssrLoadModule('virtual:remix/server-build');
 
+        // eslint-disable-next-line import/no-unresolved
         return { build: build as ServerBuild, error: null };
     } catch (error) {
         console.error('Error creating build:', error);
@@ -173,21 +223,29 @@ app.all(
     }),
 );
 
-const server = app.listen(PORT, async () => {
-    console.log(`🚀 We have liftoff!`);
-    console.log(`http://localhost:${PORT}`);
+async function startServer() {
+    const server = app.listen(PORT, async () => {
+        console.log(`🚀 We have liftoff!`);
+        console.log(`http://localhost:${PORT}`);
 
-    if (USE_QUEUE) {
-        subscribeToTasks();
-    }
+        if (USE_QUEUE) {
+            subscribeToTasks();
+        }
 
-    if (USE_CRON) {
-        shutdownInactiveGpus();
-    }
-});
-
-closeWithGrace(async () => {
-    await new Promise((resolve, reject) => {
-        server.close((e) => (e ? reject(e) : resolve('ok')));
+        if (USE_CRON) {
+            cron.schedule('*/5 * * * *', shutdownInactiveGpus); // Run every 5 minutes
+            console.log('GPU Manager shutdownInactiveGpus job scheduled');
+        }
     });
+
+    closeWithGrace(async () => {
+        await new Promise((resolve, reject) => {
+            server.close((e) => (e ? reject(e) : resolve('ok')));
+        });
+    });
+}
+
+startServer().catch((e) => {
+    console.error(e);
+    process.exit(1);
 });

@@ -11,7 +11,8 @@
 -   [ ] Limit filesize of individual training images
 -   [ ] Allow training images to be deleted
 -   [ ] Convert S3 upload process to use signed urls and front-end upload in webapp
--   [ ] separate training subject type (style, man, woman, character, object, etc) from output name/trigger word
+-   [ ] Separate training subject type (style, man, woman, character, object, etc) from output name/trigger word
+-   [ ] Ensure prisma shares pino logging with express
 
 ## Pre launch
 

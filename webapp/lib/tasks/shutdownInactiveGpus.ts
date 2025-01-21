@@ -1,4 +1,3 @@
-import cron from 'node-cron';
 import { PrismaClient } from '@prisma/client';
 import axios from 'axios';
 
@@ -109,11 +108,4 @@ export async function shutdownInactiveGpus() {
 
         console.log(`Shut down inactive GPU instance: ${gpu}`);
     }
-}
-
-const USE_CRON = process.env.USE_CRON !== 'false';
-
-if (USE_CRON) {
-    cron.schedule('*/5 * * * *', shutdownInactiveGpus); // Run every 5 minutes
-    console.log('GPU Manager shutdownInactiveGpus job scheduled');
 }

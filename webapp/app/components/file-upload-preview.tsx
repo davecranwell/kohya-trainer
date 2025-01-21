@@ -49,8 +49,6 @@ export const FileUploadPreview: React.FC<FileUploadPreviewProps> = ({
     const handleFiles = async (newFiles: FileList) => {
         setIsDraggedOver(false);
 
-        console.log('newFiles', newFiles);
-
         const previousImagesArr = previousImages || [];
         const newFilesArr = Array.from(newFiles)
             .filter(isAcceptedFileAndNotPreviousImage)
@@ -62,8 +60,6 @@ export const FileUploadPreview: React.FC<FileUploadPreviewProps> = ({
                 type: newFile.type,
                 url: URL.createObjectURL(newFile!),
             }));
-
-        console.log('newFilesArr', newFilesArr);
 
         if (!newFilesArr.length) return;
 

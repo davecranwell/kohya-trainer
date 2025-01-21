@@ -4,7 +4,7 @@ FROM node:20-bookworm-slim AS base
 # set for base and all layer that inherit from it
 ENV NODE_ENV="production"
 
-RUN apt-get update && apt-get install -y fuse3 openssl sqlite3 ca-certificates
+RUN apt-get update && apt-get install -y openssl ca-certificates
 
 # Install all node_modules, including dev dependencies
 FROM base AS deps

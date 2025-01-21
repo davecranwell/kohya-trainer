@@ -29,7 +29,7 @@ It seems that whenever you create a new environment, you have to manually move i
 ### List envs:
 
 ```bash
-esc env list
+esc env ls
 ```
 
 ### Store env values:
@@ -111,13 +111,13 @@ aws ecr get-login-password --region us-east-1 | docker login --username AWS --pa
 
 # 2. Build the image
 
-docker build -t my-remix-app ./my-remix-app
+docker build -t webapp ./webapp
 
 # 3. Tag the image with your ECR repository URL
 
 # The URL format is: <account-id>.dkr.ecr.<region>.amazonaws.com/<repo-name>
 
-docker tag my-remix-app:latest 156041424020.dkr.ecr.us-east-1.amazonaws.com/modeller-repo-616f7bc:latest
+docker tag webapp:latest 156041424020.dkr.ecr.us-east-1.amazonaws.com/modeller-repo-616f7bc:latest
 
 # 4. Push the image
 

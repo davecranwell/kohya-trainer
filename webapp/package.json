@@ -4,14 +4,16 @@
     "sideEffects": false,
     "type": "module",
     "scripts": {
-        "build": "remix vite:build",
+        "build": "npm-run-all build:*",
+        "build:remix": "NODE_ENV=production remix vite:build",
+        "build:server": "NODE_ENV=production npx esbuild server/index.ts --outfile=build/index.cjs --platform=node --target=node22 --format=cjs --bundle --external:lightningcss --external:esbuild",
         "dev": "tsx --trace-warnings ./server/index.ts",
         "lint": "eslint --ignore-path .gitignore --cache --cache-location ./node_modules/.cache/eslint .",
-        "start": "NODE_ENV=production remix-serve ./build/server/index.js",
+        "start": "NODE_ENV=production node ./build/index.cjs",
         "typecheck": "tsc",
         "prisma:migrate": "prisma migrate dev",
         "prisma:seed": "prisma migrate reset --force",
-        "docker:build": "docker build -t my-remix-app:latest . "
+        "docker:build": "docker build -t webapp:latest . "
     },
     "dependencies": {
         "@auth/core": "^0.37.4",
@@ -48,6 +50,9 @@
         "isbot": "^4.1.0",
         "jsonc-parser": "^3.3.1",
         "node-cron": "^3.0.3",
+        "pino": "^9.6.0",
+        "pino-http": "^10.4.0",
+        "pino-pretty": "^13.0.0",
         "prisma": "^5.22.0",
         "react": "^18.2.0",
         "react-dom": "^18.2.0",
@@ -65,17 +70,20 @@
         "@types/compression": "^1.7.5",
         "@types/express": "^5.0.0",
         "@types/morgan": "^1.9.9",
+        "@types/node-cron": "^3.0.11",
         "@types/react": "^18.2.20",
         "@types/react-dom": "^18.2.7",
         "@typescript-eslint/eslint-plugin": "^8.18.2",
         "@typescript-eslint/parser": "^8.18.2",
         "autoprefixer": "^10.4.19",
+        "esbuild": "^0.24.2",
         "eslint": "^9.17.0",
         "eslint-import-resolver-typescript": "^3.7.0",
         "eslint-plugin-import": "^2.31.0",
         "eslint-plugin-jsx-a11y": "^6.10.2",
         "eslint-plugin-react": "^7.37.3",
         "eslint-plugin-react-hooks": "^5.1.0",
+        "npm-run-all": "^4.1.5",
         "postcss": "^8.4.38",
         "prettier": "^3.4.2",
         "prettier-plugin-prisma": "^5.0.0",
@@ -92,6 +100,6 @@
         "seed": "tsx ./prisma/seed.ts"
     },
     "engines": {
-        "node": ">=22.0.0"
+        "node": "22"
     }
 }
