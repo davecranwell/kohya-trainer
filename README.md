@@ -115,3 +115,13 @@ docker build . -t xcession2k/kohya_rest:latest --build-arg KOHYA_BUILD_REF=main
 docker login
 docker push xcession2k/kohya_rest:latest
 ```
+
+# Webapp build system
+
+We have to build the remix app, and the server separately. The server is built with esbuild, and the remix app is built with vite.
+
+Due to old dependencies without ESM in the server, the server is built with the --format=cjs flag. The remix app is built with the --format=esm flag.
+
+Due to the frustration of esbuild needing scripting for multiple files, the server is built with the --bundle flag as this includes all files imported.
+
+The server is built with a few externals like --external:lightningcss due to errors thrown by esbuild.
