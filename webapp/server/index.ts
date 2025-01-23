@@ -32,22 +32,36 @@ const USE_QUEUE = process.env.USE_QUEUE !== 'false';
 const PORT = process.env.PORT || 3000;
 
 const logger = pino({
-    level: process.env.LOG_LEVEL || 'error',
-    transport: !IS_PROD
+    level: process.env.LOG_LEVEL || 'info',
+    // Docker best practices require logging to stdout/stderr
+    // Remove transport configuration in production to ensure direct stdout logging
+    ...(IS_PROD
         ? {
-              target: 'pino-pretty',
-              options: {
-                  colorize: true,
-                  ignore: 'pid,hostname',
-                  translateTime: 'SYS:standard',
+              // Force stdout logging in production/Docker
+              destination: 1,
+              // Ensure JSON logging in production for better log aggregation
+              formatters: {
+                  level: (label) => ({ level: label }),
+                  // Add timestamp in ISO format for log aggregation systems
+                  bindings: () => ({
+                      pid: process.pid,
+                      time: new Date().toISOString(),
+                  }),
               },
           }
-        : undefined,
-    formatters: {
-        level: (label) => {
-            return { level: label };
-        },
-    },
+        : {
+              transport: {
+                  target: 'pino-pretty',
+                  options: {
+                      colorize: true,
+                      ignore: 'pid,hostname',
+                      translateTime: 'SYS:standard',
+                  },
+              },
+              formatters: {
+                  level: (label) => ({ level: label }),
+              },
+          }),
     // Redact sensitive info from logs
     redact: ['req.headers.authorization', 'req.headers.cookie'],
 });
@@ -76,6 +90,7 @@ app.disable('x-powered-by');
 let viteDevServer: any;
 
 if (!IS_PROD) {
+    console.log('Starting Vite dev server');
     // IFFE avoids complaints about top-level await in CJS format
     // We have to use CJS due to the number of dependencies that are not ESM
     (async () => {
@@ -168,21 +183,21 @@ app.use((req, res, next) => {
     return generalRateLimit(req, res, next);
 });
 
-app.use((err: Error, req: Request, res: Response, next: Function) => {
-    req.log.error(
-        {
-            err,
-            request: {
-                url: req.url,
-                method: req.method,
-                ip: req.ip,
-                userAgent: req.get('user-agent'),
-            },
-        },
-        'Unhandled error',
-    );
-    next(err);
-});
+// app.use((err: Error, req: Request, res: Response, next: Function) => {
+//     req.log.error(
+//         {
+//             err,
+//             request: {
+//                 url: req.url,
+//                 method: req.method,
+//                 ip: req.ip,
+//                 userAgent: req.get('user-agent'),
+//             },
+//         },
+//         'Unhandled error',
+//     );
+//     next(err);
+// });
 
 async function getBuild(): Promise<{ build: ServerBuild | null; error: Error | null }> {
     try {
