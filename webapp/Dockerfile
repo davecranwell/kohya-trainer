@@ -1,5 +1,5 @@
 # base node image
-FROM node:20-bookworm-slim AS base
+FROM node:22-bookworm-slim AS base
 
 # set for base and all layer that inherit from it
 ENV NODE_ENV="production"
@@ -37,13 +37,9 @@ ADD . .
 
 RUN npm run build
 
-# Finally, build the production image with minimal footprint
 FROM base
 
-# Install openssl for Prisma
 RUN apt-get update && apt-get install -y dumb-init
-
-ENV NODE_ENV="production"
 
 RUN groupadd --gid 1001 appgroup && useradd --uid 1001 --gid 1001 --create-home --shell /usr/sbin/nologin appuser
 USER appuser
@@ -61,4 +57,4 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 CMD bash -
 
 EXPOSE 3000
 
-CMD ["npm", "run", "start"]
+CMD ["dumb-init", "npm", "run", "start"]

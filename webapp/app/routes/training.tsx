@@ -53,7 +53,7 @@ export async function action({ request, params }: ActionFunctionArgs) {
 }
 
 export async function loader({ request }: LoaderFunctionArgs) {
-    const userId = await requireUserWithPermission(request, 'update:training:own');
+    const userId = await requireUserWithPermission(request, 'read:training:own');
 
     const trainings = await prisma.training.findMany({
         select: {

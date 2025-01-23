@@ -66,5 +66,5 @@ export function sanitiseTagArray(tagArray: string[]) {
 
 // a function which converts an S3 string pointing to an image file, to a string in which the file extension is replaced with _thumbnail.extension
 export function getThumbnailKey(s3Key: string) {
-    return s3Key.replace(/\.[^.]+$/, '_thumbnail$&');
+    return s3Key.replace(/\.[^.]+$/, '_thumbnail-200$&');
 }
