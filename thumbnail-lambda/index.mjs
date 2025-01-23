@@ -6,17 +6,19 @@ export const handler = async (event, context) => {
 
     // Get the bucket and key from the S3 event
     const bucket = event.Records[0].s3.bucket.name;
-    const key = decodeURIComponent(event.Records[0].s3.object.key.replace(/\+/g, ' '));
+    const uploadedKey = decodeURIComponent(event.Records[0].s3.object.key.replace(/\+/g, ' '));
 
     // Check if the key already contains '_thumbnail'
-    if (key.includes('_thumbnail')) {
-        console.log('Skipping file:', key);
+    if (uploadedKey.includes('_thumbnail')) {
+        console.log('Skipping file:', uploadedKey);
         return;
     }
 
     // Load the image from S3
-    const imageObject = await s3.send(new GetObjectCommand({ Bucket: bucket, Key: key }));
-    const image = sharp(imageObject.Body);
+    const imageObject = await s3.send(new GetObjectCommand({ Bucket: bucket, Key: uploadedKey }));
+    // We need to await the stream and convert it to a buffer before passing to sharp
+    const imageBuffer = await imageObject.Body.transformToByteArray();
+    const image = sharp(imageBuffer);
 
     const sizes = [
         {
@@ -24,7 +26,7 @@ export const handler = async (event, context) => {
             options: {
                 fit: 'inside',
             },
-            key: (key) => key.replace(/(\.[^.]+)$/, '_thumbnail-200$1'),
+            Key: (key) => key.replace(/(\.[^.]+)$/, '_thumbnail-200$1'),
         },
         {
             size: 2048,
@@ -32,7 +34,7 @@ export const handler = async (event, context) => {
                 fit: 'inside',
                 withoutEnlargement: true,
             },
-            key: (key) => key,
+            Key: (key) => key,
         },
     ];
 
@@ -40,7 +42,7 @@ export const handler = async (event, context) => {
         // https://sharp.pixelplumbing.com/api-resize#resize
         const thumbnail = await image.resize(size.size, size.size, size.options).toBuffer();
 
-        const key = size.key(key);
+        const key = size.Key(uploadedKey);
 
         await s3.send(
             new PutObjectCommand({
