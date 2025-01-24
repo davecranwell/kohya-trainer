@@ -19,6 +19,7 @@ export default defineConfig({
                 v3_throwAbortReason: true,
                 v3_singleFetch: true, // I thought this was bad because it creates a script tag that doesn't have the required nonce, but maybe not any more
                 v3_lazyRouteDiscovery: true,
+                v3_routeConfig: true,
             },
         }),
         tsconfigPaths(),

@@ -1,8 +1,7 @@
 import { getFormProps, getInputProps, getTextareaProps, useForm } from '@conform-to/react';
 import { getZodConstraint, parseWithZod } from '@conform-to/zod';
 import { type Training } from '@prisma/client';
-import { type SerializeFrom } from '@remix-run/node';
-import { Form, useActionData } from '@remix-run/react';
+import { Form, useActionData, useLoaderData } from '@remix-run/react';
 import { InfoCircledIcon } from '@radix-ui/react-icons';
 import { z } from 'zod';
 
@@ -20,6 +19,8 @@ export const TrainingEditorSchema = z.object({
     triggerWord: z.string().min(4).max(10),
     baseModel: z.string().url(),
 });
+
+type SerializeFrom<T> = ReturnType<typeof useLoaderData<T>>;
 
 export function TrainingEditor({ training }: { training?: SerializeFrom<Pick<Training, 'id' | 'name' | 'triggerWord' | 'baseModel'>> }) {
     const actionData = useActionData<typeof action>();

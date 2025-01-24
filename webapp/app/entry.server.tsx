@@ -7,7 +7,7 @@ import { isbot } from 'isbot';
 
 import { NonceProvider } from './util/nonce.provider';
 
-const ABORT_DELAY = 5_000;
+const streamTimeout = 5_000;
 
 export default async function handleRequest(
     request: Request,
@@ -59,6 +59,6 @@ export default async function handleRequest(
             },
         );
 
-        setTimeout(abort, ABORT_DELAY);
+        setTimeout(abort, streamTimeout + 1000);
     });
 }
