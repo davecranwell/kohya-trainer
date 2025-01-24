@@ -1,8 +1,8 @@
-import type { LinksFunction, MetaFunction, ActionFunctionArgs, LoaderFunctionArgs } from '@remix-run/node';
-import { redirect } from '@remix-run/node';
-import { useLoaderData } from '@remix-run/react';
+import type { LinksFunction, MetaFunction, ActionFunctionArgs, LoaderFunctionArgs } from 'react-router';
+import { redirect } from 'react-router';
+import { useLoaderData } from 'react-router';
 
-import { authenticator } from '~/services/auth.server';
+import { requireAuthenticated } from '~/services/auth.server';
 
 export const links: LinksFunction = () => {
     return [];
@@ -19,9 +19,8 @@ export async function action({ request }: ActionFunctionArgs) {
 }
 
 export async function loader({ request }: LoaderFunctionArgs) {
-    const user = await authenticator.isAuthenticated(request, {
-        failureRedirect: '/login',
-    });
+    const user = await requireAuthenticated(request);
+
     return redirect('/training');
 }
 

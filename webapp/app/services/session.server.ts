@@ -1,4 +1,4 @@
-import { createCookieSessionStorage } from '@remix-run/node';
+import { createCookieSessionStorage } from 'react-router';
 
 export const getSessionExpirationDate = () => new Date(Date.now() + 1000 * 60 * 60 * 24 * 30);
 

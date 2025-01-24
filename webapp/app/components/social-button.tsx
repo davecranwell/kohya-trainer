@@ -1,4 +1,4 @@
-import { Form } from '@remix-run/react';
+import { Form } from 'react-router';
 
 interface SocialButtonProps {
     provider: 'discord' | 'facebook' | 'github' | 'google' | 'microsoft';

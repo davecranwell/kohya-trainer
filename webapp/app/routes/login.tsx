@@ -1,13 +1,13 @@
-import type { ActionFunctionArgs, LoaderFunctionArgs } from '@remix-run/node';
-import { Form, json, Link, useActionData, useLoaderData } from '@remix-run/react';
+import type { ActionFunctionArgs, LoaderFunctionArgs } from 'react-router';
+import { Form, Link, redirect, useActionData, useLoaderData } from 'react-router';
 import { getZodConstraint, parseWithZod } from '@conform-to/zod';
 import { getFormProps, getInputProps, useForm } from '@conform-to/react';
 
 import { z } from 'zod';
-import { AuthorizationError } from 'remix-auth';
 
-import { authenticator } from '~/services/auth.server';
+import { authenticator, isAuthenticated, requireAuthenticated } from '~/services/auth.server';
 import { useIsPending } from '~/util/hooks';
+import { sessionStorage, getSession, destroySession } from '~/services/session.server';
 
 import { ErrorList, Field, Fieldset } from '~/components/forms';
 import { SocialButton } from '~/components/social-button';
@@ -37,22 +37,26 @@ export async function action({ request }: ActionFunctionArgs) {
     }
 
     try {
-        return await authenticator.authenticate('email-pass', request, {
-            successRedirect: '/dashboard',
-            throwOnError: true,
+        const user = await authenticator.authenticate('email-pass', request);
+
+        const session = await sessionStorage.getSession(request.headers.get('cookie'));
+        session.set('user', user);
+
+        throw redirect('/', {
+            headers: { 'Set-Cookie': await sessionStorage.commitSession(session) },
         });
     } catch (error) {
         if (error instanceof Response) return error;
-        if (error instanceof AuthorizationError) {
+        if (error instanceof Error) {
             return submission.reply({ formErrors: ['No account found with this email or password'] });
         }
     }
 }
 
 export async function loader({ request }: LoaderFunctionArgs) {
-    await authenticator.isAuthenticated(request, {
-        successRedirect: '/training',
-    });
+    if (await isAuthenticated(request)) {
+        return redirect('/dashboard');
+    }
 
     return null;
 }

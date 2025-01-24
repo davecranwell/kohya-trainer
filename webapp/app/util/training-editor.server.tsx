@@ -1,5 +1,5 @@
 import { parseWithZod } from '@conform-to/zod';
-import { data, type ActionFunctionArgs } from '@remix-run/node';
+import { data, type ActionFunctionArgs } from 'react-router';
 import { z } from 'zod';
 
 import prisma from '../../prisma/db.server';

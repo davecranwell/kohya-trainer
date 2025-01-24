@@ -1,6 +1,6 @@
-import { Links, Meta, Outlet, Scripts, ScrollRestoration, useLoaderData } from '@remix-run/react';
-import type { LinksFunction, LoaderFunctionArgs } from '@remix-run/node';
-import { data } from '@remix-run/node';
+import { Links, Meta, Outlet, Scripts, ScrollRestoration, useLoaderData } from 'react-router';
+import type { LinksFunction, LoaderFunctionArgs } from 'react-router';
+import { data } from 'react-router';
 import { CheckCircledIcon, ExclamationTriangleIcon, InfoCircledIcon } from '@radix-ui/react-icons';
 
 import { useNonce } from '~/util/nonce.provider';
@@ -36,6 +36,8 @@ export async function loader({ request }: LoaderFunctionArgs) {
 
 export function Layout({ children }: { children: React.ReactNode }) {
     const nonce = useNonce();
+    const data = useLoaderData<typeof loader>();
+    useToast(data.toast);
 
     return (
         <html lang="en">

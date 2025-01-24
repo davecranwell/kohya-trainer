@@ -1,7 +1,7 @@
 import { getFormProps, getInputProps, getTextareaProps, useForm } from '@conform-to/react';
 import { getZodConstraint, parseWithZod } from '@conform-to/zod';
 import { type Training } from '@prisma/client';
-import { Form, useActionData, useLoaderData } from '@remix-run/react';
+import { Form, useActionData, useLoaderData } from 'react-router';
 import { InfoCircledIcon } from '@radix-ui/react-icons';
 import { z } from 'zod';
 

@@ -1,5 +1,5 @@
 import crypto from 'crypto';
-import { type ActionFunctionArgs, data } from '@remix-run/node';
+import { type ActionFunctionArgs, data } from 'react-router';
 
 import prisma from '#/prisma/db.server';
 

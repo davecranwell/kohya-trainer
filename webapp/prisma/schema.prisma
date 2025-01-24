@@ -34,7 +34,6 @@ model Training {
   status       String   @default("")
   gpu   Gpu? @relation(fields: [gpuId], references: [id])
   gpuId String? @unique
-  progress   Json? 
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

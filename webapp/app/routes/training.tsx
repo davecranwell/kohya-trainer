@@ -1,7 +1,6 @@
 import { useEffect } from 'react';
-import { data, type LoaderFunctionArgs } from '@remix-run/node';
-import { type ActionFunctionArgs } from '@remix-run/node';
-import { Form, NavLink, Outlet, useLoaderData } from '@remix-run/react';
+import { data, type LoaderFunctionArgs, Form, NavLink, Outlet, useLoaderData } from 'react-router';
+import { type ActionFunctionArgs } from 'react-router';
 import { ImageIcon, LightningBoltIcon, Pencil1Icon, UploadIcon } from '@radix-ui/react-icons';
 import { useEventSource } from 'remix-utils/sse/react';
 import clsx from 'clsx';

@@ -1,14 +1,15 @@
 import { useState, useEffect } from 'react';
-import { Form, Links, useLoaderData } from '@remix-run/react';
-import type { LoaderFunctionArgs, UploadHandler } from '@remix-run/node';
+import { Form, Links, useLoaderData } from 'react-router';
+import type { LoaderFunctionArgs } from 'react-router';
 import {
-    json,
-    unstable_parseMultipartFormData,
+    data,
+    // unstable_parseMultipartFormData,
     ActionFunctionArgs,
-    unstable_createMemoryUploadHandler,
-    unstable_composeUploadHandlers,
-} from '@remix-run/node';
+    // unstable_createMemoryUploadHandler,
+    // unstable_composeUploadHandlers,
+} from 'react-router';
 import { useEventSource } from 'remix-utils/sse/react';
+import { type FileUpload, parseFormData } from '@mjackson/form-data-parser';
 
 import prisma from '../../prisma/db.server';
 
@@ -40,54 +41,54 @@ export const action = async ({ params, request }: ActionFunctionArgs) => {
     });
 
     if (!trainingId) {
-        throw json('Not found', { status: 404 });
+        throw data('Not found', { status: 404 });
     }
 
-    const s3UploaderHandler: UploadHandler = async (field) => {
-        const { name, data, filename, contentType } = field;
-        if (name !== 'images' || !filename || !contentType.startsWith('image/')) {
-            return undefined;
-        }
+    // const s3UploaderHandler: UploadHandler = async (field) => {
+    //     const { name, data, filename, contentType } = field;
+    //     if (name !== 'images' || !filename || !contentType.startsWith('image/')) {
+    //         return undefined;
+    //     }
 
-        return await uploadStreamToS3(data, filename!, contentType, userId, trainingId, (progress) => {
-            emitter.emit(userId, JSON.stringify(progress));
-        });
-    };
+    //     return await uploadStreamToS3(data, filename!, contentType, userId, trainingId, (progress) => {
+    //         emitter.emit(userId, JSON.stringify(progress));
+    //     });
+    // };
 
-    const uploadHandler = unstable_composeUploadHandlers(s3UploaderHandler, unstable_createMemoryUploadHandler());
+    // const uploadHandler = unstable_composeUploadHandlers(s3UploaderHandler, unstable_createMemoryUploadHandler());
 
-    const formData = await unstable_parseMultipartFormData(request, uploadHandler);
+    // const formData = await unstable_parseMultipartFormData(request, uploadHandler);
 
-    // For some reason formgetAll('images') returns an array with a single File object, when empty.
-    // We have filter that out.
-    if (typeof formData.getAll('images')[0] === 'string') {
-        //limit the number of images to MAX_IMAGES, minus the number of images we already have in the DB
-        const imagesToCreate = Math.min(MAX_IMAGES - trainingImages.length, formData.getAll('images').length);
+    // // For some reason formgetAll('images') returns an array with a single File object, when empty.
+    // // We have filter that out.
+    // if (typeof formData.getAll('images')[0] === 'string') {
+    //     //limit the number of images to MAX_IMAGES, minus the number of images we already have in the DB
+    //     const imagesToCreate = Math.min(MAX_IMAGES - trainingImages.length, formData.getAll('images').length);
 
-        await prisma.trainingImage.createMany({
-            data: (formData.getAll('images') as string[]).slice(0, imagesToCreate).map((url) => {
-                // S3 upload results in a URL being returned for each image, but we want to access the filename so we can store its name separate from its URL
-                const fileName = url.split('/').pop();
+    //     await prisma.trainingImage.createMany({
+    //         data: (formData.getAll('images') as string[]).slice(0, imagesToCreate).map((url) => {
+    //             // S3 upload results in a URL being returned for each image, but we want to access the filename so we can store its name separate from its URL
+    //             const fileName = url.split('/').pop();
 
-                return {
-                    text: formData.get(`${fileName}-tags`) as string,
-                    url: url as string,
-                    name: fileName as string,
-                    trainingId: params.id!,
-                    type: 'image/jpeg',
-                };
-            }),
-        });
-    }
+    //             return {
+    //                 text: formData.get(`${fileName}-tags`) as string,
+    //                 url: url as string,
+    //                 name: fileName as string,
+    //                 trainingId: params.id!,
+    //                 type: 'image/jpeg',
+    //             };
+    //         }),
+    //     });
+    // }
 
-    // loop through each image and update the text
-    for (const image of trainingImages) {
-        const text = formData.get(`${image.id}-tags`) as string | null;
-        await prisma.trainingImage.update({
-            where: { id: image.id },
-            data: { text },
-        });
-    }
+    // // loop through each image and update the text
+    // for (const image of trainingImages) {
+    //     const text = formData.get(`${image.id}-tags`) as string | null;
+    //     await prisma.trainingImage.update({
+    //         where: { id: image.id },
+    //         data: { text },
+    //     });
+    // }
 
     return redirectWithToast(`/training/${params.id}/upload`, {
         type: 'success',
@@ -104,7 +105,7 @@ export async function loader({ params, request }: LoaderFunctionArgs) {
     });
 
     if (!training) {
-        throw json('Not found', { status: 404 });
+        throw data('Not found', { status: 404 });
     }
 
     const images = await prisma.trainingImage.findMany({
@@ -118,7 +119,7 @@ export async function loader({ params, request }: LoaderFunctionArgs) {
         where: { trainingId: params.id },
     });
 
-    return json({ userId, images, trainingId: params.id });
+    return { userId, images, trainingId: params.id };
 }
 
 export default function ImageUpload() {

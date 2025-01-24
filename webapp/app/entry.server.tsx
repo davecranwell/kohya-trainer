@@ -1,7 +1,7 @@
 import { PassThrough } from 'node:stream';
-import type { AppLoadContext, EntryContext, HandleDocumentRequestFunction } from '@remix-run/node';
-import { createReadableStreamFromReadable } from '@remix-run/node';
-import { RemixServer } from '@remix-run/react';
+import type { AppLoadContext, EntryContext, HandleDocumentRequestFunction } from 'react-router';
+import { createReadableStreamFromReadable } from '@react-router/node';
+import { ServerRouter } from 'react-router';
 import { renderToPipeableStream } from 'react-dom/server';
 import { isbot } from 'isbot';
 
@@ -13,7 +13,7 @@ export default async function handleRequest(
     request: Request,
     responseStatusCode: number,
     responseHeaders: Headers,
-    remixContext: EntryContext,
+    reactRouterContext: EntryContext,
     loadContext: AppLoadContext,
 ) {
     const callbackName = isbot(request.headers.get('user-agent')) ? 'onAllReady' : 'onShellReady';
@@ -25,7 +25,7 @@ export default async function handleRequest(
 
         const { pipe, abort } = renderToPipeableStream(
             <NonceProvider value={nonce}>
-                <RemixServer nonce={nonce} context={remixContext} url={request.url} />
+                <ServerRouter nonce={nonce} context={reactRouterContext} url={request.url} />
             </NonceProvider>,
             {
                 [callbackName]: () => {

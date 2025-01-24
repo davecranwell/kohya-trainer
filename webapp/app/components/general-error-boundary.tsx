@@ -1,4 +1,4 @@
-import { isRouteErrorResponse, useParams, useRouteError } from '@remix-run/react';
+import { isRouteErrorResponse, useParams, useRouteError } from 'react-router';
 
 const IS_PROD = process.env.NODE_ENV === 'production';
 

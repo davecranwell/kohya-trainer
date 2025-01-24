@@ -1,6 +1,6 @@
-import { data } from '@remix-run/node'; // or cloudflare/deno
-import type { MetaFunction } from '@remix-run/node';
-import { type LoaderFunctionArgs } from '@remix-run/node';
+import { data } from 'react-router'; // or cloudflare/deno
+import type { MetaFunction } from 'react-router';
+import { type LoaderFunctionArgs } from 'react-router';
 
 import prisma from '../../prisma/db.server';
 

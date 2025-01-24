@@ -9,8 +9,8 @@ import pino from 'pino';
 import pinoHttp from 'pino-http';
 import rateLimit from 'express-rate-limit';
 import type { Request, Response } from 'express';
-import { createRequestHandler } from '@remix-run/express';
-import type { ServerBuild } from '@remix-run/node';
+import { createRequestHandler } from '@react-router/express';
+import type { ServerBuild } from 'react-router';
 
 import { subscribeToTasks } from '../lib/task.server';
 import { shutdownInactiveGpus } from '../lib/tasks/shutdownInactiveGpus';
@@ -184,7 +184,7 @@ async function startServer() {
     async function getBuild(): Promise<{ build: ServerBuild | null; error: Error | null }> {
         try {
             const build = viteDevServer
-                ? await viteDevServer.ssrLoadModule('virtual:remix/server-build')
+                ? await viteDevServer.ssrLoadModule('virtual:react-router/server-build')
                 : // eslint-disable-next-line import/no-unresolved
                   await import('../build/server/index.js');
 

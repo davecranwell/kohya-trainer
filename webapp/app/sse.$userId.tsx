@@ -1,4 +1,4 @@
-import { LoaderFunction } from '@remix-run/node';
+import { LoaderFunction } from 'react-router';
 import { eventStream } from 'remix-utils/sse/server';
 
 import { emitter } from '~/util/emitter.server';

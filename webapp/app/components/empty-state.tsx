@@ -1,5 +1,5 @@
 import { PlusIcon } from '@radix-ui/react-icons';
-import { NavLink } from '@remix-run/react';
+import { NavLink } from 'react-router';
 import { Button } from './button';
 
 export function EmptyState({

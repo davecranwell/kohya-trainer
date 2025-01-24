@@ -1,4 +1,4 @@
-import { data, type LoaderFunctionArgs } from '@remix-run/node';
+import { data, type LoaderFunctionArgs } from 'react-router';
 import fs from 'fs';
 import path from 'path';
 

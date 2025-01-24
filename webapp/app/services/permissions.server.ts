@@ -1,13 +1,11 @@
-import { data } from '@remix-run/node';
+import { data } from 'react-router';
 
-import { authenticator } from './auth.server';
+import { authenticator, requireAuthenticated } from './auth.server';
 import prisma from '../../prisma/db.server';
 import { type PermissionString, parsePermissionString } from './user.server';
 
 export async function requireUserWithPermission(request: Request, permission: PermissionString) {
-    const authenticatedUser = await authenticator.isAuthenticated(request, {
-        failureRedirect: '/login',
-    });
+    const authenticatedUser = await requireAuthenticated(request);
 
     const permissionData = parsePermissionString(permission);
 
@@ -36,9 +34,7 @@ export async function requireUserWithPermission(request: Request, permission: Pe
 }
 
 export async function requireUserWithRole(request: Request, name: string) {
-    const { id: userId } = await authenticator.isAuthenticated(request, {
-        failureRedirect: '/login',
-    });
+    const { id: userId } = await requireAuthenticated(request);
 
     const user = await prisma.user.findFirst({
         select: { id: true },

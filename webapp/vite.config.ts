@@ -1,27 +1,11 @@
-import { vitePlugin as remix } from '@remix-run/dev';
+import { reactRouter } from '@react-router/dev/vite';
 import { defineConfig } from 'vite';
 import tsconfigPaths from 'vite-tsconfig-paths';
 import { parse } from 'jsonc-parser';
 
-declare module '@remix-run/node' {
-    interface Future {
-        v3_singleFetch: true;
-    }
-}
-
 export default defineConfig({
     plugins: [
-        remix({
-            future: {
-                unstable_optimizeDeps: true,
-                v3_fetcherPersist: true,
-                v3_relativeSplatPath: true,
-                v3_throwAbortReason: true,
-                v3_singleFetch: true, // I thought this was bad because it creates a script tag that doesn't have the required nonce, but maybe not any more
-                v3_lazyRouteDiscovery: true,
-                v3_routeConfig: true,
-            },
-        }),
+        reactRouter(),
         tsconfigPaths(),
         {
             name: 'vite-plugin-jsonc',

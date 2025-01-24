@@ -1,5 +1,5 @@
 import { User } from '@prisma/client';
-import { useRouteLoaderData } from '@remix-run/react';
+import { useRouteLoaderData } from 'react-router';
 import { type loader as rootLoader } from '~/root';
 
 // function isUser(user: any): user is SerializeFrom<typeof rootLoader>['user'] {
@@ -25,6 +25,7 @@ import { type loader as rootLoader } from '~/root';
 type Action = 'create' | 'read' | 'update' | 'delete';
 type Entity = 'user' | 'training';
 type Access = 'own' | 'any' | 'own,any' | 'any,own';
+
 export type PermissionString = `${Action}:${Entity}` | `${Action}:${Entity}:${Access}`;
 
 export function parsePermissionString(permissionString: PermissionString) {

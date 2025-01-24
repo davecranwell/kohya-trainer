@@ -1,11 +1,10 @@
-import type { ActionFunctionArgs, LoaderFunctionArgs } from '@remix-run/node';
-import { Form, Link, useActionData } from '@remix-run/react';
+import type { ActionFunctionArgs, LoaderFunctionArgs } from 'react-router';
+import { Form, Link, useActionData } from 'react-router';
 import { getZodConstraint, parseWithZod } from '@conform-to/zod';
 import { getFormProps, getInputProps, useForm } from '@conform-to/react';
 import { z } from 'zod';
-import { AuthorizationError } from 'remix-auth';
 
-import { authenticator } from '~/services/auth.server';
+import { authenticator, requireAuthenticated } from '~/services/auth.server';
 
 import { ErrorList, Field, Fieldset } from '~/components/forms';
 import { SocialButton } from '~/components/social-button';
@@ -37,22 +36,17 @@ export async function action({ request }: ActionFunctionArgs) {
     }
 
     try {
-        return await authenticator.authenticate('email-pass', request, {
-            successRedirect: '/dashboard',
-            throwOnError: true,
-        });
+        return await authenticator.authenticate('email-pass', request);
     } catch (error) {
         if (error instanceof Response) return error;
-        if (error instanceof AuthorizationError) {
+        if (error instanceof Error) {
             return submission.reply({ formErrors: ['Invalid username or password'] });
         }
     }
 }
 
 export async function loader({ request }: LoaderFunctionArgs) {
-    await authenticator.isAuthenticated(request, {
-        successRedirect: '/dashboard',
-    });
+    await requireAuthenticated(request, '/dashboard');
 
     return null;
 }
