@@ -99,13 +99,8 @@ export async function loader({ params, request }: LoaderFunctionArgs) {
     const userId = await requireUserWithPermission(request, 'create:training:own');
 
     const training = await prisma.training.findFirst({
-        select: {
-            id: true,
-        },
-        where: {
-            id: params.id,
-            ownerId: userId,
-        },
+        select: { id: true },
+        where: { id: params.id, ownerId: userId },
     });
 
     if (!training) {
@@ -120,9 +115,7 @@ export async function loader({ params, request }: LoaderFunctionArgs) {
             url: true,
             type: true,
         },
-        where: {
-            trainingId: params.id,
-        },
+        where: { trainingId: params.id },
     });
 
     return json({ userId, images, trainingId: params.id });
@@ -161,6 +154,7 @@ export default function ImageUpload() {
         newImages: ImageWithMetadata[];
         tags: string[];
     }) => {
+        console.log('newImages', newImages);
         setNewImages((prev) => [...prev, ...newImages] as ImageWithMetadata[]);
         setUploadedImages(
             (prev) =>
@@ -285,7 +279,7 @@ export default function ImageUpload() {
                                 />
 
                                 <div className="ml-2 flex-1">
-                                    <Label htmlFor={`${image.name}-text`}>Tags</Label>
+                                    <Label htmlFor={`${image.id || image.name}-tags`}>Tags</Label>
                                     <MultiComboBox
                                         name={`${image.id || image.name}-tags`}
                                         defaultValue={image.text}
