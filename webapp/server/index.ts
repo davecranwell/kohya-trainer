@@ -81,164 +81,147 @@ const httpLogger = pinoHttp({
     },
 });
 
-const app = express();
+async function startServer() {
+    const app = express();
 
-app.use(compression());
-app.use(httpLogger);
-app.disable('x-powered-by');
+    app.use(compression());
+    app.use(httpLogger);
+    app.disable('x-powered-by');
 
-let viteDevServer: any;
+    // Create dev server first so we can use it in the request handler
+    const viteDevServer = IS_PROD
+        ? undefined
+        : await import('vite').then((vite) =>
+              vite.createServer({
+                  server: { middlewareMode: true },
+                  // Required for HMR to work properly
+                  appType: 'custom',
+              }),
+          );
 
-if (!IS_PROD) {
-    console.log('Starting Vite dev server');
-    // IFFE avoids complaints about top-level await in CJS format
-    // We have to use CJS due to the number of dependencies that are not ESM
-    (async () => {
-        viteDevServer = await import('vite').then((vite) =>
-            vite.createServer({
-                server: { middlewareMode: true },
-                // Required for HMR to work properly
-                appType: 'custom',
-            }),
-        );
+    if (viteDevServer) {
         app.use(viteDevServer.middlewares);
-    })();
-} else {
-    // Remix fingerprints its assets so we can cache forever.
-    app.use('/assets', express.static('build/client/assets', { immutable: true, maxAge: '1y' }));
+    } else {
+        // Remix fingerprints its assets so we can cache forever.
+        app.use('/assets', express.static('build/client/assets', { immutable: true, maxAge: '1y' }));
 
-    // Everything else (like favicon.ico) is cached for an hour. You may want to be
-    // more aggressive with this caching.
-    app.use(express.static('build/client', { maxAge: '1h' }));
-}
-
-app.use((req, res, next) => {
-    res.locals.cspNonce = crypto.randomBytes(16).toString('hex');
-    next();
-});
-
-app.use(
-    helmet({
-        frameguard: { action: 'deny' },
-        xPoweredBy: false,
-        referrerPolicy: { policy: 'same-origin' },
-        crossOriginEmbedderPolicy: false,
-        contentSecurityPolicy: {
-            directives: {
-                'font-src': ["'self'", 'fonts.gstatic.com'],
-                'frame-src': ["'self'"],
-                'img-src': ["'self'", 'data:', 'blob:'],
-                'connect-src': ["'self'", 'ws://localhost:*'],
-                'script-src': ["'strict-dynamic'", "'self'", (_, res) => `'nonce-${(res as Response).locals.cspNonce}'`],
-                'script-src-attr': [(_, res) => `'nonce-${(res as Response).locals.cspNonce}'`],
-                'upgrade-insecure-requests': null,
-            },
-        },
-    }),
-);
-
-// When running tests or running in development, we want to effectively disable
-// rate limiting because playwright tests are very fast and we don't want to
-// have to wait for the rate limit to reset between tests.
-const maxMultiple = !IS_PROD || process.env.PLAYWRIGHT_TEST_BASE_URL ? 10_000 : 1;
-
-const rateLimitDefault = {
-    windowMs: 60 * 1000,
-    max: 1000 * maxMultiple,
-    standardHeaders: true,
-    legacyHeaders: false,
-    validate: { trustProxy: false },
-};
-
-const strongestRateLimit = rateLimit({
-    ...rateLimitDefault,
-    windowMs: 60 * 1000,
-    max: 10 * maxMultiple,
-});
-
-const strongRateLimit = rateLimit({
-    ...rateLimitDefault,
-    windowMs: 60 * 1000,
-    max: 100 * maxMultiple,
-});
-
-const strongPaths = ['/login', '/sign-up', '/verify', '/reset-password'];
-
-const generalRateLimit = rateLimit(rateLimitDefault);
-
-app.use((req, res, next) => {
-    if (req.method !== 'GET' && req.method !== 'HEAD') {
-        if (strongPaths.some((p) => req.path.includes(p))) {
-            return strongestRateLimit(req, res, next);
-        }
-        return strongRateLimit(req, res, next);
+        // Everything else (like favicon.ico) is cached for an hour. You may want to be
+        // more aggressive with this caching.
+        app.use(express.static('build/client', { maxAge: '1h' }));
     }
 
-    // the verify route is a special case because it's a GET route that
-    // can have a token in the query string
-    if (req.path.includes('/verify')) {
-        return strongestRateLimit(req, res, next);
-    }
-
-    return generalRateLimit(req, res, next);
-});
-
-// app.use((err: Error, req: Request, res: Response, next: Function) => {
-//     req.log.error(
-//         {
-//             err,
-//             request: {
-//                 url: req.url,
-//                 method: req.method,
-//                 ip: req.ip,
-//                 userAgent: req.get('user-agent'),
-//             },
-//         },
-//         'Unhandled error',
-//     );
-//     next(err);
-// });
-
-async function getBuild(): Promise<{ build: ServerBuild | null; error: Error | null }> {
-    try {
-        const build = IS_PROD ? await import('../build/server/index.js') : await viteDevServer.ssrLoadModule('virtual:remix/server-build');
-
-        // eslint-disable-next-line import/no-unresolved
-        return { build: build as ServerBuild, error: null };
-    } catch (error) {
-        console.error('Error creating build:', error);
-        return { error: error as Error, build: null };
-    }
-}
-
-if (!ALLOW_INDEXING) {
-    console.log('Disabling indexing');
     app.use((req, res, next) => {
-        res.set('X-Robots-Tag', 'noindex, nofollow');
+        res.locals.cspNonce = crypto.randomBytes(16).toString('hex');
         next();
     });
-}
 
-app.all(
-    '*',
-    createRequestHandler({
-        getLoadContext: (req: Request, res: Response) => ({
-            cspNonce: res.locals.cspNonce,
-            serverBuild: getBuild(),
+    app.use(
+        helmet({
+            frameguard: { action: 'deny' },
+            xPoweredBy: false,
+            referrerPolicy: { policy: 'same-origin' },
+            crossOriginEmbedderPolicy: false,
+            contentSecurityPolicy: {
+                directives: {
+                    'font-src': ["'self'", 'fonts.gstatic.com'],
+                    'frame-src': ["'self'"],
+                    'img-src': ["'self'", 'data:', 'blob:', 'https://my-image-resize-bucket.s3.us-east-1.amazonaws.com'],
+                    'connect-src': ["'self'", 'ws://localhost:*'],
+                    'script-src': ["'strict-dynamic'", "'self'", (_, res) => `'nonce-${(res as Response).locals.cspNonce}'`],
+                    'script-src-attr': [(_, res) => `'nonce-${(res as Response).locals.cspNonce}'`],
+                    'upgrade-insecure-requests': null,
+                },
+            },
         }),
-        mode: MODE,
-        // Ensure we handle the build properly and never return null
-        build: async () => {
-            const { error, build } = await getBuild();
-            if (error || !build) {
-                throw error || new Error('Failed to load build');
-            }
-            return build as ServerBuild;
-        },
-    }),
-);
+    );
 
-async function startServer() {
+    // When running tests or running in development, we want to effectively disable
+    // rate limiting because playwright tests are very fast and we don't want to
+    // have to wait for the rate limit to reset between tests.
+    const maxMultiple = !IS_PROD || process.env.PLAYWRIGHT_TEST_BASE_URL ? 10_000 : 1;
+
+    const rateLimitDefault = {
+        windowMs: 60 * 1000,
+        max: 1000 * maxMultiple,
+        standardHeaders: true,
+        legacyHeaders: false,
+        validate: { trustProxy: false },
+    };
+
+    const strongestRateLimit = rateLimit({
+        ...rateLimitDefault,
+        windowMs: 60 * 1000,
+        max: 10 * maxMultiple,
+    });
+
+    const strongRateLimit = rateLimit({
+        ...rateLimitDefault,
+        windowMs: 60 * 1000,
+        max: 100 * maxMultiple,
+    });
+
+    const strongPaths = ['/login', '/signup', '/verify', '/reset-password'];
+
+    const generalRateLimit = rateLimit(rateLimitDefault);
+
+    app.use((req, res, next) => {
+        if (req.method !== 'GET' && req.method !== 'HEAD') {
+            if (strongPaths.some((p) => req.path.includes(p))) {
+                return strongestRateLimit(req, res, next);
+            }
+            return strongRateLimit(req, res, next);
+        }
+
+        // the verify route is a special case because it's a GET route that
+        // can have a token in the query string
+        if (req.path.includes('/verify')) {
+            return strongestRateLimit(req, res, next);
+        }
+
+        return generalRateLimit(req, res, next);
+    });
+
+    async function getBuild(): Promise<{ build: ServerBuild | null; error: Error | null }> {
+        try {
+            const build = viteDevServer
+                ? await viteDevServer.ssrLoadModule('virtual:remix/server-build')
+                : // eslint-disable-next-line import/no-unresolved
+                  await import('../build/server/index.js');
+
+            return { build: build as ServerBuild, error: null };
+        } catch (error) {
+            console.error('Error creating build:', error);
+            return { error: error as Error, build: null };
+        }
+    }
+
+    if (!ALLOW_INDEXING) {
+        console.log('Disabling indexing');
+        app.use((req, res, next) => {
+            res.set('X-Robots-Tag', 'noindex, nofollow');
+            next();
+        });
+    }
+
+    app.all(
+        '*',
+        createRequestHandler({
+            getLoadContext: (req: Request, res: Response) => ({
+                cspNonce: res.locals.cspNonce,
+                serverBuild: getBuild(),
+            }),
+            mode: MODE,
+            // Ensure we handle the build properly and never return null
+            build: async () => {
+                const { error, build } = await getBuild();
+                if (error || !build) {
+                    throw error || new Error('Failed to load build');
+                }
+                return build as ServerBuild;
+            },
+        }),
+    );
+
     const server = app.listen(PORT, async () => {
         console.log(`🚀 We have liftoff!`);
         console.log(`http://localhost:${PORT}`);
