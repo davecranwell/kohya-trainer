@@ -67,6 +67,8 @@
     },
     "devDependencies": {
         "@remix-run/dev": "^2.13.1",
+        "@remix-run/fs-routes": "^2.15.2",
+        "@remix-run/route-config": "^2.15.2",
         "@types/compression": "^1.7.5",
         "@types/express": "^5.0.0",
         "@types/morgan": "^1.9.9",
