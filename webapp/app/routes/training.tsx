@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { json, type LoaderFunctionArgs } from '@remix-run/node';
+import { data, type LoaderFunctionArgs } from '@remix-run/node';
 import { type ActionFunctionArgs } from '@remix-run/node';
 import { Form, NavLink, Outlet, useLoaderData } from '@remix-run/react';
 import { ImageIcon, LightningBoltIcon, Pencil1Icon, UploadIcon } from '@radix-ui/react-icons';
@@ -24,7 +24,7 @@ export async function action({ request, params }: ActionFunctionArgs) {
     const trainingId = formData.get('trainingId');
 
     if (typeof trainingId !== 'string') {
-        return json({ error: 'Invalid training ID' }, { status: 400 });
+        return data({ error: 'Invalid training ID' }, { status: 400 });
     }
 
     //prevent duplicate tasks
@@ -33,7 +33,7 @@ export async function action({ request, params }: ActionFunctionArgs) {
     });
 
     if (training?.status) {
-        return json({ error: 'Training already started' }, { status: 400 });
+        return data({ error: 'Training already started' }, { status: 400 });
     }
 
     try {
@@ -80,7 +80,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
         },
     });
 
-    return json({ userId, trainings });
+    return { userId, trainings };
 }
 
 export default function TrainingPage() {

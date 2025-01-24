@@ -1,4 +1,4 @@
-import { json } from '@remix-run/node'; // or cloudflare/deno
+import { data } from '@remix-run/node'; // or cloudflare/deno
 import type { MetaFunction } from '@remix-run/node';
 import { type LoaderFunctionArgs } from '@remix-run/node';
 
@@ -9,8 +9,8 @@ export async function loader({ request }: LoaderFunctionArgs) {
         await prisma.$queryRaw`SELECT 1`;
     } catch (error) {
         console.error(error);
-        return json({ error: 'Database connection failed' }, { status: 200 });
+        return data({ error: 'Database connection failed' }, { status: 200 });
     }
 
-    return json({ message: 'OK' });
+    return { message: 'OK' };
 }

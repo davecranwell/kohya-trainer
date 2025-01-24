@@ -1,5 +1,7 @@
-import { json, Links, Meta, Outlet, Scripts, ScrollRestoration, useLoaderData } from '@remix-run/react';
+import { Links, Meta, Outlet, Scripts, ScrollRestoration, useLoaderData } from '@remix-run/react';
 import type { LinksFunction, LoaderFunctionArgs } from '@remix-run/node';
+import { data } from '@remix-run/node';
+import { CheckCircledIcon, ExclamationTriangleIcon, InfoCircledIcon } from '@radix-ui/react-icons';
 
 import { useNonce } from '~/util/nonce.provider';
 import { useToast } from '~/util/hooks';
@@ -12,7 +14,6 @@ import { TooltipProvider } from '~/components/tooltip';
 import { Toaster } from '~/components/toaster';
 
 import './tailwind.css';
-import { CheckCircledIcon, ExclamationTriangleIcon, InfoCircledIcon } from '@radix-ui/react-icons';
 
 export const links: LinksFunction = () => [
     { rel: 'preconnect', href: 'https://fonts.googleapis.com' },
@@ -30,7 +31,7 @@ export const links: LinksFunction = () => [
 export async function loader({ request }: LoaderFunctionArgs) {
     const { toast, headers: toastHeaders } = await getToast(request);
 
-    return json({ toast }, { headers: combineHeaders(toastHeaders) });
+    return data({ toast }, { headers: combineHeaders(toastHeaders) });
 }
 
 export function Layout({ children }: { children: React.ReactNode }) {

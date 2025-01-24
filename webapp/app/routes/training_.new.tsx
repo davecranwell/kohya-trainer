@@ -1,5 +1,4 @@
-import { json, type LoaderFunctionArgs } from '@remix-run/node';
-import { useLoaderData } from '@remix-run/react';
+import { type LoaderFunctionArgs } from '@remix-run/node';
 
 import { requireUserWithPermission } from '~/services/permissions.server.js';
 
@@ -10,7 +9,7 @@ export { action } from '../util/training-editor.server';
 export async function loader({ request }: LoaderFunctionArgs) {
     const userId = await requireUserWithPermission(request, 'create:training:own');
 
-    return json({ userId });
+    return { userId };
 }
 
 export default TrainingEditor;

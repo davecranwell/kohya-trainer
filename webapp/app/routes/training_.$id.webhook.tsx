@@ -1,5 +1,5 @@
 import crypto from 'crypto';
-import { type ActionFunctionArgs, json } from '@remix-run/node';
+import { type ActionFunctionArgs, data } from '@remix-run/node';
 
 import prisma from '#/prisma/db.server';
 
@@ -12,7 +12,7 @@ export async function action({ request, params }: ActionFunctionArgs) {
     // const hmac = crypto.createHmac('sha256', process.env.WEBHOOK_SECRET!);
     // const computedSignature = hmac.update(payload).digest('hex');
     // if (signature !== computedSignature) {
-    //     return json({ error: 'Forbidden' }, { status: 403 });
+    //     return data({ error: 'Forbidden' }, { status: 403 });
     // }
 
     // get the training session
@@ -23,7 +23,7 @@ export async function action({ request, params }: ActionFunctionArgs) {
     });
 
     if (!trainingSession) {
-        return json({ error: 'Training not found' }, { status: 404 });
+        return data({ error: 'Training not found' }, { status: 404 });
     }
 
     const body = await request.json();
@@ -60,7 +60,7 @@ export async function action({ request, params }: ActionFunctionArgs) {
             });
             break;
         default:
-            return json({ error: 'Invalid status' }, { status: 400 });
+            return data({ error: 'Invalid status' }, { status: 400 });
     }
 
     // update the training session

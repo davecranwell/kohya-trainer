@@ -51,7 +51,7 @@ export async function action({ request }: ActionFunctionArgs) {
 
 export async function loader({ request }: LoaderFunctionArgs) {
     await authenticator.isAuthenticated(request, {
-        successRedirect: '/dashboard',
+        successRedirect: '/training',
     });
 
     return null;

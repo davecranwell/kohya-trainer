@@ -1,4 +1,4 @@
-import { json, type LoaderFunctionArgs } from '@remix-run/node';
+import { data, type LoaderFunctionArgs } from '@remix-run/node';
 import { useLoaderData } from '@remix-run/react';
 
 import prisma from '#/prisma/db.server';
@@ -25,10 +25,10 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
     });
 
     if (!training) {
-        throw json('Not found', { status: 404 });
+        throw data('Not found', { status: 404 });
     }
 
-    return json({ training });
+    return { training };
 }
 
 export default function TrainingRoute() {

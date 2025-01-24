@@ -1,4 +1,4 @@
-import { json } from '@remix-run/node';
+import { data } from '@remix-run/node';
 
 import { authenticator } from './auth.server';
 import prisma from '../../prisma/db.server';
@@ -29,7 +29,7 @@ export async function requireUserWithPermission(request: Request, permission: Pe
     });
 
     if (!user) {
-        throw json(`Unauthorized`, { status: 403 });
+        throw data(`Unauthorized`, { status: 403 });
     }
 
     return user.id;
@@ -46,7 +46,7 @@ export async function requireUserWithRole(request: Request, name: string) {
     });
 
     if (!user) {
-        throw json(
+        throw data(
             {
                 error: 'Unauthorized',
                 requiredRole: name,

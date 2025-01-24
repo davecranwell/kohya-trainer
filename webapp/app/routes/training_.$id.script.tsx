@@ -1,4 +1,4 @@
-import { json, type LoaderFunctionArgs } from '@remix-run/node';
+import { data, type LoaderFunctionArgs } from '@remix-run/node';
 import fs from 'fs';
 import path from 'path';
 
@@ -35,7 +35,7 @@ export async function loader({ params, request }: LoaderFunctionArgs) {
     });
 
     if (!training) {
-        throw json('Not found', { status: 404 });
+        throw data('Not found', { status: 404 });
     }
 
     const CHECKPOINT_MODELS = ['https://civitai.com/api/download/models/1094291?type=Model&format=SafeTensor&size=pruned&fp=fp16'];

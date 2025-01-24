@@ -1,5 +1,5 @@
 import { parseWithZod } from '@conform-to/zod';
-import { json, type ActionFunctionArgs } from '@remix-run/node';
+import { data, type ActionFunctionArgs } from '@remix-run/node';
 import { z } from 'zod';
 
 import prisma from '../../prisma/db.server';
@@ -37,7 +37,7 @@ export async function action({ request }: ActionFunctionArgs) {
     });
 
     if (submission.status !== 'success') {
-        return json({ result: submission.reply() }, { status: submission.status === 'error' ? 400 : 200 });
+        return data({ result: submission.reply() }, { status: submission.status === 'error' ? 400 : 200 });
     }
 
     const { id: trainingId, name, triggerWord, baseModel } = submission.value;

@@ -13,10 +13,11 @@ export default defineConfig({
     plugins: [
         remix({
             future: {
+                unstable_optimizeDeps: true,
                 v3_fetcherPersist: true,
                 v3_relativeSplatPath: true,
                 v3_throwAbortReason: true,
-                v3_singleFetch: false, // this is bad because it creates a script tag that doesn't have the required nonce
+                v3_singleFetch: true, // I thought this was bad because it creates a script tag that doesn't have the required nonce, but maybe not any more
                 v3_lazyRouteDiscovery: true,
             },
         }),
