@@ -15,14 +15,14 @@ interface ImagePreviewProps {
 export const ImagePreview: React.FC<ImagePreviewProps> = ({ id, name, url, uploadProgress, width = 200 }) => {
     return (
         // Can't use dynamic heights here
-        <div className={`relative block flex h-[200px] w-[200px] flex-none`}>
+        <div className={`relative block flex h-[200px] w-[200px] flex-none border border-gray-800`}>
             {url && (
                 <img
                     src={getThumbnailKey(url)}
                     width={width}
                     height="auto"
                     alt={`Preview ${name}`}
-                    className={`m-auto block max-h-[200px] max-w-[200px] rounded border border-gray-800 object-contain text-center`}
+                    className={`m-auto block max-h-[200px] max-w-[200px] rounded object-contain text-center`}
                 />
             )}
             {!id && (

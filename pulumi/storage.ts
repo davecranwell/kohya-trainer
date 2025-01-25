@@ -14,6 +14,18 @@ new aws.s3.BucketOwnershipControls('imageBucketOwnershipControls', {
     },
 });
 
+new aws.s3.BucketCorsConfigurationV2('imageBucketCorsConfiguration', {
+    bucket: bucket.id,
+    corsRules: [
+        {
+            allowedHeaders: ['*'],
+            allowedMethods: ['GET', 'POST', 'PUT', 'DELETE', 'HEAD'],
+            allowedOrigins: ['*'],
+            maxAgeSeconds: 3000,
+        },
+    ],
+});
+
 /* This is a public policy, attached to no specific user, but applying to all users */
 /* We will need a user-attached policy to allow the app to upload */
 new aws.s3.BucketPolicy('imageBucketPolicy', {

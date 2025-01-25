@@ -126,7 +126,7 @@ async function startServer() {
                     'font-src': ["'self'", 'fonts.gstatic.com'],
                     'frame-src': ["'self'"],
                     'img-src': ["'self'", 'data:', 'blob:', 'https://my-image-resize-bucket.s3.us-east-1.amazonaws.com'],
-                    'connect-src': ["'self'", 'ws://localhost:*'],
+                    'connect-src': ["'self'", 'ws://localhost:*', 'https://my-image-resize-bucket.s3.us-east-1.amazonaws.com'],
                     'script-src': ["'strict-dynamic'", "'self'", (_, res) => `'nonce-${(res as Response).locals.cspNonce}'`],
                     'script-src-attr': [(_, res) => `'nonce-${(res as Response).locals.cspNonce}'`],
                     'upgrade-insecure-requests': null,
