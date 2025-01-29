@@ -24,6 +24,7 @@ export type ImageWithMetadata = {
     text?: string | null;
     type: string;
     url?: string;
+    updatedAt?: Date;
 };
 
 export const FileUploadPreview: React.FC<FileUploadPreviewProps> = ({
@@ -42,20 +43,37 @@ export const FileUploadPreview: React.FC<FileUploadPreviewProps> = ({
     const [isInvalidDrag, setIsInvalidDrag] = useState(false);
     const [dragMessage, setDragMessage] = useState('');
 
+    const getImageFiles = (files: FileList) => {
+        return Array.from(files).filter((file) => acceptedImageTypes.includes(file.type));
+    };
+
+    const getTextFiles = (files: FileList) => {
+        return Array.from(files).filter((file) => acceptedTextTypes.includes(file.type));
+    };
+
+    const getSupportedFiles = (files: FileList) => {
+        return Array.from(files).filter((file) => acceptedImageTypes.includes(file.type) || acceptedTextTypes.includes(file.type));
+    };
+
     const handleFiles = async (newFiles: FileList) => {
         setIsDraggedOver(false);
 
         // filter out the filetypes that are unsupported
-        const files = Array.from(newFiles).filter((file) => acceptedImageTypes.includes(file.type) || acceptedTextTypes.includes(file.type));
+        const files = getSupportedFiles(newFiles);
 
-        onDropped(files);
+        // filter out the files that are already in the previousImages array
+        const filteredFiles = files.filter((file) => !previousImages.find((image) => image.name === file.name));
+
+        onDropped(filteredFiles);
     };
 
     const handleDragOver = useCallback((e: React.DragEvent<HTMLDivElement>) => {
         e.preventDefault();
 
         setIsDraggedOver(true);
-        if (imageCount + e.dataTransfer.files.length >= maxImages) {
+
+        const imageFiles = getImageFiles(e.dataTransfer.files);
+        if (imageFiles.length >= maxImages || imageCount + imageFiles.length >= maxImages) {
             setIsInvalidDrag(true);
             setDragMessage(
                 `You've uploaded The maximum number of images allowed. ${maxImages - imageCount > 0 ? `You can only upload ${maxImages - imageCount} more images.` : ''}`,
@@ -71,7 +89,9 @@ export const FileUploadPreview: React.FC<FileUploadPreviewProps> = ({
             setIsInvalidDrag(false);
             setDragMessage('');
 
-            if (imageCount + e.dataTransfer.files.length >= maxImages) return;
+            const imageFiles = getImageFiles(e.dataTransfer.files);
+            if (imageFiles.length >= maxImages || imageCount + imageFiles.length >= maxImages) return;
+
             await handleFiles(e.dataTransfer.files);
         },
         [handleFiles],
@@ -82,7 +102,13 @@ export const FileUploadPreview: React.FC<FileUploadPreviewProps> = ({
         async (e: React.ChangeEvent<HTMLInputElement>) => {
             if (imageCount >= maxImages) return;
 
-            if (e.target.files) await handleFiles(e.target.files);
+            if (e.target.files) {
+                const imageFiles = getImageFiles(e.target.files);
+
+                if (imageFiles.length >= maxImages || imageCount + imageFiles.length >= maxImages) return;
+
+                await handleFiles(e.target.files);
+            }
         },
         [handleFiles],
     );
@@ -93,6 +119,7 @@ export const FileUploadPreview: React.FC<FileUploadPreviewProps> = ({
                 ref={fileInputRef}
                 type="file"
                 name="images"
+                id="file-upload-input"
                 multiple
                 onChange={handleFileChange}
                 accept="image/png, image/jpeg"
@@ -113,18 +140,21 @@ export const FileUploadPreview: React.FC<FileUploadPreviewProps> = ({
                     setDragMessage('');
                 }}
                 className={clsx(
-                    `rounded border-2 border-dashed p-4`,
+                    `rounded border-2 border-dashed`,
                     isDraggedOver && isInvalidDrag && 'border-semantic-error',
                     isDraggedOver && !isInvalidDrag && 'border-semantic-success',
-                    !isDraggedOver && 'border-accent2-dark',
+                    !isDraggedOver && 'border-gray-800',
                 )}
                 onClick={(e) => {
                     e.target === dragDropRef.current && fileInputRef.current?.click();
                 }}>
-                {dragMessage ||
-                    `Drag and drop ${[...acceptedImageTypes, ...acceptedTextTypes].map((type) => `*.${type.split(',')}`).join(', ')} files here or click to
-                select from your computer. Any *.txt files which match the filename of an image (minus the extension) will be used to tag that image.`}
-                {children}
+                <label htmlFor="file-upload-input" className="block cursor-pointer p-4">
+                    {dragMessage ||
+                        `Drag and drop ${[...acceptedImageTypes, ...acceptedTextTypes].map((type) => `*.${type.split(',')}`).join(', ')} files here or click here to
+                    select from your computer. Any *.txt files which match the filename of an image (minus the extension) will be used to tag that image.`}
+                </label>
+
+                <div className="p-4">{children}</div>
             </div>
         </div>
     );

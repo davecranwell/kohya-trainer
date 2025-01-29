@@ -35,7 +35,7 @@ export const zipImages = async ({ trainingId }: { trainingId: string }) => {
 
         await s3Client.send(
             new PutObjectCommand({
-                Bucket: process.env.AWS_S3_BUCKET_NAME,
+                Bucket: process.env.AWS_S3_MAXRES_BUCKET_NAME,
                 Key: `${training?.ownerId}/${trainingId}/${image.name}.txt`,
                 Body: image.text,
             }),
@@ -47,7 +47,7 @@ export const zipImages = async ({ trainingId }: { trainingId: string }) => {
 
     const command = new InvokeCommand({
         FunctionName: process.env.ZIP_IMAGES_LAMBDA_NAME,
-        Payload: JSON.stringify({ bucket: process.env.AWS_S3_BUCKET_NAME, key: `${training?.ownerId}/${trainingId}/` }),
+        Payload: JSON.stringify({ bucket: process.env.AWS_S3_MAXRES_BUCKET_NAME, key: `${training?.ownerId}/${trainingId}/` }),
     });
 
     const { Payload, LogResult, StatusCode } = await client.send(command);

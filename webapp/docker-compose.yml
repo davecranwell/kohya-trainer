@@ -18,3 +18,33 @@ services:
         image: adminer
         ports:
             - 8090:8080
+
+    # webapp:
+    #     image: webapp:latest
+    #     ports:
+    #         - 3000:3000
+    #     expose:
+    #         - 3000
+    #     depends_on:
+    #         - postgres
+    #     environment:
+    #         ROOT_URL: 'http://localhost:3000'
+    #         LOG_LEVEL: 'info'
+    #         PORT: 3000
+    #         ALLOW_INDEXING: 'false'
+    #         USE_CRON: 'true'
+    #         USE_QUEUE: 'true'
+    #         AWS_S3_BUCKET_NAME: '${AWS_S3_BUCKET_NAME}'
+    #         VAST_WEB_USER: '${VAST_WEB_USER}'
+    #         VAST_WEB_PASSWORD: '${VAST_WEB_PASSWORD}'
+    #         VAST_API_KEY: '${VAST_API_KEY}'
+    #         SESSION_SECRET: '${SESSION_SECRET}'
+    #         AWS_ACCESS_KEY_ID: '${AWS_ACCESS_KEY_ID}'
+    #         AWS_SECRET_ACCESS_KEY: '${AWS_SECRET_ACCESS_KEY}'
+    #         AWS_REGION: '${AWS_REGION}'
+    #         AWS_SQS_TASK_QUEUE_URL: '${AWS_SQS_TASK_QUEUE_URL}'
+    #         AWS_SQS_THUMBNAILER_QUEUE_URL: '${AWS_SQS_THUMBNAILER_QUEUE_URL}'
+    #         ZIP_IMAGES_LAMBDA_NAME: '${ZIP_IMAGES_LAMBDA_NAME}'
+    #         GOOGLE_CLIENT_ID: '${GOOGLE_CLIENT_ID}'
+    #         GOOGLE_CLIENT_SECRET: '${GOOGLE_CLIENT_SECRET}'
+    #         DATABASE_URL: 'postgresql://postgres:postgres@postgres:5432/modeller?schema=public'

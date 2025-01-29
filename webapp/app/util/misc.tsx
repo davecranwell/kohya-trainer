@@ -56,15 +56,15 @@ export function arrayToCommaSeparatedString(array: string[]) {
     return array.join(',');
 }
 
-export function sanitiseTagString(tagString: string) {
-    return arrayToCommaSeparatedString(makeArrayUnique(commaSeparatedStringToArray(tagString)));
+export function sanitiseTagString(tagString: string, filterTags?: string[]) {
+    return arrayToCommaSeparatedString(makeArrayUnique(commaSeparatedStringToArray(tagString).filter((tag) => !filterTags?.includes(tag))));
 }
 
-export function sanitiseTagArray(tagArray: string[]) {
-    return makeArrayUnique(tagArray);
+export function sanitiseTagArray(tagArray: string[], filterTags?: string[]) {
+    return makeArrayUnique(tagArray).filter((tag) => !filterTags?.includes(tag));
 }
 
-// a function which converts an S3 string pointing to an image file, to a string in which the file extension is replaced with _thumbnail.extension
-export function getThumbnailKey(s3Key: string) {
-    return s3Key.replace(/\.[^.]+$/, '_thumbnail-200$&');
-}
+// // a function which converts an S3 string pointing to an image file, to a string in which the file extension is replaced with _thumbnail.extension
+// export function getThumbnailKey(s3Key: string) {
+//     return s3Key.replace(/\.[^.]+$/, '_thumbnail-200$&');
+// }

@@ -61,7 +61,7 @@ async function createGpuInstance(training: Training) {
                 //WEBHOOK_SECRET: process.env.WEBHOOK_SECRET,
                 //WEBHOOK_URL: process.env.WEBHOOK_URL,
                 //TRAINING_ID: training.id,
-                //ZIP_URL: `${process.env.AWS_S3_BUCKET_NAME}/${zipKey}`,
+                //ZIP_URL: `${process.env.AWS_S3_MAXRES_BUCKET_NAME}/${zipKey}`,
                 KOHYA_ARGS: '',
                 TENSORBOARD_ARGS: '--logdir /opt/kohya_ss/logs',
                 AUTO_UPDATE: 'false',

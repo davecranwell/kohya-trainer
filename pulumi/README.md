@@ -90,7 +90,7 @@ pulumi up
 
 ```bash
 pulumi stack ls
-pulumi stack output
+pulumi stack outputp
 ```
 
 ## Destroying

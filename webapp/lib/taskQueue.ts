@@ -1,7 +1,7 @@
 import 'dotenv/config';
 import { SQS } from '@aws-sdk/client-sqs';
 
-const queueUrl = process.env.AWS_SQS_QUEUE_URL;
+const queueUrl = process.env.AWS_SQS_TASK_QUEUE_URL;
 
 const sqs = new SQS({ region: 'us-east-1' });
 
@@ -17,14 +17,18 @@ async function pollMessages(handler) {
             console.log('Messages received:', data.Messages.length);
 
             for (const message of data.Messages) {
-                console.log('Processing message:', message.Body);
+                const { Body, ReceiptHandle } = message;
+
+                console.log('Processing message:', Body);
                 // Process message logic here
-                await handler(JSON.parse(message.Body));
+                if (Body) {
+                    await handler(JSON.parse(Body));
+                }
 
                 try {
                     await sqs.deleteMessage({
                         QueueUrl: queueUrl,
-                        ReceiptHandle: message.ReceiptHandle,
+                        ReceiptHandle,
                     });
                 } catch (error) {
                     console.error('Error deleting message:', error);

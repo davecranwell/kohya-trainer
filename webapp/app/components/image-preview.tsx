@@ -1,34 +1,51 @@
 import { clsx } from 'clsx';
-import React from 'react';
-
-import { getThumbnailKey } from '~/util/misc';
+import React, { useEffect, useState } from 'react';
 
 interface ImagePreviewProps {
     id?: string;
-    name: string;
     text?: string | null | undefined;
     url?: string;
-    uploadProgress: number | undefined;
     width?: number;
 }
 
-export const ImagePreview: React.FC<ImagePreviewProps> = ({ id, name, url, uploadProgress, width = 200 }) => {
+export const ImagePreview: React.FC<ImagePreviewProps> = ({ id, url, width = 200 }) => {
+    // Track whether the image failed to load
+    const [imageError, setImageError] = useState(false);
+
+    useEffect(() => {
+        let timeoutId: NodeJS.Timeout;
+
+        // If the image failed to load and we have a URL, set up retry logic
+        if (imageError && url) {
+            timeoutId = setTimeout(() => {
+                setImageError(false); // Reset error state to trigger a new load attempt
+            }, 10000);
+        }
+
+        return () => {
+            if (timeoutId) {
+                clearTimeout(timeoutId);
+            }
+        };
+    }, [imageError, url]);
+
     return (
         // Can't use dynamic heights here
-        <div className={`relative block flex h-[200px] w-[200px] flex-none border border-gray-800`}>
+        <div className={`relative block flex h-[200px] w-[200px] flex-none`}>
             {url && (
-                <img
-                    src={getThumbnailKey(url)}
-                    width={width}
-                    height="auto"
-                    alt={`Preview ${name}`}
-                    className={`m-auto block max-h-[200px] max-w-[200px] rounded object-contain text-center`}
-                />
-            )}
-            {!id && (
-                <div className="absolute inset-x-0 bottom-0 left-0 right-0 top-0 m-auto h-2.5 w-9/12 rounded-full border border-white bg-gray-300 ring-2 ring-white">
-                    <div className="h-2.5 w-[0px] rounded-full bg-blue-600 text-sm text-gray-500" style={{ width: `${uploadProgress}%` }}></div>
-                </div>
+                <>
+                    <img
+                        // Add key prop to force React to recreate the img element when error state changes
+                        key={`${url}-${imageError}`}
+                        src={`https://${process.env.AWS_S3_THUMBNAILS_BUCKET_NAME!}.s3.amazonaws.com/${url}`}
+                        width={width}
+                        height="auto"
+                        alt=""
+                        className={`m-auto block max-h-[200px] max-w-[200px] rounded object-contain text-center`}
+                        onError={() => setImageError(true)}
+                    />
+                    {imageError && <div>Processing...</div>}
+                </>
             )}
         </div>
     );

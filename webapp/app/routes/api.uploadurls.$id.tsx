@@ -21,7 +21,7 @@ export const action = async ({ params, request }: ActionFunctionArgs) => {
     const urls = await Promise.all(
         files.map(async ({ name, type }: { name: string; type: string }) => {
             const command = new PutObjectCommand({
-                Bucket: process.env.AWS_S3_BUCKET_NAME!,
+                Bucket: process.env.AWS_S3_UPLOAD_BUCKET_NAME!,
                 Key: `${userId}/${trainingId}/images/${name}`,
                 ContentType: type,
             });

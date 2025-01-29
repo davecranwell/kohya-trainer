@@ -3,6 +3,7 @@ import { SQS } from '@aws-sdk/client-sqs';
 import prisma from '#/prisma/db.server';
 
 import { taskSubscription } from './taskQueue';
+import { reduceImages } from './tasks/reduceImages';
 import { zipImages } from './tasks/zipImages';
 import { assignGpuToTraining } from './tasks/createGpuInstance';
 import { awaitGpuReady } from './tasks/awaitGpuReady';
@@ -10,10 +11,12 @@ import { startTraining } from './tasks/startTraining';
 
 // Add type for the task body
 export type TaskBody = {
-    task: 'zipImages' | 'allocateGpu' | 'deallocateGpu' | 'awaitGpuReady' | 'startTraining';
+    task: 'reduceImage' | 'zipImages' | 'allocateGpu' | 'awaitGpuReady' | 'startTraining';
     trainingId: string;
     userId?: string;
     zipKey?: string;
+    imageId?: string;
+    imageUrl?: string;
 };
 
 const sqs = new SQS({ region: 'us-east-1' });
@@ -25,21 +28,16 @@ export function subscribeToTasks() {
         const { task, trainingId, userId }: TaskBody = body;
 
         switch (task) {
-            case 'awaitGpuReady': {
-                const isReady = await awaitGpuReady({ trainingId });
-                if (isReady) {
-                    await createTask({ task: 'startTraining', trainingId, userId });
-                } else {
-                    // if not ready, wait 10 seconds and try again
-                    await createTask({ task: 'awaitGpuReady', trainingId, userId }, 10);
-                }
+            case 'reduceImages': {
+                await reduceImages({ trainingId });
+                await createTask(process.env.AWS_SQS_TASK_QUEUE_URL!, { task: 'zipImages', trainingId, userId }, 10);
                 break;
             }
 
             case 'zipImages': {
                 const zipKey = await zipImages({ trainingId });
                 if (zipKey) {
-                    await createTask({ task: 'allocateGpu', trainingId, userId, zipKey });
+                    await createTask(process.env.AWS_SQS_TASK_QUEUE_URL!, { task: 'allocateGpu', trainingId, userId, zipKey });
                 }
 
                 break;
@@ -47,7 +45,18 @@ export function subscribeToTasks() {
 
             case 'allocateGpu': {
                 await assignGpuToTraining({ trainingId });
-                await createTask({ task: 'awaitGpuReady', trainingId, userId }, 10);
+                await createTask(process.env.AWS_SQS_TASK_QUEUE_URL!, { task: 'awaitGpuReady', trainingId, userId }, 10);
+                break;
+            }
+
+            case 'awaitGpuReady': {
+                const isReady = await awaitGpuReady({ trainingId });
+                if (isReady) {
+                    await createTask(process.env.AWS_SQS_TASK_QUEUE_URL!, { task: 'startTraining', trainingId, userId });
+                } else {
+                    // if not ready, wait 10 seconds and try again
+                    await createTask(process.env.AWS_SQS_TASK_QUEUE_URL!, { task: 'awaitGpuReady', trainingId, userId }, 10);
+                }
                 break;
             }
 
@@ -60,13 +69,13 @@ export function subscribeToTasks() {
     }, 5000);
 }
 
-async function createTask(messageBody: TaskBody, delaySeconds: number = 0) {
+export async function createTask(queueUrl: string, messageBody: TaskBody, delaySeconds: number = 0) {
     const { trainingId, task } = messageBody;
 
     try {
         await sqs.sendMessage({
             DelaySeconds: delaySeconds,
-            QueueUrl: process.env.AWS_SQS_QUEUE_URL!,
+            QueueUrl: queueUrl,
             MessageBody: JSON.stringify(messageBody),
         });
 
@@ -81,5 +90,5 @@ async function createTask(messageBody: TaskBody, delaySeconds: number = 0) {
 
 // Call this to begin the async training process
 export async function enqueueTraining(trainingId: string) {
-    return createTask({ task: 'zipImages', trainingId });
+    return createTask(process.env.AWS_SQS_TASK_QUEUE_URL!, { task: 'reduceImages', trainingId });
 }

@@ -36,7 +36,7 @@ export const startTraining = async ({ trainingId }: { trainingId: string }) => {
 
     const client = new S3Client({ region: process.env.AWS_REGION });
     const command = new PutObjectCommand({
-        Bucket: process.env.AWS_S3_BUCKET_NAME,
+        Bucket: process.env.AWS_S3_UPLOAD_BUCKET_NAME,
         Key: `${training.ownerId}/${trainingId}/models/checkpoint.safetensors`,
     });
     const presignedUrl = await getSignedUrl(client, command, { expiresIn: 60 * 60 * 12 }); // upload must occur within 12 hours. Yes this is a long time. TODO: Make this more JIT

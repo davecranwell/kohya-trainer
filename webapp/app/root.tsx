@@ -48,7 +48,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 <Links />
             </head>
             <body className="min-h-screen bg-gradient-to-br from-gray-950 via-gray-900 to-slate-900 text-gray-400">
-                <div className="mx-auto w-full max-w-4xl">
+                <div className="mx-auto w-full max-w-6xl">
                     <TooltipProvider delayDuration={100} skipDelayDuration={500}>
                         <div className="overflow-auto p-8">{children}</div>
                     </TooltipProvider>

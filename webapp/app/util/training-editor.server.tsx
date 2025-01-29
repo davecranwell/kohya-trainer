@@ -54,15 +54,15 @@ export async function action({ request }: ActionFunctionArgs) {
         where: { id: trainingId ?? '__new_training__' },
         create: {
             ownerId: userId,
-            name,
-            triggerWord,
-            baseModel,
+            name: name.trim(),
+            triggerWord: triggerWord.trim(),
+            baseModel: baseModel.trim(),
             config: JSON.stringify(config),
         },
         update: {
-            name,
-            triggerWord,
-            baseModel,
+            name: name.trim(),
+            triggerWord: triggerWord.trim(),
+            baseModel: baseModel.trim(),
             config: JSON.stringify(config),
         },
     });
