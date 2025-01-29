@@ -29,6 +29,15 @@ export async function action({ request, params }: ActionFunctionArgs) {
     const body = await request.json();
 
     switch (body.status) {
+        case 'image_maxres_resized':
+            await prisma.trainingImage.update({
+                where: { id: body.imageId },
+                data: {
+                    isResized: true,
+                    updatedAt: new Date(),
+                },
+            });
+            break;
         case 'downloading_checkpoint_started':
         case 'downloading_checkpoint_progress':
         case 'downloading_checkpoint_completed':

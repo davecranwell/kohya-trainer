@@ -1,6 +1,10 @@
 import * as aws from '@pulumi/aws';
 import * as pulumi from '@pulumi/pulumi';
+
 import { s3User, createS3PolicyForBucket } from './user';
+import { thumbnailerQueue } from './app';
+
+const config = new pulumi.Config();
 
 // Helper function to create a bucket with all standard configurations
 function createStandardBucket(name: string, bucketName: string) {
@@ -91,7 +95,22 @@ export const maxresBucket = createStandardBucket('modellerMaxresBucket', 'modell
 export const thumbnailsBucket = createStandardBucket('modellerThumbnailsBucket', 'modeller-thumbnails-bucket');
 
 // Create IAM role for Lambda
-const lambdaRole = new aws.iam.Role('zipLambdaRole', {
+const zipLambdaRole = new aws.iam.Role('zipLambdaRole', {
+    assumeRolePolicy: JSON.stringify({
+        Version: '2012-10-17',
+        Statement: [
+            {
+                Action: 'sts:AssumeRole',
+                Principal: {
+                    Service: 'lambda.amazonaws.com',
+                },
+                Effect: 'Allow',
+            },
+        ],
+    }),
+});
+
+const maxSizeLambdaRole = new aws.iam.Role('maxSizeLambdaRole', {
     assumeRolePolicy: JSON.stringify({
         Version: '2012-10-17',
         Statement: [
@@ -108,15 +127,19 @@ const lambdaRole = new aws.iam.Role('zipLambdaRole', {
 
 // Add basic Lambda execution permissions (for CloudWatch Logs)
 new aws.iam.RolePolicyAttachment('zipLambdaBasicExecution', {
-    role: lambdaRole.name,
+    role: zipLambdaRole.name,
     policyArn: 'arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole',
 });
 
-// Create S3 access policy for Lambda
-const lambdaS3Policy = maxresBucket.id.apply(
+new aws.iam.RolePolicyAttachment('maxSizeLambdaBasicExecution', {
+    role: maxSizeLambdaRole.name,
+    policyArn: 'arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole',
+});
+
+maxresBucket.id.apply(
     (bucketName) =>
-        new aws.iam.RolePolicy('zipLambdaS3Policy', {
-            role: lambdaRole.id,
+        new aws.iam.RolePolicy('maxSizeLambdaS3Policy', {
+            role: maxSizeLambdaRole.id,
             policy: JSON.stringify({
                 Version: '2012-10-17',
                 Statement: [
@@ -130,13 +153,64 @@ const lambdaS3Policy = maxresBucket.id.apply(
         }),
 );
 
-// Create Lambda function
-const lambda = new aws.lambda.Function('zipLambda', {
+uploadBucket.id.apply(
+    (bucketName) =>
+        new aws.iam.RolePolicy('zipLambdaS3Policy', {
+            role: zipLambdaRole.id,
+            policy: JSON.stringify({
+                Version: '2012-10-17',
+                Statement: [
+                    {
+                        Effect: 'Allow',
+                        Action: ['s3:GetObject', 's3:PutObject', 's3:DeleteObject', 's3:ListBucket'],
+                        Resource: [`arn:aws:s3:::${bucketName}`, `arn:aws:s3:::${bucketName}/*`],
+                    },
+                ],
+            }),
+        }),
+);
+
+maxresBucket.id.apply(
+    (bucketName) =>
+        new aws.iam.RolePolicy('maxSizeLambdaS3Policy', {
+            role: maxSizeLambdaRole.id,
+            policy: JSON.stringify({
+                Version: '2012-10-17',
+                Statement: [
+                    {
+                        Effect: 'Allow',
+                        Action: ['s3:GetObject', 's3:PutObject', 's3:DeleteObject', 's3:ListBucket'],
+                        Resource: [`arn:aws:s3:::${bucketName}`, `arn:aws:s3:::${bucketName}/*`],
+                    },
+                ],
+            }),
+        }),
+);
+
+uploadBucket.id.apply(
+    (bucketName) =>
+        new aws.iam.RolePolicy('zipLambdaS3Policy', {
+            role: maxSizeLambdaRole.id,
+            policy: JSON.stringify({
+                Version: '2012-10-17',
+                Statement: [
+                    {
+                        Effect: 'Allow',
+                        Action: ['s3:GetObject', 's3:PutObject', 's3:DeleteObject', 's3:ListBucket'],
+                        Resource: [`arn:aws:s3:::${bucketName}`, `arn:aws:s3:::${bucketName}/*`],
+                    },
+                ],
+            }),
+        }),
+);
+
+// Lambda for zipping all the bucket files into a single zip file
+const zipLambda = new aws.lambda.Function('zipLambda', {
     runtime: 'nodejs18.x',
     // Lambda code is one directory up in the zip-lambda folder
     code: new pulumi.asset.FileArchive('../zip-lambda'),
     handler: 'index.handler',
-    role: lambdaRole.arn,
+    role: zipLambdaRole.arn,
     timeout: 30,
     memorySize: 128,
     ephemeralStorage: { size: 1024 }, // Ephemeral storage needs to be at least the size of the total number of files we permit the user to upload
@@ -148,10 +222,34 @@ const lambda = new aws.lambda.Function('zipLambda', {
     },
 });
 
+// Lambda for resizing all the bucket files to their max allowed resolution and uploading them to the maxres bucket
+const maxSizeLambda = new aws.lambda.Function(
+    'maxSizeLambda',
+    {
+        runtime: 'nodejs18.x',
+        // Lambda code is one directory up in the zip-lambda folder
+        code: new pulumi.asset.FileArchive('../resize-lambda'),
+        handler: 'index.handler',
+        role: maxSizeLambdaRole.arn,
+        timeout: 30,
+        memorySize: 128,
+        ephemeralStorage: { size: 1024 }, // Ephemeral storage needs to be at least the size of the total number of files we permit the user to upload
+        environment: {
+            variables: {
+                QUEUE_URL: thumbnailerQueue.url,
+                SOURCE_BUCKET_NAME: uploadBucket.id,
+                TARGET_BUCKET_NAME: maxresBucket.id,
+                DB_URL: config.require('DATABASE_URL'),
+            },
+        },
+    },
+    { dependsOn: [thumbnailerQueue] },
+);
+
 // Add policy allowing S3user to invoke Lambda
 // This is needed because our application architecture requires the backend to trigger
 // the zip Lambda function directly using AWS SDK credentials
-const lambdaInvokePolicy = lambda.arn.apply(
+const lambdaInvokePolicy = zipLambda.arn.apply(
     (lambdaArn) =>
         new aws.iam.Policy('lambdaInvokePolicy', {
             policy: JSON.stringify({
@@ -173,5 +271,12 @@ new aws.iam.UserPolicyAttachment('lambdaInvokeUserPolicyAttachment', {
     policyArn: lambdaInvokePolicy.arn,
 });
 
+const queueEventSource = new aws.lambda.EventSourceMapping('queueEventSource', {
+    eventSourceArn: thumbnailerQueue.arn,
+    functionName: maxSizeLambda.arn,
+    batchSize: 5,
+});
+
 // Export the Lambda ARN for reference
-export const lambdaArn = lambda.arn;
+export const zipLambdaArn = zipLambda.arn;
+export const maxSizeLambdaArn = maxSizeLambda.arn;

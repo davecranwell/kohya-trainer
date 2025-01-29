@@ -20,6 +20,11 @@ export const reduceImages = async ({ trainingId }: { trainingId: string }) => {
 
     // add each image to the resize queue
     for (const image of images) {
-        createTask(process.env.AWS_SQS_RESIZE_IMAGES_QUEUE_URL!, { task: 'reduceImage', imageId: image.id, trainingId, imageUrl: image.url });
+        createTask(process.env.AWS_SQS_RESIZE_IMAGES_QUEUE_URL!, {
+            imageId: image.id,
+            trainingId,
+            imageUrl: image.url,
+            webhookUrl: `${process.env.ROOT_URL}/training/${trainingId}/webhook`,
+        });
     }
 };

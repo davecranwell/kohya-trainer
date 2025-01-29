@@ -1,0 +1,10 @@
+{
+    "name": "maxres-lambda",
+    "version": "1.0.0",
+    "description": "A lambda function to reduce images to their max allowed resolution and upload them to S3",
+    "main": "index.mjs",
+    "dependencies": {
+        "@aws-sdk/client-s3": "^3.645.0",
+        "sharp": "^0.28.3"
+    }
+}

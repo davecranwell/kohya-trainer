@@ -9,14 +9,19 @@ import { assignGpuToTraining } from './tasks/createGpuInstance';
 import { awaitGpuReady } from './tasks/awaitGpuReady';
 import { startTraining } from './tasks/startTraining';
 
-// Add type for the task body
 export type TaskBody = {
-    task: 'reduceImage' | 'zipImages' | 'allocateGpu' | 'awaitGpuReady' | 'startTraining';
+    task: 'reduceImages' | 'zipImages' | 'allocateGpu' | 'awaitGpuReady' | 'startTraining';
     trainingId: string;
     userId?: string;
     zipKey?: string;
+};
+
+export type ResizeBody = {
+    trainingId: string;
+    userId?: string;
     imageId?: string;
     imageUrl?: string;
+    webhookUrl?: string;
 };
 
 const sqs = new SQS({ region: 'us-east-1' });
@@ -69,7 +74,7 @@ export function subscribeToTasks() {
     }, 5000);
 }
 
-export async function createTask(queueUrl: string, messageBody: TaskBody, delaySeconds: number = 0) {
+export async function createTask(queueUrl: string, messageBody: TaskBody | ResizeBody, delaySeconds: number = 0) {
     const { trainingId, task } = messageBody;
 
     try {

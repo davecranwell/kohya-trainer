@@ -55,6 +55,7 @@ model TrainingImage {
   url         String
   name        String
   type        String
+  isResized   Boolean @default(false)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
