@@ -40,13 +40,13 @@ jobs:
 
             - name: Install Pulumi dependencies
               run: npm ci
-              working-directory: ./pulumi
+              working-directory: ./infra
 
             - name: Install Pulumi & Deploy
               uses: pulumi/actions@v6
               with:
                   command: up
                   stack-name: dev
-                  work-dir: ./pulumi
+                  work-dir: ./infra
               env:
                   PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
