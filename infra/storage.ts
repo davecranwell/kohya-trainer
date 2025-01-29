@@ -231,8 +231,8 @@ const maxSizeLambda = new aws.lambda.Function(
         code: new pulumi.asset.FileArchive('../lambdas/maxres'),
         handler: 'index.handler',
         role: maxSizeLambdaRole.arn,
-        timeout: 30,
-        memorySize: 128,
+        timeout: 15 * 60, // 15 mins
+        memorySize: 256,
         ephemeralStorage: { size: 1024 }, // Ephemeral storage needs to be at least the size of the total number of files we permit the user to upload
         environment: {
             variables: {
