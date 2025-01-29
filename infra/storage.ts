@@ -208,7 +208,7 @@ uploadBucket.id.apply(
 const zipLambda = new aws.lambda.Function('zipLambda', {
     runtime: 'nodejs18.x',
     // Lambda code is one directory up in the zip-lambda folder
-    code: new pulumi.asset.FileArchive('../zip-lambda'),
+    code: new pulumi.asset.FileArchive('../lambdas/zip'),
     handler: 'index.handler',
     role: zipLambdaRole.arn,
     timeout: 30,
@@ -228,7 +228,7 @@ const maxSizeLambda = new aws.lambda.Function(
     {
         runtime: 'nodejs18.x',
         // Lambda code is one directory up in the zip-lambda folder
-        code: new pulumi.asset.FileArchive('../resize-lambda'),
+        code: new pulumi.asset.FileArchive('../lambdas/maxres'),
         handler: 'index.handler',
         role: maxSizeLambdaRole.arn,
         timeout: 30,

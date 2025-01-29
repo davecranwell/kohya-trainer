@@ -79,7 +79,7 @@ new aws.iam.RolePolicyAttachment('lambdaS3Access', {
  */
 export const resizeLambda = new aws.lambda.Function('resizeLambda', {
     code: new pulumi.asset.AssetArchive({
-        '.': new pulumi.asset.FileArchive('../resizeLambda'),
+        '.': new pulumi.asset.FileArchive('../lambdas/edge-resize'),
     }),
     handler: 'index.handler',
     runtime: 'nodejs18.x',
