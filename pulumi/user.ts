@@ -12,7 +12,7 @@ const s3UserAccessKey = new aws.iam.AccessKey('s3UserAccessKey', {
 });
 
 export const createS3PolicyForBucket = (bucketName: string) => {
-    return new aws.iam.Policy('s3Policy', {
+    return new aws.iam.Policy(`${bucketName}s3UserAccessPolicy`, {
         description: 'S3 access policy for the web app user',
         policy: JSON.stringify({
             Version: '2012-10-17',

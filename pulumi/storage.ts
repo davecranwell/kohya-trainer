@@ -2,69 +2,93 @@ import * as aws from '@pulumi/aws';
 import * as pulumi from '@pulumi/pulumi';
 import { s3User, createS3PolicyForBucket } from './user';
 
-export const bucket = new aws.s3.BucketV2('imageBucket', {
-    bucket: 'my-image-resize-bucket',
-    forceDestroy: true,
-});
+// Helper function to create a bucket with all standard configurations
+function createStandardBucket(name: string, bucketName: string) {
+    // Create the main bucket
+    const bucket = new aws.s3.BucketV2(name, {
+        bucket: bucketName,
+        forceDestroy: true,
+    });
 
-new aws.s3.BucketOwnershipControls('imageBucketOwnershipControls', {
-    bucket: bucket.id,
-    rule: {
-        objectOwnership: 'BucketOwnerEnforced',
-    },
-});
-
-new aws.s3.BucketCorsConfigurationV2('imageBucketCorsConfiguration', {
-    bucket: bucket.id,
-    corsRules: [
-        {
-            allowedHeaders: ['*'],
-            allowedMethods: ['GET', 'POST', 'PUT', 'DELETE', 'HEAD'],
-            allowedOrigins: ['*'],
-            maxAgeSeconds: 3000,
+    // Set ownership controls
+    const ownershipControls = new aws.s3.BucketOwnershipControls(`${name}OwnershipControls`, {
+        bucket: bucket.id,
+        rule: {
+            objectOwnership: 'BucketOwnerEnforced',
         },
-    ],
-});
+    });
 
-/* This is a public policy, attached to no specific user, but applying to all users */
-/* We will need a user-attached policy to allow the app to upload */
-new aws.s3.BucketPolicy('imageBucketPolicy', {
-    bucket: bucket.id,
-    policy: bucket.arn.apply((bucketArn) =>
-        JSON.stringify({
-            Version: '2012-10-17',
-            Statement: [
+    // Configure public access block - MOVED UP and made dependent
+    const publicAccessBlock = new aws.s3.BucketPublicAccessBlock(
+        `${name}PublicAccessBlock`,
+        {
+            bucket: bucket.id,
+            blockPublicAcls: false,
+            blockPublicPolicy: false,
+            ignorePublicAcls: false,
+            restrictPublicBuckets: false,
+        },
+        { dependsOn: ownershipControls },
+    ); // Add dependency
+
+    // Set public access policy - Add dependencies
+    const bucketPolicy = new aws.s3.BucketPolicy(
+        `${name}Policy`,
+        {
+            bucket: bucket.id,
+            policy: bucket.arn.apply((bucketArn) =>
+                JSON.stringify({
+                    Version: '2012-10-17',
+                    Statement: [
+                        {
+                            Sid: 'PublicReadGetObject',
+                            Effect: 'Allow',
+                            Principal: '*',
+                            Action: 's3:GetObject',
+                            Resource: [`${bucketArn}/*`],
+                        },
+                    ],
+                }),
+            ),
+        },
+        { dependsOn: [publicAccessBlock] },
+    ); // Add dependency
+
+    // Set CORS configuration
+    new aws.s3.BucketCorsConfigurationV2(
+        `${name}CorsConfiguration`,
+        {
+            bucket: bucket.id,
+            corsRules: [
                 {
-                    Sid: 'PublicReadGetObject',
-                    Effect: 'Allow',
-                    Principal: '*',
-                    Action: 's3:GetObject',
-                    Resource: [`${bucketArn}/*`],
+                    allowedHeaders: ['*'],
+                    allowedMethods: ['GET', 'POST', 'PUT', 'DELETE', 'HEAD'],
+                    allowedOrigins: ['*'],
+                    maxAgeSeconds: 3000,
                 },
             ],
-        }),
-    ),
-});
+        },
+        { dependsOn: bucketPolicy },
+    ); // Add dependency
 
-new aws.s3.BucketPublicAccessBlock('imageBucketPublicAccessBlock', {
-    bucket: bucket.id,
-    blockPublicAcls: false,
-    blockPublicPolicy: false,
-    ignorePublicAcls: false,
-    restrictPublicBuckets: false,
-});
+    // Create and attach S3 policy to the user
+    const s3Policy = bucket.id.apply(createS3PolicyForBucket);
+    s3Policy.apply(
+        (policy) =>
+            new aws.iam.UserPolicyAttachment(`${name}UserPolicyAttachment`, {
+                user: s3User.name,
+                policyArn: policy.arn,
+            }),
+    );
 
-// Attach S3 policy to the user
-const s3Policy = bucket.id.apply(createS3PolicyForBucket);
+    return bucket;
+}
 
-// Attach the policy to the user
-s3Policy.apply(
-    (policy) =>
-        new aws.iam.UserPolicyAttachment('s3UserPolicyAttachment', {
-            user: s3User.name,
-            policyArn: policy.arn,
-        }),
-);
+// Create your buckets using the helper function
+export const bucket = createStandardBucket('imageBucket', 'my-image-resize-bucket');
+export const uploadBucket = createStandardBucket('modellerUploadBucket', 'modeller-upload-bucket');
+export const maxresBucket = createStandardBucket('modellerMaxresBucket', 'modeller-maxres-bucket');
+export const thumbnailsBucket = createStandardBucket('modellerThumbnailsBucket', 'modeller-thumbnails-bucket');
 
 // Create IAM role for Lambda
 const lambdaRole = new aws.iam.Role('zipLambdaRole', {
@@ -89,7 +113,7 @@ new aws.iam.RolePolicyAttachment('zipLambdaBasicExecution', {
 });
 
 // Create S3 access policy for Lambda
-const lambdaS3Policy = bucket.id.apply(
+const lambdaS3Policy = maxresBucket.id.apply(
     (bucketName) =>
         new aws.iam.RolePolicy('zipLambdaS3Policy', {
             role: lambdaRole.id,
@@ -119,7 +143,7 @@ const lambda = new aws.lambda.Function('zipLambda', {
     environment: {
         variables: {
             // Pass the bucket name to the Lambda function
-            BUCKET_NAME: bucket.id,
+            BUCKET_NAME: maxresBucket.id,
         },
     },
 });

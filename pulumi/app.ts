@@ -3,7 +3,7 @@ import * as awsx from '@pulumi/awsx';
 import * as pulumi from '@pulumi/pulumi';
 
 import { vpc } from './networking';
-import { bucket } from './storage';
+import { bucket, maxresBucket, thumbnailsBucket, uploadBucket } from './storage';
 import { s3User } from './user';
 
 // Get Pulumi config to manage environment-specific values
@@ -132,15 +132,23 @@ const listener = new aws.lb.Listener(
     { dependsOn: [targetGroup, loadBalancer] },
 );
 
-export const queue = new aws.sqs.Queue(`${appName}-queue`, {
+export const taskQueue = new aws.sqs.Queue(`${appName}-task-queue`, {
+    // AWS recommends setting a message retention period to prevent accidental loss of messages
+    messageRetentionSeconds: 2 * 24 * 60 * 60, // 2 days (14 days is max)
+    sqsManagedSseEnabled: true,
+    //this should probably be a fifo queue
+    //fifoQueue: true,
+});
+
+export const thumbnailerQueue = new aws.sqs.Queue(`${appName}-thumbnailer-queue`, {
     // AWS recommends setting a message retention period to prevent accidental loss of messages
     messageRetentionSeconds: 2 * 24 * 60 * 60, // 2 days (14 days is max)
     sqsManagedSseEnabled: true,
 });
 
-const sqsPolicy = new aws.iam.Policy(`${appName}-sqs-policy`, {
-    description: 'Policy to access SQS queue',
-    policy: queue.arn.apply((queueArn) =>
+const taskQueuePolicy = new aws.iam.Policy(`${appName}-task-queue-policy`, {
+    description: 'Policy to access task queue',
+    policy: taskQueue.arn.apply((queueArn) =>
         JSON.stringify({
             Version: '2012-10-17',
             Statement: [
@@ -154,9 +162,30 @@ const sqsPolicy = new aws.iam.Policy(`${appName}-sqs-policy`, {
     ),
 });
 
-new aws.iam.UserPolicyAttachment('sqsUserPolicyAttachment', {
+const thumbnailerQueuePolicy = new aws.iam.Policy(`${appName}-thumbnailer-queue-policy`, {
+    description: 'Policy to access thumbnailer queue',
+    policy: thumbnailerQueue.arn.apply((thumbnailerQueueArn) =>
+        JSON.stringify({
+            Version: '2012-10-17',
+            Statement: [
+                {
+                    Effect: 'Allow',
+                    Action: ['sqs:SendMessage', 'sqs:ReceiveMessage', 'sqs:DeleteMessage', 'sqs:GetQueueAttributes'],
+                    Resource: thumbnailerQueueArn,
+                },
+            ],
+        }),
+    ),
+});
+
+new aws.iam.UserPolicyAttachment('sqsTaskQueueUserPolicyAttachment', {
     user: s3User.name,
-    policyArn: sqsPolicy.arn,
+    policyArn: taskQueuePolicy.arn,
+});
+
+new aws.iam.UserPolicyAttachment('sqsThumbnailerQueueUserPolicyAttachment', {
+    user: s3User.name,
+    policyArn: thumbnailerQueuePolicy.arn,
 });
 
 // Add this after the queue definition and before the fargateService
@@ -178,7 +207,12 @@ const taskRole = new aws.iam.Role(`${appName}-task-role`, {
 // Attach the SQS policy to the task role
 new aws.iam.RolePolicyAttachment(`${appName}-task-role-policy`, {
     role: taskRole.name,
-    policyArn: sqsPolicy.arn,
+    policyArn: taskQueuePolicy.arn,
+});
+
+new aws.iam.RolePolicyAttachment(`${appName}-thumbnailer-role-policy`, {
+    role: taskRole.name,
+    policyArn: thumbnailerQueuePolicy.arn,
 });
 
 export const fargateService = new awsx.ecs.FargateService(
@@ -206,11 +240,15 @@ export const fargateService = new awsx.ecs.FargateService(
                     { name: 'PORT', value: containerPort.toString() },
                     { name: 'LOG_LEVEL', value: 'info' },
                     { name: 'AWS_REGION', value: 'us-east-1' },
-                    { name: 'AWS_SQS_QUEUE_URL', value: queue.url },
+                    { name: 'AWS_SQS_TASK_QUEUE_URL', value: taskQueue.url },
+                    { name: 'AWS_SQS_THUMBNAILER_QUEUE_URL', value: thumbnailerQueue.url },
                     { name: 'ALLOW_INDEXING', value: 'false' },
                     { name: 'USE_CRON', value: 'true' },
                     { name: 'USE_QUEUE', value: 'true' },
                     { name: 'AWS_S3_BUCKET_NAME', value: bucket.bucket },
+                    { name: 'AWS_S3_UPLOAD_BUCKET_NAME', value: uploadBucket.bucket },
+                    { name: 'AWS_S3_MAXRES_BUCKET_NAME', value: maxresBucket.bucket },
+                    { name: 'AWS_S3_THUMBNAILS_BUCKET_NAME', value: thumbnailsBucket.bucket },
                     { name: 'VAST_WEB_USER', value: 'admin' },
                     { name: 'SESSION_SECRET', value: config.require('SESSION_SECRET') },
                     { name: 'AWS_ACCESS_KEY_ID', value: config.require('AWS_ACCESS_KEY_ID') },
@@ -249,5 +287,7 @@ export const networkingVpcId = vpc.vpcId;
 export const loadBalancerSubnets = loadBalancer.subnets;
 export const vpcPublicSubnets = vpc.publicSubnetIds;
 
-export const queueUrl = queue.url;
-export const queueArn = queue.arn;
+export const taskQueueUrl = taskQueue.url;
+export const taskQueueArn = taskQueue.arn;
+export const thumbnailerQueueUrl = thumbnailerQueue.url;
+export const thumbnailerQueueArn = thumbnailerQueue.arn;

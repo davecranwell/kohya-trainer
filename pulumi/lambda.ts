@@ -1,6 +1,6 @@
 import * as aws from '@pulumi/aws';
 import * as pulumi from '@pulumi/pulumi';
-import { bucket } from './storage';
+import { bucket, maxresBucket, thumbnailsBucket, uploadBucket } from './storage';
 
 /**
  * IAM Role for Lambda@Edge
