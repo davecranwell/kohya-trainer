@@ -97,16 +97,18 @@ const bastionSecurityGroup = new aws.ec2.SecurityGroup('bastion-security-group',
  * Get the latest Amazon Linux 2 AMI
  * Using a data source ensures we always get the latest patched AMI
  */
-const amazonLinux2Ami = aws.ec2.getAmiOutput({
-    mostRecent: true,
-    owners: ['amazon'],
-    filters: [
-        {
-            name: 'name',
-            values: ['amzn2-ami-hvm-*-x86_64-gp2'],
-        },
-    ],
-});
+// const amazonLinux2Ami = aws.ec2.getAmiOutput({
+//     mostRecent: true,
+//     owners: ['amazon'],
+//     filters: [
+//         {
+//             name: 'name',
+//             values: ['amzn2-ami-hvm-*-x86_64-gp2'],
+//         },
+//     ],
+// });
+
+const bastionAmiId = 'ami-032ae1bccc5be78ca';
 
 // Read the public key from a file
 // Note: Use readFileSync since Pulumi needs synchronous operations
@@ -118,7 +120,7 @@ const bastionKeyPair = new aws.ec2.KeyPair('bastionKey', {
 });
 
 export const bastionHost = new aws.ec2.Instance('bastion', {
-    ami: amazonLinux2Ami.id,
+    ami: bastionAmiId,
     instanceType: 't2.nano',
     subnetId: publicSubnet1.id,
     vpcSecurityGroupIds: [bastionSecurityGroup.id],
