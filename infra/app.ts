@@ -3,7 +3,7 @@ import * as awsx from '@pulumi/awsx';
 import * as pulumi from '@pulumi/pulumi';
 
 import { vpc } from './networking';
-import { bucket, maxresBucket, thumbnailsBucket, uploadBucket } from './storage';
+import { bucket, maxresBucket, thumbnailsBucket, uploadBucket, thumbnailerQueue, thumbnailerQueuePolicy } from './storage';
 import { s3User } from './user';
 
 // Get Pulumi config to manage environment-specific values
@@ -140,11 +140,11 @@ export const taskQueue = new aws.sqs.Queue(`${appName}-task-queue`, {
     //fifoQueue: true,
 });
 
-export const thumbnailerQueue = new aws.sqs.Queue(`${appName}-thumbnailer-queue`, {
-    // AWS recommends setting a message retention period to prevent accidental loss of messages
-    messageRetentionSeconds: 2 * 24 * 60 * 60, // 2 days (14 days is max)
-    sqsManagedSseEnabled: true,
-});
+// export const thumbnailerQueue = new aws.sqs.Queue(`${appName}-thumbnailer-queue`, {
+//     // AWS recommends setting a message retention period to prevent accidental loss of messages
+//     messageRetentionSeconds: 2 * 24 * 60 * 60, // 2 days (14 days is max)
+//     sqsManagedSseEnabled: true,
+// });
 
 const taskQueuePolicy = new aws.iam.Policy(`${appName}-task-queue-policy`, {
     description: 'Policy to access task queue',
@@ -162,30 +162,9 @@ const taskQueuePolicy = new aws.iam.Policy(`${appName}-task-queue-policy`, {
     ),
 });
 
-const thumbnailerQueuePolicy = new aws.iam.Policy(`${appName}-thumbnailer-queue-policy`, {
-    description: 'Policy to access thumbnailer queue',
-    policy: thumbnailerQueue.arn.apply((thumbnailerQueueArn) =>
-        JSON.stringify({
-            Version: '2012-10-17',
-            Statement: [
-                {
-                    Effect: 'Allow',
-                    Action: ['sqs:SendMessage', 'sqs:ReceiveMessage', 'sqs:DeleteMessage', 'sqs:GetQueueAttributes'],
-                    Resource: thumbnailerQueueArn,
-                },
-            ],
-        }),
-    ),
-});
-
 new aws.iam.UserPolicyAttachment('sqsTaskQueueUserPolicyAttachment', {
     user: s3User.name,
     policyArn: taskQueuePolicy.arn,
-});
-
-new aws.iam.UserPolicyAttachment('sqsThumbnailerQueueUserPolicyAttachment', {
-    user: s3User.name,
-    policyArn: thumbnailerQueuePolicy.arn,
 });
 
 // Add this after the queue definition and before the fargateService
@@ -210,10 +189,14 @@ new aws.iam.RolePolicyAttachment(`${appName}-task-role-policy`, {
     policyArn: taskQueuePolicy.arn,
 });
 
-new aws.iam.RolePolicyAttachment(`${appName}-thumbnailer-role-policy`, {
-    role: taskRole.name,
-    policyArn: thumbnailerQueuePolicy.arn,
-});
+new aws.iam.RolePolicyAttachment(
+    `${appName}-thumbnailer-role-policy`,
+    {
+        role: taskRole.name,
+        policyArn: thumbnailerQueuePolicy.arn,
+    },
+    { dependsOn: [thumbnailerQueuePolicy] },
+);
 
 export const fargateService = new awsx.ecs.FargateService(
     `${appName}-service`,

@@ -2,9 +2,10 @@ import * as aws from '@pulumi/aws';
 import * as pulumi from '@pulumi/pulumi';
 
 import { s3User, createS3PolicyForBucket } from './user';
-import { thumbnailerQueue } from './app';
+// import { thumbnailerQueue } from './app';
 
 const config = new pulumi.Config();
+const appName = config.require('appName');
 
 // Helper function to create a bucket with all standard configurations
 function createStandardBucket(name: string, bucketName: string) {
@@ -94,6 +95,33 @@ export const uploadBucket = createStandardBucket('modellerUploadBucket', 'modell
 export const maxresBucket = createStandardBucket('modellerMaxresBucket', 'modeller-maxres-bucket');
 export const thumbnailsBucket = createStandardBucket('modellerThumbnailsBucket', 'modeller-thumbnails-bucket');
 
+export const thumbnailerQueue = new aws.sqs.Queue(`${appName}-thumbnailer-queue`, {
+    // AWS recommends setting a message retention period to prevent accidental loss of messages
+    messageRetentionSeconds: 2 * 24 * 60 * 60, // 2 days (14 days is max)
+    sqsManagedSseEnabled: true,
+});
+
+export const thumbnailerQueuePolicy = new aws.iam.Policy(`${appName}-thumbnailer-queue-policy`, {
+    description: 'Policy to access thumbnailer queue',
+    policy: thumbnailerQueue.arn.apply((thumbnailerQueueArn) =>
+        JSON.stringify({
+            Version: '2012-10-17',
+            Statement: [
+                {
+                    Effect: 'Allow',
+                    Action: ['sqs:SendMessage', 'sqs:ReceiveMessage', 'sqs:DeleteMessage', 'sqs:GetQueueAttributes'],
+                    Resource: thumbnailerQueueArn,
+                },
+            ],
+        }),
+    ),
+});
+
+new aws.iam.UserPolicyAttachment('sqsThumbnailerQueueUserPolicyAttachment', {
+    user: s3User.name,
+    policyArn: thumbnailerQueuePolicy.arn,
+});
+
 // Create IAM role for Lambda
 const zipLambdaRole = new aws.iam.Role('zipLambdaRole', {
     assumeRolePolicy: JSON.stringify({
@@ -136,10 +164,28 @@ new aws.iam.RolePolicyAttachment('maxSizeLambdaBasicExecution', {
     policyArn: 'arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole',
 });
 
+// Add SQS permissions to maxSizeLambdaRole
+thumbnailerQueue.arn.apply(
+    (queueArn) =>
+        new aws.iam.RolePolicy('maxSizeLambdaSQSPolicy', {
+            role: maxSizeLambdaRole.id,
+            policy: JSON.stringify({
+                Version: '2012-10-17',
+                Statement: [
+                    {
+                        Effect: 'Allow',
+                        Action: ['sqs:ReceiveMessage', 'sqs:DeleteMessage', 'sqs:GetQueueAttributes', 'sqs:ChangeMessageVisibility'],
+                        Resource: queueArn,
+                    },
+                ],
+            }),
+        }),
+);
+
 maxresBucket.id.apply(
     (bucketName) =>
-        new aws.iam.RolePolicy('maxSizeLambdaS3Policy', {
-            role: maxSizeLambdaRole.id,
+        new aws.iam.RolePolicy('maxResZipLambdaS3Policy', {
+            role: zipLambdaRole.id,
             policy: JSON.stringify({
                 Version: '2012-10-17',
                 Statement: [
@@ -155,7 +201,7 @@ maxresBucket.id.apply(
 
 uploadBucket.id.apply(
     (bucketName) =>
-        new aws.iam.RolePolicy('zipLambdaS3Policy', {
+        new aws.iam.RolePolicy('uploadZipLambdaS3Policy', {
             role: zipLambdaRole.id,
             policy: JSON.stringify({
                 Version: '2012-10-17',
@@ -172,7 +218,7 @@ uploadBucket.id.apply(
 
 maxresBucket.id.apply(
     (bucketName) =>
-        new aws.iam.RolePolicy('maxSizeLambdaS3Policy', {
+        new aws.iam.RolePolicy('maxResMaxSizeLambdaS3Policy', {
             role: maxSizeLambdaRole.id,
             policy: JSON.stringify({
                 Version: '2012-10-17',
@@ -189,7 +235,7 @@ maxresBucket.id.apply(
 
 uploadBucket.id.apply(
     (bucketName) =>
-        new aws.iam.RolePolicy('zipLambdaS3Policy', {
+        new aws.iam.RolePolicy('uploadMaxSizeLambdaS3Policy', {
             role: maxSizeLambdaRole.id,
             policy: JSON.stringify({
                 Version: '2012-10-17',
@@ -223,27 +269,26 @@ const zipLambda = new aws.lambda.Function('zipLambda', {
 });
 
 // Lambda for resizing all the bucket files to their max allowed resolution and uploading them to the maxres bucket
-const maxSizeLambda = new aws.lambda.Function(
-    'maxSizeLambda',
-    {
-        runtime: 'nodejs18.x',
-        // Lambda code is one directory up in the zip-lambda folder
-        code: new pulumi.asset.FileArchive('../lambdas/maxres'),
-        handler: 'index.handler',
-        role: maxSizeLambdaRole.arn,
-        timeout: 15 * 60, // 15 mins
-        memorySize: 256,
-        ephemeralStorage: { size: 1024 }, // Ephemeral storage needs to be at least the size of the total number of files we permit the user to upload
-        environment: {
-            variables: {
-                QUEUE_URL: thumbnailerQueue.url,
-                SOURCE_BUCKET_NAME: uploadBucket.id,
-                TARGET_BUCKET_NAME: maxresBucket.id,
-                DB_URL: config.require('DATABASE_URL'),
+const maxSizeLambda = thumbnailerQueue.url.apply(
+    (queueUrl) =>
+        new aws.lambda.Function('maxSizeLambda', {
+            runtime: 'nodejs18.x',
+            // Lambda code is one directory up in the zip-lambda folder
+            code: new pulumi.asset.FileArchive('../lambdas/maxres'),
+            handler: 'index.handler',
+            role: maxSizeLambdaRole.arn,
+            timeout: 15 * 60, // 15 mins
+            memorySize: 256,
+            ephemeralStorage: { size: 1024 }, // Ephemeral storage needs to be at least the size of the total number of files we permit the user to upload
+            environment: {
+                variables: {
+                    QUEUE_URL: queueUrl,
+                    SOURCE_BUCKET_NAME: uploadBucket.id,
+                    TARGET_BUCKET_NAME: maxresBucket.id,
+                    DB_URL: config.require('DATABASE_URL'),
+                },
             },
-        },
-    },
-    { dependsOn: [thumbnailerQueue] },
+        }),
 );
 
 // Add policy allowing S3user to invoke Lambda
