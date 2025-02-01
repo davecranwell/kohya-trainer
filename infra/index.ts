@@ -8,6 +8,8 @@ import { accessKeyId, secretAccessKey } from './user';
 // import { resizeLambda } from './lambda';
 import * as app from './app';
 import * as githubActions from './github-actions';
+import { taskQueue, maxSizeQueue } from './queues';
+import { zipLambda, maxSizeLambda } from './lambda-s3';
 
 // Export all required values
 export const bastionPublicIp = networking.bastionHost.publicIp;
@@ -29,7 +31,9 @@ export const appUrl = app.url;
 export const githubOidcRole = githubActions.githubOidcRole.arn;
 export const s3AccessKeyId = accessKeyId;
 export const s3SecretAccessKey = secretAccessKey;
-export const taskQueueUrl = app.taskQueueUrl;
-export const taskQueueArn = app.taskQueueArn;
-export const thumbnailerQueueUrl = app.thumbnailerQueueUrl;
-export const thumbnailerQueueArn = app.thumbnailerQueueArn;
+export const taskQueueUrl = taskQueue.url;
+export const taskQueueArn = taskQueue.arn;
+export const maxSizeQueueUrl = maxSizeQueue.url;
+export const maxSizeQueueArn = maxSizeQueue.arn;
+export const zipLambdaArn = zipLambda.arn;
+export const maxSizeLambdaArn = maxSizeLambda.arn;

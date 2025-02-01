@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo, useCallback, memo } from 'react';
 import { Combobox, ComboboxInput, ComboboxButton, ComboboxOption, ComboboxOptions } from '@headlessui/react';
 import { Cross1Icon, ArrowDownIcon, PlusIcon, TargetIcon, QuoteIcon, ChevronDownIcon, BookmarkFilledIcon } from '@radix-ui/react-icons';
 
@@ -16,7 +16,40 @@ export type Option = string;
 
 export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {}
 
-export const MultiComboBox: React.FC<Props> = ({ ...props }) => {
+// Separate component for selected items to prevent re-renders of the entire combobox
+const SelectedItems = memo(({ selected, name, onRemove }: { selected: Option[]; name: string; onRemove: (option: Option) => void }) => {
+    if (selected.length === 0) return null;
+
+    // Event delegation handler
+    const handleClick = (e: React.MouseEvent) => {
+        // Look for closest button element from click target
+        const button = (e.target as HTMLElement).closest('[data-remove-option]');
+        if (button) {
+            const option = button.getAttribute('data-remove-option');
+            if (option) onRemove(option);
+        }
+    };
+
+    return (
+        <ul className="mb-2 flex flex-wrap border-b border-gray-800 py-2" onClick={handleClick}>
+            {selected.map((option: Option, index) => (
+                <li
+                    key={`${name}-${option}-${index}`}
+                    className="group relative mb-1 mr-1 flex items-center items-stretch whitespace-nowrap rounded rounded-full bg-primary-dark p-1 px-2 text-xs text-white">
+                    <span>{option}</span>
+                    <span
+                        title={`Remove ${option}`}
+                        data-remove-option={option}
+                        className="inset-0 flex cursor-pointer content-center items-center justify-center justify-items-center justify-items-stretch justify-self-center rounded rounded-full">
+                        <Cross1Icon className="m-auto ml-1 h-3 w-3 hover:text-semantic-error-dark" aria-label={`Remove ${option}`} />
+                    </span>
+                </li>
+            ))}
+        </ul>
+    );
+});
+
+export const MultiComboBox: React.FC<Props> = memo(({ ...props }) => {
     const [selected, setSelected] = useState<Option[]>(props.defaultValue ? commaSeparatedStringToArray(props.defaultValue) : []);
     const [query, setQuery] = useState('');
 
@@ -24,42 +57,38 @@ export const MultiComboBox: React.FC<Props> = ({ ...props }) => {
         setSelected(props.defaultValue ? commaSeparatedStringToArray(props.defaultValue) : []);
     }, [props.defaultValue]);
 
-    const handleChange = (selectedOptions: Option[]) => {
-        setSelected(selectedOptions);
-        setQuery('');
-        props.onChange(selectedOptions);
-    };
+    const handleChange = useCallback(
+        (selectedOptions: Option[]) => {
+            setSelected(selectedOptions);
+            setQuery('');
+            props.onChange(selectedOptions);
+        },
+        [props.onChange],
+    );
 
-    const handleRemove = (option: Option) => {
-        setSelected((selected) => selected.filter((selectedItem) => selectedItem !== option));
-        props.onChange(selected.filter((selectedItem) => selectedItem !== option));
-    };
+    const handleRemove = useCallback(
+        (option: Option) => {
+            setSelected((selected) => {
+                const newSelected = selected.filter((selectedItem) => selectedItem !== option);
+                props.onChange(newSelected);
+                return newSelected;
+            });
+        },
+        [props.onChange],
+    );
 
-    // Filter the items by the active query
-    const filteredItems = query === '' ? props.options : props.options?.filter((item) => item.toLowerCase().includes(query.toLowerCase()));
+    // Memoize filtered items
+    const filteredItems = useMemo(
+        () => (query === '' ? props.options : props.options?.filter((item) => item.toLowerCase().includes(query.toLowerCase()))),
+        [query, props.options],
+    );
 
-    // Then we want to remove the items we've already selected
-    const unSelectedItems = filteredItems?.filter((item) => !selected.find((selected) => item === selected)) || [];
+    // Memoize unselected items
+    const unSelectedItems = useMemo(() => filteredItems?.filter((item) => !selected.includes(item)) || [], [filteredItems, selected]);
 
     return (
         <div className="rounded rounded-lg border border-gray-800 bg-black/40 p-2">
-            {selected.length > 0 && (
-                <ul className="mb-2 flex flex-wrap border-b border-gray-800 py-2">
-                    {selected.map((option: Option, index) => (
-                        <li
-                            key={`${props.name}-${option}-${index}`}
-                            className="group relative mb-1 mr-1 flex items-center items-stretch whitespace-nowrap rounded rounded-full bg-primary-dark p-1 px-2 text-xs text-white">
-                            <span>{option}</span>
-                            <span
-                                title={`Remove ${option}`}
-                                onClick={() => handleRemove(option)}
-                                className="inset-0 flex cursor-pointer content-center items-center justify-center justify-items-center justify-items-stretch justify-self-center rounded rounded-full">
-                                <Cross1Icon className="m-auto ml-1 h-3 w-3 hover:text-semantic-error-dark" aria-label={`Remove ${option}`} />
-                            </span>
-                        </li>
-                    ))}
-                </ul>
-            )}
+            <SelectedItems selected={selected} name={props.name} onRemove={handleRemove} />
 
             <Combobox value={selected} onChange={handleChange} multiple>
                 {({ value }) => (
@@ -81,7 +110,12 @@ export const MultiComboBox: React.FC<Props> = ({ ...props }) => {
                                 <ChevronDownIcon className="text-gray-500" />
                             </ComboboxButton>
 
-                            <ComboboxOptions className="dropdown-content absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded-md bg-black py-1 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm">
+                            <ComboboxOptions
+                                className="dropdown-content absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded-md bg-black py-1 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm"
+                                onClick={(e: React.MouseEvent) => {
+                                    // Prevent re-opening of dropdown when clicking option
+                                    e.stopPropagation();
+                                }}>
                                 {query.length > 0 && !unSelectedItems.includes(query) && (
                                     <ComboboxOption
                                         value={query}
@@ -108,4 +142,7 @@ export const MultiComboBox: React.FC<Props> = ({ ...props }) => {
             </Combobox>
         </div>
     );
-};
+});
+
+// Add display name for debugging
+MultiComboBox.displayName = 'MultiComboBox';

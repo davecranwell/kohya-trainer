@@ -12,6 +12,14 @@ export const action = async ({ params, request }: ActionFunctionArgs) => {
     const trainingId = params.id;
     const data = await request.json();
 
+    const training = await prisma.training.findUnique({
+        where: { id: trainingId },
+    });
+
+    if (!training) {
+        return Response.json({ error: 'Training not found' }, { status: 404 });
+    }
+
     if (request.method === 'POST') {
         const newImage = await prisma.trainingImage.create({
             data: {
@@ -24,23 +32,13 @@ export const action = async ({ params, request }: ActionFunctionArgs) => {
             },
         });
 
-        const sqs = new SQS({ region: 'us-east-1' });
-        await sqs.sendMessage({
-            DelaySeconds: 0,
-            QueueUrl: process.env.AWS_SQS_THUMBNAILER_QUEUE_URL!,
-            MessageBody: JSON.stringify({
-                id: newImage.id,
-                key: `${userId}/${trainingId}/images/${data.name}`,
-            }),
-        });
-
         return Response.json(newImage);
     }
 
     if (request.method === 'PATCH') {
         const updatedImage = await prisma.trainingImage.update({
             where: { id: data.id },
-            data: { text: sanitiseTagString(data.text), updatedAt: new Date() },
+            data: { text: sanitiseTagString(data.text, [...training.name.split(' '), ...training.triggerWord.split(' ')]), updatedAt: new Date() },
         });
 
         return Response.json(updatedImage);

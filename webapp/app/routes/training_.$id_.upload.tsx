@@ -1,9 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Form, useLoaderData } from 'react-router';
 import type { LoaderFunctionArgs } from 'react-router';
 import { data } from 'react-router';
 import { toast } from 'sonner';
 import { createId } from '@paralleldrive/cuid2';
+import { List, CellMeasurer, CellMeasurerCache, AutoSizer } from 'react-virtualized';
 
 import prisma from '#/prisma/db.server';
 
@@ -41,12 +42,13 @@ export async function loader({ params, request }: LoaderFunctionArgs) {
             text: true,
             url: true,
             type: true,
-            updatedAt: true,
+            createdAt: true,
         },
         where: { trainingId: params.id },
     });
 
     return {
+        thumbnailBucketUrl: `https://${process.env.AWS_S3_THUMBNAILS_BUCKET_NAME!}.s3.us-east-1.amazonaws.com/`,
         userId,
         images: images.map((image) => ({ ...image, filenameNoExtension: image.name.split('.').slice(0, -1).join('.') })),
         training,
@@ -54,7 +56,7 @@ export async function loader({ params, request }: LoaderFunctionArgs) {
 }
 
 export default function ImageUpload() {
-    const { userId, images, training } = useLoaderData<typeof loader>();
+    const { userId, images, training, thumbnailBucketUrl } = useLoaderData<typeof loader>();
     const [uploadedImages, setUploadedImages] = useState<ImageWithMetadata[]>(images as ImageWithMetadata[]);
     const [uploadProgress, setUploadProgress] = useState<Record<string, number>>({});
     const [allTags, setAllTags] = useState<string[]>(sanitiseTagArray(images.map((image) => (image.text || '').split(',')).flat()));
@@ -188,13 +190,13 @@ export default function ImageUpload() {
         });
 
         if (updateTextResponse.ok) {
-            setUploadedImages([
-                ...uploadedImages.filter((image) => image.id !== imageId),
-                {
-                    ...uploadedImages.find((image) => image.id === imageId),
-                    text: sanitisedTags.join(','),
-                } as ImageWithMetadata,
-            ]);
+            // setUploadedImages([
+            //     ...uploadedImages.filter((image) => image.id !== imageId),
+            //     {
+            //         ...uploadedImages.find((image) => image.id === imageId),
+            //         text: sanitisedTags.join(','),
+            //     } as ImageWithMetadata,
+            // ]);
             setAllTags(sanitiseTagArray([...allTags, ...sanitisedTags]));
         }
     };
@@ -212,6 +214,52 @@ export default function ImageUpload() {
 
         return true;
     });
+
+    // Create a cache for cell measurements
+    const cache = new CellMeasurerCache({
+        fixedWidth: true,
+        defaultHeight: 200,
+        minHeight: 100,
+    });
+
+    // Reset cache when filtered images change
+    useEffect(() => {
+        cache.clearAll();
+    }, [filteredImages]);
+
+    // Memoized row renderer
+    const rowRenderer = useCallback(
+        ({ key, index, parent, style }: any) => {
+            const image = filteredImages[index];
+
+            return (
+                <CellMeasurer cache={cache} columnIndex={0} key={key} parent={parent} rowIndex={index}>
+                    {({ registerChild }) => (
+                        <div ref={registerChild as any} style={style}>
+                            <li className="mb-4 flex flex-row gap-6 rounded-xl border border-gray-800 bg-gray-900 p-6">
+                                <ImagePreview
+                                    url={`${image.url?.startsWith('blob') ? image.url : `${thumbnailBucketUrl}${image.url}`}`}
+                                    id={image.id}
+                                    width={200}
+                                />
+
+                                <div className="ml-2 flex-1">
+                                    <div>Tags</div>
+                                    <MultiComboBox
+                                        name={`${image.id}-tags`}
+                                        defaultValue={image.text}
+                                        options={allTags}
+                                        onChange={(tags) => handleTagChange(tags, image.id)}
+                                    />
+                                </div>
+                            </li>
+                        </div>
+                    )}
+                </CellMeasurer>
+            );
+        },
+        [filteredImages, thumbnailBucketUrl, allTags, handleTagChange, cache],
+    );
 
     return (
         <Form key={training.id} id={training.id} method="post" encType="multipart/form-data" className="relative">
@@ -277,25 +325,21 @@ export default function ImageUpload() {
                                     </div>
                                 </div>
 
-                                <ul role="list" className="mt-4 space-y-4">
-                                    {filteredImages
-                                        .sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0))
-                                        .map((image) => (
-                                            <li key={`${image.id}`} className="flex flex-row gap-6 rounded-xl border border-gray-800 bg-gray-900 p-6">
-                                                <ImagePreview url={image.url} id={image.id} width={200} />
-
-                                                <div className="ml-2 flex-1">
-                                                    <Label htmlFor={`${image.id}-tags`}>Tags</Label>
-                                                    <MultiComboBox
-                                                        name={`${image.id}-tags`}
-                                                        defaultValue={image.text}
-                                                        options={allTags}
-                                                        onChange={(tags) => handleTagChange(tags, image.id)}
-                                                    />
-                                                </div>
-                                            </li>
-                                        ))}
-                                </ul>
+                                <div className="mt-4" style={{ height: 'calc(100vh - 350px)' }}>
+                                    <AutoSizer>
+                                        {({ width, height }) => (
+                                            <List
+                                                width={width}
+                                                height={height}
+                                                deferredMeasurementCache={cache}
+                                                rowHeight={cache.rowHeight}
+                                                rowRenderer={rowRenderer}
+                                                rowCount={filteredImages.length}
+                                                overscanRowCount={3}
+                                            />
+                                        )}
+                                    </AutoSizer>
+                                </div>
                             </div>
                         )}
                     </FileUploadPreview>

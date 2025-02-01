@@ -33,17 +33,12 @@ const PORT = process.env.PORT || 3000;
 
 const logger = pino({
     level: process.env.LOG_LEVEL || 'info',
-    // Docker best practices require logging to stdout/stderr
-    // Remove transport configuration in production to ensure direct stdout logging
     ...(IS_PROD
         ? {
-              // Force stdout logging in production/Docker
               destination: 1,
-              // Ensure JSON logging in production for better log aggregation
               formatters: {
                   level: (label) => ({ level: label }),
-                  // Add timestamp in ISO format for log aggregation systems
-                  bindings: () => ({
+                  bindings: (bindings) => ({
                       pid: process.pid,
                       time: new Date().toISOString(),
                   }),
@@ -58,24 +53,53 @@ const logger = pino({
                       translateTime: 'SYS:standard',
                   },
               },
-              formatters: {
-                  level: (label) => ({ level: label }),
-              },
           }),
-    // Redact sensitive info from logs
     redact: ['req.headers.authorization', 'req.headers.cookie'],
 });
 
-// Create HTTP logger middleware
 const httpLogger = pinoHttp({
     logger,
-    // Generate request ID if not present in headers
-    genReqId: (req) => req.headers['x-request-id'] || crypto.randomBytes(16).toString('hex'),
+    // Disable automatic error logging since we'll handle it ourselves
+    wrapSerializers: false,
     customProps: (req, res) => ({
-        // Add any custom properties you want in every log
         environment: MODE,
     }),
-    // Skip logging health checks in production
+    // Only set request id
+    genReqId: (req) => req.headers['x-request-id'] || crypto.randomBytes(16).toString('hex'),
+    customLogLevel: function (req, res, err) {
+        if (res.statusCode >= 400 || err) {
+            return 'error';
+        }
+        return 'info';
+    },
+    customSuccessMessage: function (req, res) {
+        if (res.statusCode >= 400) {
+            return `${req.method} ${req.url} ${res.statusCode}`;
+        }
+        return `${req.method} ${req.url}`;
+    },
+    customErrorMessage: function (req, res, err) {
+        return `${req.method} ${req.url} failed: ${err?.message}`;
+    },
+    serializers: {
+        err: (err) => {
+            // Only serialize error details for actual Error objects
+            if (err && err instanceof Error) {
+                return {
+                    type: err.constructor.name,
+                    message: err.message,
+                    stack: err.stack,
+                };
+            }
+            return err;
+        },
+        req: (req) => {
+            return {
+                method: req.method,
+                url: req.url,
+            };
+        },
+    },
     autoLogging: {
         ignore: (req) => IS_PROD && req.url === '/healthcheck',
     },
@@ -85,7 +109,7 @@ async function startServer() {
     const app = express();
 
     app.use(compression());
-    app.use(httpLogger);
+    //app.use(httpLogger);
     app.disable('x-powered-by');
 
     // Create dev server first so we can use it in the request handler
@@ -125,8 +149,8 @@ async function startServer() {
                 directives: {
                     'font-src': ["'self'", 'fonts.gstatic.com'],
                     'frame-src': ["'self'"],
-                    'img-src': ["'self'", 'data:', 'blob:', 'https://my-image-resize-bucket.s3.us-east-1.amazonaws.com'],
-                    'connect-src': ["'self'", 'ws://localhost:*', 'https://my-image-resize-bucket.s3.us-east-1.amazonaws.com'],
+                    'img-src': ["'self'", 'data:', 'blob:', `https://${process.env.AWS_S3_THUMBNAILS_BUCKET_NAME!}.s3.us-east-1.amazonaws.com`],
+                    'connect-src': ["'self'", 'ws://localhost:*', `https://${process.env.AWS_S3_UPLOAD_BUCKET_NAME!}.s3.us-east-1.amazonaws.com`],
                     'script-src': ["'strict-dynamic'", "'self'", (_, res) => `'nonce-${(res as Response).locals.cspNonce}'`],
                     'script-src-attr': [(_, res) => `'nonce-${(res as Response).locals.cspNonce}'`],
                     'upgrade-insecure-requests': null,

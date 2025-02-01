@@ -3,8 +3,9 @@ import * as awsx from '@pulumi/awsx';
 import * as pulumi from '@pulumi/pulumi';
 
 import { vpc } from './networking';
-import { bucket, maxresBucket, thumbnailsBucket, uploadBucket, thumbnailerQueue, thumbnailerQueuePolicy } from './storage';
+import { bucket, maxresBucket, thumbnailsBucket, uploadBucket } from './storage';
 import { s3User } from './user';
+import { taskQueue, maxSizeQueue, taskQueuePolicy, maxSizeQueuePolicy } from './queues';
 
 // Get Pulumi config to manage environment-specific values
 const config = new pulumi.Config();
@@ -132,41 +133,6 @@ const listener = new aws.lb.Listener(
     { dependsOn: [targetGroup, loadBalancer] },
 );
 
-export const taskQueue = new aws.sqs.Queue(`${appName}-task-queue`, {
-    // AWS recommends setting a message retention period to prevent accidental loss of messages
-    messageRetentionSeconds: 2 * 24 * 60 * 60, // 2 days (14 days is max)
-    sqsManagedSseEnabled: true,
-    //this should probably be a fifo queue
-    //fifoQueue: true,
-});
-
-// export const thumbnailerQueue = new aws.sqs.Queue(`${appName}-thumbnailer-queue`, {
-//     // AWS recommends setting a message retention period to prevent accidental loss of messages
-//     messageRetentionSeconds: 2 * 24 * 60 * 60, // 2 days (14 days is max)
-//     sqsManagedSseEnabled: true,
-// });
-
-const taskQueuePolicy = new aws.iam.Policy(`${appName}-task-queue-policy`, {
-    description: 'Policy to access task queue',
-    policy: taskQueue.arn.apply((queueArn) =>
-        JSON.stringify({
-            Version: '2012-10-17',
-            Statement: [
-                {
-                    Effect: 'Allow',
-                    Action: ['sqs:SendMessage', 'sqs:ReceiveMessage', 'sqs:DeleteMessage', 'sqs:GetQueueAttributes'],
-                    Resource: queueArn,
-                },
-            ],
-        }),
-    ),
-});
-
-new aws.iam.UserPolicyAttachment('sqsTaskQueueUserPolicyAttachment', {
-    user: s3User.name,
-    policyArn: taskQueuePolicy.arn,
-});
-
 // Add this after the queue definition and before the fargateService
 const taskRole = new aws.iam.Role(`${appName}-task-role`, {
     assumeRolePolicy: JSON.stringify({
@@ -190,12 +156,12 @@ new aws.iam.RolePolicyAttachment(`${appName}-task-role-policy`, {
 });
 
 new aws.iam.RolePolicyAttachment(
-    `${appName}-thumbnailer-role-policy`,
+    `${appName}-maxsize-role-policy`,
     {
         role: taskRole.name,
-        policyArn: thumbnailerQueuePolicy.arn,
+        policyArn: maxSizeQueuePolicy.arn,
     },
-    { dependsOn: [thumbnailerQueuePolicy] },
+    { dependsOn: [maxSizeQueuePolicy] },
 );
 
 export const fargateService = new awsx.ecs.FargateService(
@@ -224,7 +190,7 @@ export const fargateService = new awsx.ecs.FargateService(
                     { name: 'LOG_LEVEL', value: 'info' },
                     { name: 'AWS_REGION', value: 'us-east-1' },
                     { name: 'AWS_SQS_TASK_QUEUE_URL', value: taskQueue.url },
-                    { name: 'AWS_SQS_THUMBNAILER_QUEUE_URL', value: thumbnailerQueue.url },
+                    { name: 'AWS_SQS_MAXSIZE_QUEUE_URL', value: maxSizeQueue.url },
                     { name: 'ALLOW_INDEXING', value: 'false' },
                     { name: 'USE_CRON', value: 'true' },
                     { name: 'USE_QUEUE', value: 'true' },
@@ -272,5 +238,3 @@ export const vpcPublicSubnets = vpc.publicSubnetIds;
 
 export const taskQueueUrl = taskQueue.url;
 export const taskQueueArn = taskQueue.arn;
-export const thumbnailerQueueUrl = thumbnailerQueue.url;
-export const thumbnailerQueueArn = thumbnailerQueue.arn;

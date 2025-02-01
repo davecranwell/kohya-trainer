@@ -60,6 +60,22 @@ export const zipImages = async ({ trainingId }: { trainingId: string }) => {
     const lambdaResult = Payload && (JSON.parse(Buffer.from(Payload).toString()) as ZipPayloadResponse);
 
     if (lambdaResult?.zipKey) {
+        const training = await prisma.training.findUnique({
+            where: { id: trainingId },
+            select: { config: true },
+        });
+
+        if (training?.config) {
+            const configJson = JSON.parse(training.config);
+            configJson.training_images_url = lambdaResult.zipKey;
+
+            //update the training config to set training_images_url to the zip key
+            await prisma.training.update({
+                where: { id: trainingId },
+                data: { config: JSON.stringify(configJson) },
+            });
+        }
+
         return lambdaResult?.zipKey;
     }
 };

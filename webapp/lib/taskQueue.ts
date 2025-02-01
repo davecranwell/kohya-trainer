@@ -5,7 +5,7 @@ const queueUrl = process.env.AWS_SQS_TASK_QUEUE_URL;
 
 const sqs = new SQS({ region: 'us-east-1' });
 
-async function pollMessages(handler) {
+async function pollMessages(handler: (message: any) => Promise<void>) {
     try {
         const data = await sqs.receiveMessage({
             QueueUrl: queueUrl,
@@ -40,7 +40,7 @@ async function pollMessages(handler) {
     }
 }
 
-export function taskSubscription(func, interval = 5000) {
+export function taskSubscription(func: (message: any) => Promise<void>, interval = 5000) {
     setInterval(() => {
         pollMessages(func);
     }, interval);

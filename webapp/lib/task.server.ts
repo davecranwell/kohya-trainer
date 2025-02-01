@@ -8,12 +8,14 @@ import { zipImages } from './tasks/zipImages';
 import { assignGpuToTraining } from './tasks/createGpuInstance';
 import { awaitGpuReady } from './tasks/awaitGpuReady';
 import { startTraining } from './tasks/startTraining';
+import { reduceImageSuccess } from './tasks/reduceImageSuccess';
 
 export type TaskBody = {
-    task: 'reduceImages' | 'zipImages' | 'allocateGpu' | 'awaitGpuReady' | 'startTraining';
+    task: 'reduceImages' | 'reduceImageSuccess' | 'zipImages' | 'allocateGpu' | 'awaitGpuReady' | 'startTraining';
     trainingId: string;
     userId?: string;
     zipKey?: string;
+    imageId?: string;
 };
 
 export type ResizeBody = {
@@ -30,12 +32,18 @@ export function subscribeToTasks() {
     console.log('Subscribing to task queue');
 
     taskSubscription(async (body: TaskBody) => {
-        const { task, trainingId, userId }: TaskBody = body;
+        const { task, trainingId, imageId, userId }: TaskBody = body;
 
         switch (task) {
             case 'reduceImages': {
                 await reduceImages({ trainingId });
-                await createTask(process.env.AWS_SQS_TASK_QUEUE_URL!, { task: 'zipImages', trainingId, userId }, 10);
+                break;
+            }
+
+            case 'reduceImageSuccess': {
+                if (imageId) {
+                    await reduceImageSuccess({ imageId });
+                }
                 break;
             }
 

@@ -77,6 +77,9 @@ export async function loader({ request }: LoaderFunctionArgs) {
         where: {
             ownerId: userId,
         },
+        orderBy: {
+            updatedAt: 'desc',
+        },
     });
 
     return { userId, trainings };
