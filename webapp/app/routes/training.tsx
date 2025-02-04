@@ -63,7 +63,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
             baseModel: true,
             status: true,
             images: {
-                take: 1,
+                take: 3,
                 select: {
                     url: true,
                 },
@@ -82,11 +82,11 @@ export async function loader({ request }: LoaderFunctionArgs) {
         },
     });
 
-    return { userId, trainings };
+    return { userId, trainings, thumbnailBucketUrl: `https://${process.env.AWS_S3_THUMBNAILS_BUCKET_NAME!}.s3.us-east-1.amazonaws.com/` };
 }
 
 export default function TrainingPage() {
-    const { userId, trainings } = useLoaderData<typeof loader>();
+    const { userId, trainings, thumbnailBucketUrl } = useLoaderData<typeof loader>();
     const progressMessage = useEventSource(`/sse/${userId}`, { event: userId });
 
     useEffect(() => {
@@ -160,6 +160,19 @@ export default function TrainingPage() {
                             <div className="flex items-end items-center gap-x-2">
                                 <ImageIcon className="text-accent1" />
                                 <NavLink to={`/training/${training.id}/upload`}>{training._count.images} images</NavLink>
+                                <div className="flex justify-center -space-x-3 font-mono text-sm font-bold leading-6 text-white">
+                                    {training.images.map((image) => (
+                                        <img
+                                            // Add key prop to force React to recreate the img element when error state changes
+                                            key={`${image.url}`}
+                                            src={`${thumbnailBucketUrl}${image.url}`}
+                                            width="50"
+                                            height="50"
+                                            alt=""
+                                            className={`m-auto block h-[50px] w-[50px] rounded-full object-cover text-center shadow-lg ring-2 ring-white dark:ring-slate-900`}
+                                        />
+                                    ))}
+                                </div>
                             </div>
                         </div>
                     </li>

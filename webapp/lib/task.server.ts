@@ -94,7 +94,7 @@ export async function createTask(queueUrl: string, messageBody: TaskBody | Resiz
 
         return prisma.training.update({
             where: { id: trainingId },
-            data: { status: task, updatedAt: new Date() },
+            data: { status: task },
         });
     } catch (error) {
         console.error('Error sending message:', error);

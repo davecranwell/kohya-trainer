@@ -42,7 +42,7 @@ export function Field({
     inputProps: React.InputHTMLAttributes<HTMLInputElement>;
     errors?: ListOfErrors;
     className?: string;
-    help?: string;
+    help?: React.ReactNode;
 }) {
     const fallbackId = useId();
     const id = inputProps.id ?? fallbackId;

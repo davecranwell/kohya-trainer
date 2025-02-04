@@ -35,16 +35,16 @@ export async function loader({ params, request }: LoaderFunctionArgs) {
     });
 
     if (!training) {
-        throw data('Not found', { status: 404 });
+        throw Response.json({ error: 'Not found' }, { status: 404 });
     }
 
-    const CHECKPOINT_MODELS = ['https://civitai.com/api/download/models/1094291?type=Model&format=SafeTensor&size=pruned&fp=fp16'];
+    // const CHECKPOINT_MODELS = ['https://civitai.com/api/download/models/1094291?type=Model&format=SafeTensor&size=pruned&fp=fp16'];
 
     const scriptPath = path.join(process.cwd(), 'app', 'util', 'provisioning-script.sh');
     let scriptContent = await fs.promises.readFile(scriptPath, 'utf-8');
 
     // Replace checkpoint models
-    scriptContent = replaceSection(scriptContent, 'CHECKPOINT_MODELS', CHECKPOINT_MODELS.map((url) => `"${url}"`).join('\n'));
+    scriptContent = replaceSection(scriptContent, 'CHECKPOINT_MODELS', [training.baseModel].map((url) => `"${url}"`).join('\n'));
 
     return new Response(scriptContent, {
         headers: {

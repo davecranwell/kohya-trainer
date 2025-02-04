@@ -199,6 +199,7 @@ export const fargateService = new awsx.ecs.FargateService(
                     { name: 'AWS_S3_MAXRES_BUCKET_NAME', value: maxresBucket.bucket },
                     { name: 'AWS_S3_THUMBNAILS_BUCKET_NAME', value: thumbnailsBucket.bucket },
                     { name: 'VAST_WEB_USER', value: 'admin' },
+                    { name: 'CIVITAI_KEY', value: config.require('CIVITAI_KEY') },
                     { name: 'SESSION_SECRET', value: config.require('SESSION_SECRET') },
                     { name: 'AWS_ACCESS_KEY_ID', value: config.require('AWS_ACCESS_KEY_ID') },
                     { name: 'AWS_SECRET_ACCESS_KEY', value: config.require('AWS_SECRET_ACCESS_KEY') },

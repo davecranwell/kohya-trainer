@@ -149,8 +149,19 @@ async function startServer() {
                 directives: {
                     'font-src': ["'self'", 'fonts.gstatic.com'],
                     'frame-src': ["'self'"],
-                    'img-src': ["'self'", 'data:', 'blob:', `https://${process.env.AWS_S3_THUMBNAILS_BUCKET_NAME!}.s3.us-east-1.amazonaws.com`],
-                    'connect-src': ["'self'", 'ws://localhost:*', `https://${process.env.AWS_S3_UPLOAD_BUCKET_NAME!}.s3.us-east-1.amazonaws.com`],
+                    'img-src': [
+                        "'self'",
+                        'data:',
+                        'blob:',
+                        `https://${process.env.AWS_S3_THUMBNAILS_BUCKET_NAME!}.s3.us-east-1.amazonaws.com`,
+                        'https://image.civitai.com',
+                    ],
+                    'connect-src': [
+                        "'self'",
+                        'ws://localhost:*',
+                        `https://${process.env.AWS_S3_UPLOAD_BUCKET_NAME!}.s3.us-east-1.amazonaws.com`,
+                        'https://civitai.com',
+                    ],
                     'script-src': ["'strict-dynamic'", "'self'", (_, res) => `'nonce-${(res as Response).locals.cspNonce}'`],
                     'script-src-attr': [(_, res) => `'nonce-${(res as Response).locals.cspNonce}'`],
                     'upgrade-insecure-requests': null,

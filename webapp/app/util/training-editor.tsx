@@ -2,7 +2,7 @@ import { getFormProps, getInputProps, getTextareaProps, useForm } from '@conform
 import { getZodConstraint, parseWithZod } from '@conform-to/zod';
 import { type Training } from '@prisma/client';
 import { Form, useActionData, useLoaderData } from 'react-router';
-import { InfoCircledIcon } from '@radix-ui/react-icons';
+import { ExternalLinkIcon, InfoCircledIcon } from '@radix-ui/react-icons';
 import { z } from 'zod';
 
 import { useIsPending } from '~/util/hooks';
@@ -12,7 +12,7 @@ import { ErrorList, Field } from '~/components/forms';
 import { Button } from '~/components/button';
 import { StatusButton } from '~/components/status-button';
 import { Container } from '~/components/container';
-
+import { Alert } from '~/components/alert';
 export const TrainingEditorSchema = z.object({
     id: z.string().optional(),
     name: z.string().min(1).max(100),
@@ -47,19 +47,41 @@ export function TrainingEditor({ training }: { training?: SerializeFrom<Pick<Tra
         <Container>
             <Form method="POST" {...getFormProps(form)} encType="multipart/form-data">
                 {training ? <input type="hidden" name="id" value={training.id} /> : null}
-                <div className="space-y-8 border-b border-gray-900/10 pb-12">
+                <div className="space-y-8 border-b border-gray-900/10">
                     <div className="grid grid-cols-2 gap-4 border-b border-gray-900/10 pb-12">
+                        <Alert variant="info">
+                            <p className="basis-1/2 text-sm leading-6">
+                                The name given has no impact on the training process. It just allows you to identify this training later.
+                            </p>
+                        </Alert>
                         <Field
-                            labelProps={{ children: 'Name' }}
+                            labelProps={{ children: 'Training name' }}
                             inputProps={{
                                 autoFocus: true,
                                 ...nameProps,
                             }}
                             errors={fields.name.errors}
-                            help="Give your Lora a name to identify it later."
                         />
                     </div>
                     <div className="grid grid-cols-2 gap-4 border-b border-gray-900/10 pb-12">
+                        <div>
+                            <Alert variant="info">
+                                <p className="basis-1/2 text-sm leading-6">
+                                    The word(s) to activate the Lora while generating an image.
+                                    <br />
+                                    <br />
+                                    Loras teach a base model a brand new concept, or enhance an existing one. For new concepts use a trigger word that
+                                    is <em className="text-semantic-info">unknown</em> to the base model. Most English dictionary words are already
+                                    known. Random-letter, or username-like words work well (e.g 'ohxw', 'johndoe420') because no dictionary word could
+                                    clash and dilute the concept you're teaching.
+                                </p>
+                            </Alert>
+                            <Alert variant="warning">
+                                <p className="text-sm leading-6">
+                                    NB: Combining multiple loras all trained with the same trigger word will cause confusion in your image generation.
+                                </p>
+                            </Alert>
+                        </div>
                         <Field
                             labelProps={{ children: 'Trigger word(s)' }}
                             inputProps={{
@@ -68,32 +90,42 @@ export function TrainingEditor({ training }: { training?: SerializeFrom<Pick<Tra
                             errors={fields.triggerWord.errors}
                             help="e.g 'ohxw'. 4-10 characters long"
                         />
-                        <p className="mt-1 basis-1/2 text-sm leading-6">
-                            <InfoCircledIcon className="inline" />
-                            The word(s) to activate the Lora while generating an image.
-                            <br />
-                            <br />
-                            When training a person, use a trigger word that is unique to them but unknown to the base model, e.g 'ohxw man' for a man,
-                            or 'ohxw cat' for a pet cat. If your trigger word is known in the base model, your training will have to fight the base
-                            model's existing understanding of that word. Non-words like "ohxw" are therefore useful as your base model is unlikely to
-                            already understand them.
-                            <br />
-                        </p>
                     </div>
                     <div className="grid grid-cols-2 gap-4 pb-12">
+                        <div>
+                            <Alert variant="info">
+                                <p className="text-sm leading-6">
+                                    Loras are like music remixes, building upon an original idea. The base model will define key characteristics of
+                                    the Lora's output, so select one that matches the style or content of the output you want.
+                                </p>
+                            </Alert>
+                            <Alert variant="warning">
+                                <p className="text-sm leading-6">
+                                    NB: Your Lora will generate the best images{' '}
+                                    <em className="text-semantic-warning">only when used with the base model you choose here</em>. Use of a different
+                                    base model with this Lora may cause poor results.
+                                </p>
+                            </Alert>
+                        </div>
+                        {/* <MultiComboBoxCivitai
+                            name="baseModel"
+                            defaultValue={training?.baseModel}
+                            onChange={(options) => {
+                                fields.baseModel.change(options.join(','));
+                            }}
+                        /> */}
                         <Field
-                            labelProps={{ children: 'Base model' }}
+                            labelProps={{ children: 'Base model URL' }}
                             inputProps={{
                                 ...baseModelProps,
                             }}
                             errors={fields.baseModel.errors}
-                            help=""
+                            help={
+                                <a href="https://civitai.com/models" target="_blank" rel="noreferrer" className="text-accent1 hover:underline">
+                                    Find one on Civitai.com <ExternalLinkIcon className="inline-block h-4 w-4" />
+                                </a>
+                            }
                         />
-                        <p className="text-sm leading-6">
-                            <InfoCircledIcon className="inline" />
-                            Like a remix of your favourite song, your Lora will always slightly resemble your base model. Your choice of base model
-                            greatly affects all the results of using your Lora so choose a base model that is similar to the output you want.
-                        </p>
                     </div>
                 </div>
                 <ErrorList id={form.errorId} errors={form.errors} />
@@ -103,7 +135,7 @@ export function TrainingEditor({ training }: { training?: SerializeFrom<Pick<Tra
                         Reset
                     </Button>
                     <StatusButton form={form.id} type="submit" disabled={isPending} status={isPending ? 'pending' : 'idle'}>
-                        Submit
+                        Continue
                     </StatusButton>
                 </div>
             </Form>

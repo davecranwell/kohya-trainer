@@ -38,7 +38,7 @@ export const action = async ({ params, request }: ActionFunctionArgs) => {
     if (request.method === 'PATCH') {
         const updatedImage = await prisma.trainingImage.update({
             where: { id: data.id },
-            data: { text: sanitiseTagString(data.text, [...training.name.split(' '), ...training.triggerWord.split(' ')]), updatedAt: new Date() },
+            data: { text: sanitiseTagString(data.text, training.triggerWord.split(' ')) },
         });
 
         return Response.json(updatedImage);

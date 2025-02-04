@@ -127,7 +127,6 @@ export async function assignGpuToTraining({ trainingId }: { trainingId: string }
             where: { id: trainingId },
             data: {
                 gpuId: gpuRecord.id,
-                updatedAt: new Date(),
             },
         });
 

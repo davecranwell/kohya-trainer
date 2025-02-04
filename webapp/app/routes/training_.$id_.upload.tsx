@@ -234,7 +234,7 @@ export default function ImageUpload() {
 
             return (
                 <CellMeasurer cache={cache} columnIndex={0} key={key} parent={parent} rowIndex={index}>
-                    {({ registerChild }) => (
+                    {({ registerChild }: { registerChild: (node: HTMLElement) => void }) => (
                         <div ref={registerChild as any} style={style}>
                             <li className="mb-4 flex flex-row gap-6 rounded-xl border border-gray-800 bg-gray-900 p-6">
                                 <ImagePreview
@@ -348,16 +348,17 @@ export default function ImageUpload() {
                 <div className="flex-1 basis-2/5">
                     <h3 className="text-lg font-bold tracking-tight text-white">Tagging tips</h3>
 
-                    <ul className="list-disc space-y-4 pl-4 text-sm marker:text-accent1">
+                    <ul className="list-disc space-y-4 pl-4 text-sm leading-6 marker:text-accent1">
                         <li>
                             Tags should be <strong className="text-accent1">one or two words</strong>, not phrases and should usually only be things
                             that are <strong className="text-accent1">visible in the image</strong>, except where they identify overall qualities of
                             the image. Tagging things that can't be seen will confuse the model.
                         </li>
                         <li>
-                            Tag things you <strong className="text-accent1">would want to change when generating images from your Lora</strong>. Don't
-                            tag things you want to be fixed. e.g If images are yourself, and you have brown hair, tagging the hair as "brunette" or
-                            "brown" can indicate this is a changeable property. If brown hair should never change, don't tag it.
+                            Tags teach the model what is presentTag things you{' '}
+                            <strong className="text-accent1">would want to change when generating images from your Lora</strong>. Don't tag things you
+                            want to be fixed. e.g If images are of yourself, and you have brown hair, tagging the hair as "brunette" or "brown" can
+                            indicate this is a changeable property. If brown hair should never change, don't tag it.
                         </li>
                         <li>
                             Avoid <strong className="text-accent1">ambiguous or non-specific tags</strong>. e.g "person", "picture", "image", "light"
@@ -376,18 +377,17 @@ export default function ImageUpload() {
                                 <li>
                                     The <strong className="text-accent1">quality and type</strong> of the image e.g{' '}
                                     <code className="font-mono text-accent2">professional</code>,{' '}
-                                    <code className="font-mono text-accent2">illustration</code>,{' '}
-                                    <code className="font-mono text-accent2">candid</code>, <code className="font-mono text-accent2">photograph</code>{' '}
-                                    etc
+                                    <code className="font-mono text-accent2">amateur</code>, etc
                                 </li>
                                 <li>
-                                    In the case of photographs, details <strong className="text-accent1">about the camera used</strong> e.g{' '}
-                                    <code className="font-mono text-accent2">canon</code>, <code className="font-mono text-accent2">nikon</code>,{' '}
-                                    <code className="font-mono text-accent2">50mm</code>, <code className="font-mono text-accent2">f1.8</code>
+                                    Details <strong className="text-accent1">about the medium</strong> e.g{' '}
+                                    <code className="font-mono text-accent2">canon</code>, <code className="font-mono text-accent2">f1.8</code>, or
+                                    style of art <code className="font-mono text-accent2">cell-shading</code>,{' '}
+                                    <code className="font-mono text-accent2">chiaroscuro</code>,
                                 </li>
                                 <li>
                                     <strong className="text-accent1">The setting or background of the image</strong> e.g{' '}
-                                    <code className="font-mono text-accent2">sunset</code>, <code className="font-mono text-accent2">night</code>,{' '}
+                                    <code className="font-mono text-accent2">sunset</code>, <code className="font-mono text-accent2">office</code>,{' '}
                                     <code className="font-mono text-accent2">beach</code>, <code className="font-mono text-accent2">city</code>
                                 </li>
                                 <li>

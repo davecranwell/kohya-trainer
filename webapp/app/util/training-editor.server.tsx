@@ -42,11 +42,32 @@ export async function action({ request }: ActionFunctionArgs) {
 
     const { id: trainingId, name, triggerWord, baseModel } = submission.value;
 
+    const training = await prisma.training.findUnique({
+        include: {
+            _count: {
+                select: { images: true },
+            },
+        },
+        where: { id: trainingId },
+    });
+
+    if (!training) {
+        throw data('Not found', { status: 404 });
+    }
+
     const TrainingConfig = await import('~/util/training-config.jsonc');
 
     const config = {
         ...TrainingConfig.default,
-        output_name: triggerWord,
+        id: trainingId,
+        output_name: triggerWord.trim(),
+        trigger_word: triggerWord.trim(),
+        checkpoint_url: baseModel.trim(),
+        checkpoint_filename: 'model.safetensors', // TODO: make this dynamic
+        webhook_url: `${process.env.ROOT_URL}/training/${trainingId}/webhook`,
+        civitai_key: process.env.CIVITAI_KEY,
+        metadata_description: `Training images: ${training?._count.images}. Trigger word(s): ${triggerWord.trim()}. Base model: ${baseModel.trim()}. Trained through: ${process.env.ROOT_URL}`,
+        metadata_title: name.trim(),
     };
 
     const updateTraining = await prisma.training.upsert({

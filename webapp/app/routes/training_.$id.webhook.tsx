@@ -1,5 +1,5 @@
 import crypto from 'crypto';
-import { type ActionFunctionArgs, data } from 'react-router';
+import { type ActionFunctionArgs, LoaderFunctionArgs, data } from 'react-router';
 
 import prisma from '#/prisma/db.server';
 
@@ -34,7 +34,6 @@ export async function action({ request, params }: ActionFunctionArgs) {
                 where: { id: body.imageId },
                 data: {
                     isResized: true,
-                    updatedAt: new Date(),
                 },
             });
             break;
@@ -51,7 +50,6 @@ export async function action({ request, params }: ActionFunctionArgs) {
                 where: { id },
                 data: {
                     status: body.status,
-                    updatedAt: new Date(),
                 },
             });
             break;
@@ -61,7 +59,6 @@ export async function action({ request, params }: ActionFunctionArgs) {
                 where: { id },
                 data: {
                     status: body.status,
-                    updatedAt: new Date(),
                     // epoch: body.epoch,
                     // step: body.step,
                     // loss: body.loss,
@@ -73,4 +70,8 @@ export async function action({ request, params }: ActionFunctionArgs) {
     }
 
     // update the training session
+}
+
+export async function loader({ request }: LoaderFunctionArgs) {
+    throw new Response('Not found', { status: 404 });
 }

@@ -63,7 +63,6 @@ export const startTraining = async ({ trainingId }: { trainingId: string }) => {
         where: { id: trainingId },
         data: {
             status: 'starting',
-            updatedAt: new Date(),
         },
     });
 };
