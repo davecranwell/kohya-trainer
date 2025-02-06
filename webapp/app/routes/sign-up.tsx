@@ -1,7 +1,7 @@
 import type { ActionFunctionArgs, LoaderFunctionArgs } from 'react-router';
 import { Form, Link, useActionData } from 'react-router';
 import { getZodConstraint, parseWithZod } from '@conform-to/zod';
-import { getFormProps, getInputProps, useForm } from '@conform-to/react';
+import { getFormProps, getInputProps, SubmissionResult, useForm } from '@conform-to/react';
 import { z } from 'zod';
 
 import { authenticator, requireAuthenticated } from '~/services/auth.server';
@@ -55,7 +55,7 @@ export default function Login() {
     const actionData = useActionData<typeof action>();
     const isSubmitting = useIsPending();
     const [form, fields] = useForm({
-        lastResult: actionData,
+        lastResult: actionData as SubmissionResult<string[]> | null | undefined,
         constraint: getZodConstraint(loginSchema),
     });
 

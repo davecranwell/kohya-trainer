@@ -1,47 +1,85 @@
-import { getFormProps, getInputProps, getTextareaProps, useForm } from '@conform-to/react';
+import { useEffect, useReducer, useState } from 'react';
+import { getFormProps, getInputProps, getCollectionProps, getTextareaProps, useForm, useInputControl } from '@conform-to/react';
 import { getZodConstraint, parseWithZod } from '@conform-to/zod';
-import { type Training } from '@prisma/client';
 import { Form, useActionData, useLoaderData } from 'react-router';
-import { ExternalLinkIcon, InfoCircledIcon } from '@radix-ui/react-icons';
+import { CheckIcon, ExternalLinkIcon, InfoCircledIcon } from '@radix-ui/react-icons';
+import { Field as HeadlessField, Label as HeadlessLabel, Radio, RadioGroup } from '@headlessui/react';
 import { z } from 'zod';
 
 import { useIsPending } from '~/util/hooks';
-import { type action } from './training-editor.server';
+import { type BaseModel, type Training } from '~/types/training';
 
 import { ErrorList, Field } from '~/components/forms';
+import { Label } from '~/components/forms/label';
 import { Button } from '~/components/button';
 import { StatusButton } from '~/components/status-button';
 import { Container } from '~/components/container';
 import { Alert } from '~/components/alert';
+import { CivitaiBrowser } from '~/components/civitai-browser';
+
+import { type action } from './training-editor.server';
+import civitai from '../assets/civitai.png';
+
 export const TrainingEditorSchema = z.object({
     id: z.string().optional(),
     name: z.string().min(1).max(100),
     triggerWord: z.string().min(4).max(10),
-    baseModel: z.string().url(),
+    baseModel: z.object({
+        id: z.string(),
+        name: z.string(),
+        url: z.string().url(),
+        filename: z.string(),
+        type: z.string(),
+    }),
 });
 
-type SerializeFrom<T> = ReturnType<typeof useLoaderData<T>>;
+type BaseModelState = {
+    options: BaseModel[];
+    selected: BaseModel | null;
+};
 
-export function TrainingEditor({ training }: { training?: SerializeFrom<Pick<Training, 'id' | 'name' | 'triggerWord' | 'baseModel'>> }) {
+type BaseModelAction = { type: 'ADD_AND_SELECT'; payload: BaseModel } | { type: 'SELECT'; payload: BaseModel | null };
+
+function baseModelReducer(state: BaseModelState, action: BaseModelAction): BaseModelState {
+    switch (action.type) {
+        case 'ADD_AND_SELECT':
+            return {
+                options: [...state.options, action.payload],
+                selected: action.payload,
+            };
+        case 'SELECT':
+            return {
+                ...state,
+                selected: action.payload,
+            };
+        default:
+            return state;
+    }
+}
+
+export function TrainingEditor({ training, baseModels }: { training?: Training; baseModels: BaseModel[] }) {
     const actionData = useActionData<typeof action>();
     const isPending = useIsPending();
+    const [isCivitaiBrowserOpen, setIsCivitaiBrowserOpen] = useState(false);
+    const [baseModelState, dispatch] = useReducer(baseModelReducer, {
+        options: baseModels,
+        selected: training?.baseModel || null,
+    });
 
     const [form, fields] = useForm({
         id: `training-editor-${training?.id}`,
         constraint: getZodConstraint(TrainingEditorSchema),
         lastResult: actionData?.result,
-        onValidate({ formData }) {
-            return parseWithZod(formData, { schema: TrainingEditorSchema });
-        },
-        defaultValue: {
-            ...training,
-        },
+        defaultValue: training,
         shouldRevalidate: 'onBlur',
     });
 
+    const handleChosenNewBaseModel = (model: BaseModel) => {
+        dispatch({ type: 'ADD_AND_SELECT', payload: model });
+    };
+
     const { key: nameKey, ...nameProps } = getInputProps(fields.name, { type: 'text' });
     const { key: triggerWordKey, ...triggerWordProps } = getInputProps(fields.triggerWord, { type: 'text' });
-    const { key: baseModelKey, ...baseModelProps } = getInputProps(fields.baseModel, { type: 'text' });
 
     return (
         <Container>
@@ -107,28 +145,72 @@ export function TrainingEditor({ training }: { training?: SerializeFrom<Pick<Tra
                                 </p>
                             </Alert>
                         </div>
-                        {/* <MultiComboBoxCivitai
-                            name="baseModel"
-                            defaultValue={training?.baseModel}
-                            onChange={(options) => {
-                                fields.baseModel.change(options.join(','));
-                            }}
-                        /> */}
-                        <Field
-                            labelProps={{ children: 'Base model URL' }}
-                            inputProps={{
-                                ...baseModelProps,
-                            }}
-                            errors={fields.baseModel.errors}
-                            help={
-                                <a href="https://civitai.com/models" target="_blank" rel="noreferrer" className="text-accent1 hover:underline">
-                                    Find one on Civitai.com <ExternalLinkIcon className="inline-block h-4 w-4" />
-                                </a>
-                            }
-                        />
+                        <div>
+                            <RadioGroup
+                                className="flex flex-col divide-y divide-gray-800 rounded-lg border border-gray-800 bg-black/40"
+                                value={baseModelState.selected}
+                                by="id"
+                                onChange={(value) => {
+                                    dispatch({ type: 'SELECT', payload: value as BaseModel });
+                                }}>
+                                {baseModelState.options.map((model) => (
+                                    <HeadlessField
+                                        key={model?.id}
+                                        className="group flex w-full flex-row items-center gap-2 transition-all hover:bg-primary-dark/60">
+                                        <HeadlessLabel className="flex flex-1 gap-4 px-4 py-3 text-sm">
+                                            <Radio
+                                                value={model}
+                                                className="block size-5 items-center justify-center rounded-full border border-gray-800 bg-black/40 ring-1 ring-gray-800 data-[checked]:bg-accent1"
+                                            />
+                                            <span>{model?.name}</span>
+                                        </HeadlessLabel>
+                                    </HeadlessField>
+                                ))}
+                                <div className="group flex w-full flex-row items-center gap-2">
+                                    <div className="flex flex-1 gap-4 px-4 py-3 text-sm">
+                                        <Button
+                                            variant="ghost"
+                                            onClick={(e) => {
+                                                e.preventDefault();
+                                                setIsCivitaiBrowserOpen(true);
+                                            }}>
+                                            Choose from Civitai <img src={civitai} alt="" className="ml-2 size-5" />
+                                        </Button>
+                                    </div>
+                                </div>
+                            </RadioGroup>
+
+                            {fields['baseModel.url'].errors && (
+                                <ErrorList id={fields['baseModel.url'].errorId} errors={fields['baseModel.url'].errors} />
+                            )}
+
+                            {fields.baseModel.errors && <ErrorList id={fields.baseModel.errorId} errors={fields.baseModel.errors} />}
+
+                            <CivitaiBrowser
+                                onSelect={(model) => {
+                                    const newModel = {
+                                        id: model.id.toString(),
+                                        name: `${model.originalModelName} - ${model.name}`,
+                                        url: model.files[0].downloadUrl,
+                                        filename: model.files[0].name,
+                                        type: model.baseModel,
+                                    };
+
+                                    handleChosenNewBaseModel(newModel);
+                                }}
+                                isOpen={isCivitaiBrowserOpen}
+                                setIsOpen={setIsCivitaiBrowserOpen}
+                            />
+                        </div>
                     </div>
                 </div>
                 <ErrorList id={form.errorId} errors={form.errors} />
+
+                <input type="hidden" name="baseModel.id" value={baseModelState.selected?.id || training?.baseModel?.id} />
+                <input type="hidden" name="baseModel.name" value={baseModelState.selected?.name || training?.baseModel?.name || ''} />
+                <input type="hidden" name="baseModel.url" value={baseModelState.selected?.url || training?.baseModel?.url || ''} />
+                <input type="hidden" name="baseModel.filename" value={baseModelState.selected?.filename || training?.baseModel?.filename || ''} />
+                <input type="hidden" name="baseModel.type" value={baseModelState.selected?.type || training?.baseModel?.type || ''} />
 
                 <div className="mt-6 flex items-center justify-end gap-x-6">
                     <Button variant="ghost" {...form.reset.getButtonProps()}>

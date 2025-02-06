@@ -9,7 +9,7 @@ const buttonVariants = cva('inline-flex items-center justify-center rounded-lg t
             default: 'bg-primary hover:bg-primary-dark text-white',
             secondary: 'bg-accent1 hover:bg-accent1-dark text-white',
             tertiary: 'bg-accent2 hover:bg-accent2-dark text-white',
-            ghost: 'border border-stroke bg-black/40 text-gray-300 backdrop-blur-sm hover:bg-black/60',
+            ghost: 'border border-stroke bg-black/40 text-gray-300 backdrop-blur-sm hover:bg-accent1-dark/60',
             success: 'bg-semantic-success hover:bg-semantic-success-dark text-white',
             info: 'bg-semantic-info hover:bg-semantic-info-dark text-white',
             warning: 'bg-semantic-warning hover:bg-semantic-warning-dark text-white',

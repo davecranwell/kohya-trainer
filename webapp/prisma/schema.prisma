@@ -30,7 +30,7 @@ model Training {
   name         String
   config       String
   triggerWord  String   @default("oxhw")
-  baseModel    String   @default("")
+  baseModel    Json?
   status       String   @default("")
   gpu   Gpu? @relation(fields: [gpuId], references: [id])
   gpuId String? @unique

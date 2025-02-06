@@ -2,6 +2,7 @@ import { Links, Meta, Outlet, Scripts, ScrollRestoration, useLoaderData } from '
 import type { LinksFunction, LoaderFunctionArgs } from 'react-router';
 import { data } from 'react-router';
 import { CheckCircledIcon, ExclamationTriangleIcon, InfoCircledIcon } from '@radix-ui/react-icons';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 import { useNonce } from '~/util/nonce.provider';
 import { useToast } from '~/util/hooks';
@@ -28,6 +29,8 @@ export const links: LinksFunction = () => [
     },
 ];
 
+const queryClient = new QueryClient();
+
 export async function loader({ request }: LoaderFunctionArgs) {
     const { toast, headers: toastHeaders } = await getToast(request);
 
@@ -50,7 +53,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
             <body className="min-h-screen bg-gradient-to-br from-gray-950 via-gray-900 to-slate-900 text-gray-400">
                 <div className="mx-auto w-full max-w-6xl">
                     <TooltipProvider delayDuration={100} skipDelayDuration={500}>
-                        <div className="overflow-auto p-8">{children}</div>
+                        <QueryClientProvider client={queryClient}>
+                            <div className="overflow-auto p-8">{children}</div>
+                        </QueryClientProvider>
                     </TooltipProvider>
                     <ScrollRestoration nonce={nonce} />
                     <Scripts nonce={nonce} />

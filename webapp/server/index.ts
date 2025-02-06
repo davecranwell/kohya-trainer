@@ -149,6 +149,7 @@ async function startServer() {
                 directives: {
                     'font-src': ["'self'", 'fonts.gstatic.com'],
                     'frame-src': ["'self'"],
+                    'media-src': ["'self'", 'data:', 'blob:', 'https://image.civitai.com'],
                     'img-src': [
                         "'self'",
                         'data:',
