@@ -4,6 +4,7 @@ import { type ActionFunctionArgs } from 'react-router';
 import { ImageIcon, LightningBoltIcon, Pencil1Icon, UploadIcon } from '@radix-ui/react-icons';
 import { useEventSource } from 'remix-utils/sse/react';
 import clsx from 'clsx';
+import type { Route } from './+types/training';
 
 import prisma from '#/prisma/db.server';
 import { enqueueTraining } from '#/lib/task.server';
@@ -51,7 +52,7 @@ export async function action({ request, params }: ActionFunctionArgs) {
     } catch (error) {}
 }
 
-export async function loader({ request }: LoaderFunctionArgs) {
+export async function loader({ request }: Route.LoaderArgs) {
     const userId = await requireUserWithPermission(request, 'read:training:own');
 
     const trainings = await prisma.training.findMany({
@@ -85,8 +86,8 @@ export async function loader({ request }: LoaderFunctionArgs) {
     return { userId, trainings, thumbnailBucketUrl: `https://${process.env.AWS_S3_THUMBNAILS_BUCKET_NAME!}.s3.us-east-1.amazonaws.com/` };
 }
 
-export default function TrainingPage() {
-    const { userId, trainings, thumbnailBucketUrl } = useLoaderData<typeof loader>();
+export default function TrainingPage({ loaderData }: Route.ComponentProps) {
+    const { userId, trainings, thumbnailBucketUrl } = loaderData;
     const progressMessage = useEventSource(`/sse/${userId}`, { event: userId });
 
     useEffect(() => {
