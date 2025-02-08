@@ -99,7 +99,7 @@ export default function Login() {
 
                 <Divider title="Or with your favourite provider" />
 
-                <SocialButton provider={'google'} label="Sign up with Google" />
+                <SocialButton provider={'discord'} label="Sign up with Discord" />
 
                 <Divider />
 

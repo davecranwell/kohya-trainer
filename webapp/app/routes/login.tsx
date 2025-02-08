@@ -100,7 +100,7 @@ export default function Login() {
 
                 <Divider title="Or with your favourite provider" />
 
-                <SocialButton provider={'discord'} label="Log in with Discord" />
+                <SocialButton provider={'discord'} label="Sign in with Discord" />
 
                 <Divider />
 
