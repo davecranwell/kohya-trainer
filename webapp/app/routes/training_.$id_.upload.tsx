@@ -5,6 +5,7 @@ import { data } from 'react-router';
 import { toast } from 'sonner';
 import { createId } from '@paralleldrive/cuid2';
 import { List, CellMeasurer, CellMeasurerCache, AutoSizer } from 'react-virtualized';
+import { useHydrated } from 'remix-utils/use-hydrated';
 
 import prisma from '#/prisma/db.server';
 
@@ -63,6 +64,7 @@ export default function ImageUpload() {
     const [showUntaggedOnly, setShowUntaggedOnly] = useState(false);
     const [selectedTag, setSelectedTag] = useState<string>('');
     const [negateTag, setNegateTag] = useState(false);
+    const isHydrated = useHydrated();
 
     // updated images are those that have been given tags by the upload of a text file
     // new images are those that have been uploaded brand new
@@ -325,20 +327,22 @@ export default function ImageUpload() {
                                     </div>
                                 </div>
 
-                                <div className="mt-4" style={{ height: 'calc(100vh - 350px)' }}>
-                                    <AutoSizer>
-                                        {({ width, height }) => (
-                                            <List
-                                                width={width}
-                                                height={height}
-                                                deferredMeasurementCache={cache}
-                                                rowHeight={cache.rowHeight}
-                                                rowRenderer={rowRenderer}
-                                                rowCount={filteredImages.length}
-                                                overscanRowCount={3}
-                                            />
-                                        )}
-                                    </AutoSizer>
+                                <div className="mt-4 h-[calc(100vh-350px)]">
+                                    {isHydrated && (
+                                        <AutoSizer>
+                                            {({ width, height }) => (
+                                                <List
+                                                    width={width}
+                                                    height={height}
+                                                    deferredMeasurementCache={cache}
+                                                    rowHeight={cache.rowHeight}
+                                                    rowRenderer={rowRenderer}
+                                                    rowCount={filteredImages.length}
+                                                    overscanRowCount={3}
+                                                />
+                                            )}
+                                        </AutoSizer>
+                                    )}
                                 </div>
                             </div>
                         )}

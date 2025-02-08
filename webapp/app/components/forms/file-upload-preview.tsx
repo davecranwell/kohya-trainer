@@ -1,3 +1,4 @@
+import clsx from 'clsx';
 import React, { useCallback, useState, useRef } from 'react';
 
 import { commaSeparatedStringToArray, makeArrayUnique } from '~/util/misc';
@@ -142,7 +143,7 @@ export const FileUploadPreview: React.FC<FileUploadPreviewProps> = ({
                 multiple
                 onChange={handleFileChange}
                 accept="image/png, image/jpeg"
-                style={{ display: 'none' }}
+                className="hidden"
             />
             <div
                 ref={dragDropRef}
@@ -150,10 +151,10 @@ export const FileUploadPreview: React.FC<FileUploadPreviewProps> = ({
                 onDrop={handleDrop}
                 onDragLeave={() => setIsDraggedOver(false)}
                 onDragEnd={() => setIsDraggedOver(false)}
-                className="rounded border-2 border-dashed border-gray-300 p-4"
-                style={{
-                    borderColor: isDraggedOver ? (maxImages <= imageCount ? 'red' : 'blue') : '',
-                }}
+                className={clsx(
+                    'rounded border-2 border-dashed border-gray-300 p-4',
+                    isDraggedOver ? (maxImages <= imageCount ? 'border-red-500' : 'border-blue-500') : '',
+                )}
                 onClick={(e) => {
                     e.target === dragDropRef.current && fileInputRef.current?.click();
                 }}>
