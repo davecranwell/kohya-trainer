@@ -31,16 +31,17 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
         throw data('Not found', { status: 404 });
     }
 
+    const ourBaseModels = [...baseModels];
     if (training.baseModel) {
         const currentBaseModel = JSON.parse(training.baseModel as string);
         training.baseModel = currentBaseModel;
 
-        if (!baseModels.find((model) => model.id === currentBaseModel?.id)) {
-            baseModels.push(currentBaseModel);
+        if (!ourBaseModels.find((model) => model.id === currentBaseModel?.id)) {
+            ourBaseModels.push(currentBaseModel);
         }
     }
 
-    return { training, baseModels };
+    return { training, baseModels: ourBaseModels };
 }
 
 export default function TrainingRoute() {

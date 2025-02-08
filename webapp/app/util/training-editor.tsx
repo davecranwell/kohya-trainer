@@ -80,7 +80,7 @@ export function TrainingEditor({ training, baseModels }: { training?: Training; 
 
     const { key: nameKey, ...nameProps } = getInputProps(fields.name, { type: 'text' });
     const { key: triggerWordKey, ...triggerWordProps } = getInputProps(fields.triggerWord, { type: 'text' });
-
+    const baseModelFields = fields.baseModel.getFieldset();
     return (
         <Container>
             <Form method="POST" {...getFormProps(form)} encType="multipart/form-data">
@@ -180,11 +180,7 @@ export function TrainingEditor({ training, baseModels }: { training?: Training; 
                                 </div>
                             </RadioGroup>
 
-                            {fields['baseModel.url'].errors && (
-                                <ErrorList id={fields['baseModel.url'].errorId} errors={fields['baseModel.url'].errors} />
-                            )}
-
-                            {fields.baseModel.errors && <ErrorList id={fields.baseModel.errorId} errors={fields.baseModel.errors} />}
+                            {baseModelFields.url.errors && <ErrorList id={baseModelFields.url.errorId} errors={baseModelFields.url.errors} />}
 
                             <CivitaiBrowser
                                 onSelect={(model) => {
@@ -213,9 +209,6 @@ export function TrainingEditor({ training, baseModels }: { training?: Training; 
                 <input type="hidden" name="baseModel.type" value={baseModelState.selected?.type || training?.baseModel?.type || ''} />
 
                 <div className="mt-6 flex items-center justify-end gap-x-6">
-                    <Button variant="ghost" {...form.reset.getButtonProps()}>
-                        Reset
-                    </Button>
                     <StatusButton form={form.id} type="submit" disabled={isPending} status={isPending ? 'pending' : 'idle'}>
                         Continue
                     </StatusButton>

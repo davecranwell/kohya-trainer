@@ -3,10 +3,10 @@ import { redirect } from 'react-router';
 import { Authenticator } from 'remix-auth';
 import { FormStrategy } from 'remix-auth-form';
 import { safeRedirect } from 'remix-utils/safe-redirect';
-// import { GoogleStrategy } from 'remix-auth-google';
+import { DiscordStrategy } from '@nichtsam/remix-auth-discord';
 
 import { sessionStorage, getSession, commitSession, destroySession } from '~/services/session.server';
-import { verifyEmailPassword, findOrCreateUser } from '~/services/account.server';
+import { verifyEmailPassword, findOrCreateProviderUser } from '~/services/account.server';
 
 export type User = {
     id: string;
@@ -23,10 +23,31 @@ export const authenticator = new Authenticator<User>();
 //         },
 //         async ({ accessToken, refreshToken, extraParams, profile }) => {
 //             // Get the user data from your DB or API using the tokens and profile
-//             return await findOrCreateUser({ email: profile.emails[0].value, name: profile.displayName });
+//             return await findOrCreateProviderUser({ email: profile.emails[0].value, name: profile.displayName });
 //         },
 //     ),
 // );
+
+authenticator.use(
+    new DiscordStrategy(
+        {
+            clientId: process.env.DISCORD_CLIENT_ID!,
+            clientSecret: process.env.DISCORD_CLIENT_SECRET!,
+            redirectURI: 'http://localhost:3000/auth/discord/callback',
+            scopes: ['identify', 'email'],
+        },
+        async ({ tokens, request }) => {
+            const userRequest = await fetch('https://discord.com/api/v10/users/@me', {
+                headers: {
+                    Authorization: `Bearer ${tokens.data.access_token}`,
+                },
+            });
+            let user = await userRequest.json();
+            return await findOrCreateProviderUser({ email: user.email, name: user.name });
+        },
+    ),
+    'discord',
+);
 
 authenticator.use(
     new FormStrategy(async ({ form }) => {

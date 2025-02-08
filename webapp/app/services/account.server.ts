@@ -10,7 +10,7 @@ export const hashPassword = async (password: string) => {
     return await bcrypt.hash(password, 10);
 };
 
-export const createAccount = async (data: { email: string; name: string; password: string }) => {
+export const createAccount = async (data: { email: string; name: string; password?: string }) => {
     const result = await prisma.user.findFirst({ where: { email: data.email } });
 
     if (result) {
@@ -21,13 +21,20 @@ export const createAccount = async (data: { email: string; name: string; passwor
         name: data.name,
         email: data.email,
         createdAt: new Date(),
-        ...(data.password.length > 0 && {
-            password: {
-                create: {
-                    hash: await hashPassword(data.password),
-                },
+        roles: {
+            create: {
+                name: 'user',
             },
-        }),
+        },
+        // An empty password is allowed for provider users whos password we don't know
+        ...(data?.password &&
+            data.password.length > 0 && {
+                password: {
+                    create: {
+                        hash: await hashPassword(data.password),
+                    },
+                },
+            }),
     };
 
     const user = await prisma.user.create({ data: newUser, select: { id: true } });
@@ -80,12 +87,13 @@ export async function verifyEmailPassword(email: string, password: string): Prom
     return { id: userWithPassword.id } as User;
 }
 
-export async function findOrCreateUser(data: { email: string; name: string }) {
+// Only used for provider users whos passwords we don't know
+export async function findOrCreateProviderUser(data: { email: string; name: string }) {
     const user = await findAccountByEmail(data.email);
 
     if (user) {
         return user;
     }
 
-    return await createAccount({ email: data.email, name: data.name, password: '' });
+    return await createAccount({ email: data.email, name: data.name });
 }

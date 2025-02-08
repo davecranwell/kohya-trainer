@@ -42,7 +42,7 @@ export async function action({ request }: ActionFunctionArgs) {
         const session = await sessionStorage.getSession(request.headers.get('cookie'));
         session.set('user', user);
 
-        throw redirect('/', {
+        throw redirect('/training', {
             headers: { 'Set-Cookie': await sessionStorage.commitSession(session) },
         });
     } catch (error) {
@@ -55,7 +55,7 @@ export async function action({ request }: ActionFunctionArgs) {
 
 export async function loader({ request }: LoaderFunctionArgs) {
     if (await isAuthenticated(request)) {
-        return redirect('/dashboard');
+        return redirect('/training');
     }
 
     return null;
@@ -70,45 +70,46 @@ export default function Login() {
     });
 
     return (
-        <Container>
-            <ErrorList id={form.errorId} errors={form.errors} />
-            <Form method="post" {...getFormProps(form)}>
-                <Fieldset>
-                    <Field
-                        labelProps={{ children: 'Email' }}
-                        inputProps={{
-                            ...getInputProps(fields.email, { type: 'email' }),
-                            autoFocus: true,
-                            autoComplete: 'email',
-                        }}
-                        errors={fields.email.errors}
-                    />
-                    <Field
-                        labelProps={{ children: 'Password' }}
-                        inputProps={{
-                            ...getInputProps(fields.password, { type: 'password' }),
-                            autoFocus: true,
-                            autoComplete: 'current-password',
-                        }}
-                        errors={fields.password.errors}
-                    />
-                    <StatusButton type="submit" status={isSubmitting ? 'pending' : 'idle'} size="full">
-                        Sign In
-                    </StatusButton>
-                </Fieldset>
-            </Form>
+        <div className="mx-auto flex min-h-screen max-w-md items-center justify-center">
+            <Container>
+                <ErrorList id={form.errorId} errors={form.errors} />
+                <Form method="post" {...getFormProps(form)}>
+                    <Fieldset>
+                        <Field
+                            labelProps={{ children: 'Email' }}
+                            inputProps={{
+                                ...getInputProps(fields.email, { type: 'email' }),
+                                autoFocus: true,
+                                autoComplete: 'email',
+                            }}
+                            errors={fields.email.errors}
+                        />
+                        <Field
+                            labelProps={{ children: 'Password' }}
+                            inputProps={{
+                                ...getInputProps(fields.password, { type: 'password' }),
+                                autoComplete: 'current-password',
+                            }}
+                            errors={fields.password.errors}
+                        />
+                        <StatusButton type="submit" status={isSubmitting ? 'pending' : 'idle'} size="full">
+                            Sign In
+                        </StatusButton>
+                    </Fieldset>
+                </Form>
 
-            <Divider title="Or with your favourite provider" />
+                <Divider title="Or with your favourite provider" />
 
-            <SocialButton provider={'google'} label="Log in with Google" />
+                <SocialButton provider={'discord'} label="Log in with Discord" />
 
-            <Divider />
+                <Divider />
 
-            <div className="flex justify-center text-sm">
-                <Button asChild variant="secondary" size="lg">
-                    <Link to="/sign-up">Create an account</Link>
-                </Button>
-            </div>
-        </Container>
+                <div className="flex justify-center text-sm">
+                    <Button asChild variant="secondary" size="lg">
+                        <Link to="/sign-up">Create an account</Link>
+                    </Button>
+                </div>
+            </Container>
+        </div>
     );
 }
