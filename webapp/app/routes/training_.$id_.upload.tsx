@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Form, useLoaderData } from 'react-router';
 import type { LoaderFunctionArgs } from 'react-router';
 import { data } from 'react-router';
@@ -203,19 +203,23 @@ export default function ImageUpload() {
         }
     };
 
-    const filteredImages = uploadedImages.filter((image) => {
-        if (showUntaggedOnly) {
-            return !image.text || image.text.trim() === '';
-        }
+    const filteredImages = useMemo(
+        () =>
+            uploadedImages.filter((image) => {
+                if (showUntaggedOnly) {
+                    return !image.text || image.text.trim() === '';
+                }
 
-        if (selectedTag) {
-            const imageTags = (image.text || '').split(',').map((t) => t.trim());
-            const hasTag = imageTags.includes(selectedTag);
-            return negateTag ? !hasTag : hasTag;
-        }
+                if (selectedTag) {
+                    const imageTags = (image.text || '').split(',').map((t) => t.trim());
+                    const hasTag = imageTags.includes(selectedTag);
+                    return negateTag ? !hasTag : hasTag;
+                }
 
-        return true;
-    });
+                return true;
+            }),
+        [uploadedImages, showUntaggedOnly, selectedTag, negateTag],
+    );
 
     // Create a cache for cell measurements
     const cache = new CellMeasurerCache({
@@ -251,7 +255,9 @@ export default function ImageUpload() {
                                         name={`${image.id}-tags`}
                                         defaultValue={image.text}
                                         options={allTags}
-                                        onChange={(tags) => handleTagChange(tags, image.id)}
+                                        onChange={(tags) => {
+                                            handleTagChange(tags, image.id);
+                                        }}
                                     />
                                 </div>
                             </li>
