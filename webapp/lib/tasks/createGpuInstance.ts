@@ -58,8 +58,6 @@ async function createGpuInstance(training: Training) {
                 WEB_ENABLE_HTTPS: 'true',
                 //WEB_USER: process.env.VAST_WEB_USER,
                 //WEB_PASSWORD: process.env.VAST_WEB_PASSWORD,
-                //WEBHOOK_SECRET: process.env.WEBHOOK_SECRET,
-                //WEBHOOK_URL: process.env.WEBHOOK_URL,
                 //TRAINING_ID: training.id,
                 //ZIP_URL: `${process.env.AWS_S3_MAXRES_BUCKET_NAME}/${zipKey}`,
                 KOHYA_ARGS: '',

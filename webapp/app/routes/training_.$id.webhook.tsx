@@ -6,14 +6,7 @@ import prisma from '#/prisma/db.server';
 export async function action({ request, params }: ActionFunctionArgs) {
     const { id } = params;
 
-    // const signature = request.headers.get('x-webhook-signature');
-    // const payload = JSON.stringify(request.body);
-    // // Compute HMAC to verify
-    // const hmac = crypto.createHmac('sha256', process.env.WEBHOOK_SECRET!);
-    // const computedSignature = hmac.update(payload).digest('hex');
-    // if (signature !== computedSignature) {
-    //     return data({ error: 'Forbidden' }, { status: 403 });
-    // }
+    if (!id) return;
 
     // get the training session
     const trainingSession = await prisma.training.findFirst({
@@ -46,19 +39,19 @@ export async function action({ request, params }: ActionFunctionArgs) {
         case 'training_starting':
         case 'training_completed':
         case 'training_failed':
-            await prisma.training.update({
-                where: { id },
+            await prisma.trainingStatus.create({
                 data: {
                     status: body.status,
+                    trainingId: id,
                 },
             });
             break;
 
         case 'training_progress':
-            await prisma.training.update({
-                where: { id },
+            await prisma.trainingStatus.create({
                 data: {
                     status: body.status,
+                    trainingId: id,
                     // epoch: body.epoch,
                     // step: body.step,
                     // loss: body.loss,

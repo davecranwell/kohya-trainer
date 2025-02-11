@@ -52,21 +52,21 @@ export const findAccountByEmail = async (email: string) => {
     return result;
 };
 
-export async function login(email: string, password: string) {
-    const user = await verifyEmailPassword(email, password);
+// export async function login(email: string, password: string) {
+//     const user = await verifyEmailPassword(email, password);
 
-    if (!user) throw new Error('Invalid email or password');
+//     if (!user) throw new Error('Invalid email or password');
 
-    const session = await prisma.session.create({
-        select: { id: true, expirationDate: true, userId: true },
-        data: {
-            expirationDate: getSessionExpirationDate(),
-            userId: user.id,
-        },
-    });
+//     const session = await prisma.session.create({
+//         select: { id: true, expirationDate: true, userId: true },
+//         data: {
+//             expirationDate: getSessionExpirationDate(),
+//             userId: user.id,
+//         },
+//     });
 
-    return session;
-}
+//     return session;
+// }
 
 export async function verifyEmailPassword(email: string, password: string): Promise<Omit<User, 'password'>> {
     const userWithPassword = await prisma.user.findUnique({

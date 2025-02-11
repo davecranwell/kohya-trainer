@@ -37,7 +37,7 @@ export async function shutdownInactiveGpus() {
     // We want to delete those that are linked, but where training has finished
     const finishedTrainings = await prisma.training.findMany({
         where: {
-            status: 'completed',
+            status: 'training_completed',
             NOT: {
                 gpuId: null,
             },
@@ -54,24 +54,24 @@ export async function shutdownInactiveGpus() {
     toShutDownIds.push(...finishedTrainingIds);
 
     // We want to delete those where they are linked but training hasn't received an update in more than 10 minutes
-    const stalledGpus = await prisma.gpu.findMany({
-        where: {
-            status: 'running',
-            NOT: {
-                training: {
-                    updatedAt: {
-                        gt: new Date(Date.now() - STALL_PERIOD), // 10 minutes ago
-                    },
-                },
-            },
-        },
-    });
+    // const stalledGpus = await prisma.gpu.findMany({
+    //     where: {
+    //         status: 'running',
+    //         NOT: {
+    //             training: {
+    //                 updatedAt: {
+    //                     gt: new Date(Date.now() - STALL_PERIOD), // 10 minutes ago
+    //                 },
+    //             },
+    //         },
+    //     },
+    // });
 
-    const stalledGpuIds = stalledGpus.map((gpu) => gpu.instanceId);
+    // const stalledGpuIds = stalledGpus.map((gpu) => gpu.instanceId);
 
-    stalledGpuIds.length && console.log(`Stalled GPU instances: ${stalledGpuIds.length ? stalledGpuIds.join(',') : 'none'}`);
+    // stalledGpuIds.length && console.log(`Stalled GPU instances: ${stalledGpuIds.length ? stalledGpuIds.join(',') : 'none'}`);
 
-    toShutDownIds.push(...stalledGpuIds);
+    // toShutDownIds.push(...stalledGpuIds);
 
     toShutDownIds.length && console.log(`Shutting down inactive GPU instances: ${toShutDownIds.join(', ')}`);
 

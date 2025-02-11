@@ -14,6 +14,7 @@ import type { ServerBuild } from 'react-router';
 
 import { subscribeToTasks } from '../lib/task.server';
 import { shutdownInactiveGpus } from '../lib/tasks/shutdownInactiveGpus';
+import { emitter } from '~/util/emitter.server';
 
 // Extend Express types to include locals
 declare global {

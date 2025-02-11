@@ -22,7 +22,7 @@ export const awaitGpuReady = async ({ trainingId }: { trainingId: string }) => {
     });
 
     if (!vastInstance.data.instance) {
-        throw new Error('GPU instance not found on Vast');
+        throw new Error(`GPU instance not found on Vast: ${trainingConfig.gpu.instanceId}`);
     }
 
     // Get the jupyter_token from the vast API

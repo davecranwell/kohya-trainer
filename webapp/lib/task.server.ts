@@ -19,6 +19,7 @@ export type TaskBody = {
 };
 
 export type ResizeBody = {
+    task: 'reduceImage';
     trainingId: string;
     userId?: string;
     imageId?: string;
@@ -31,8 +32,8 @@ const sqs = new SQS({ region: 'us-east-1' });
 export function subscribeToTasks() {
     console.log('Subscribing to task queue');
 
-    taskSubscription(async (body: TaskBody) => {
-        const { task, trainingId, imageId, userId }: TaskBody = body;
+    taskSubscription(async (body: TaskBody | ResizeBody) => {
+        const { task, trainingId, imageId, userId } = body;
 
         switch (task) {
             case 'reduceImages': {
@@ -85,20 +86,37 @@ export function subscribeToTasks() {
 export async function createTask(queueUrl: string, messageBody: TaskBody | ResizeBody, delaySeconds: number = 0) {
     const { trainingId, task } = messageBody;
 
+    // find any existing trainingStatuses that match this task and avoid creating another one
+    if (['zipImages', 'allocateGpu', 'startTraining'].includes(task)) {
+        const existingStatus = await prisma.trainingStatus.findFirst({
+            where: { trainingId, status: task },
+        });
+
+        if (existingStatus) {
+            console.log('Task already exists', queueUrl, task);
+            return existingStatus;
+        }
+    }
+
+    console.log('Creating task', queueUrl, messageBody);
+
     try {
         await sqs.sendMessage({
             DelaySeconds: delaySeconds,
             QueueUrl: queueUrl,
             MessageBody: JSON.stringify(messageBody),
         });
-
-        return prisma.training.update({
-            where: { id: trainingId },
-            data: { status: task },
-        });
     } catch (error) {
-        console.error('Error sending message:', error);
+        console.error('Error sending message:', queueUrl, error);
+        return false;
     }
+
+    return prisma.trainingStatus.create({
+        data: {
+            trainingId,
+            status: task,
+        },
+    });
 }
 
 // Call this to begin the async training process

@@ -36,7 +36,7 @@ export const zipImages = async ({ trainingId }: { trainingId: string }) => {
         await s3Client.send(
             new PutObjectCommand({
                 Bucket: process.env.AWS_S3_MAXRES_BUCKET_NAME,
-                Key: `${training?.ownerId}/${trainingId}/${image.name}.txt`,
+                Key: `${training?.ownerId}/${trainingId}/images/${image.name}.txt`,
                 Body: image.text,
             }),
         );
@@ -67,7 +67,7 @@ export const zipImages = async ({ trainingId }: { trainingId: string }) => {
 
         if (training?.config) {
             const configJson = JSON.parse(training.config);
-            configJson.training_images_url = lambdaResult.zipKey;
+            configJson.training_images_url = `https://${process.env.AWS_S3_MAXRES_BUCKET_NAME}.s3.amazonaws.com/${lambdaResult.zipKey}`;
 
             //update the training config to set training_images_url to the zip key
             await prisma.training.update({

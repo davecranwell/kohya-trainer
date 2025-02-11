@@ -8,7 +8,7 @@ const appName = config.require('appName');
 // Queue for general task processing
 export const taskQueue = new aws.sqs.Queue(`${appName}-task-queue`, {
     // AWS recommends setting a message retention period to prevent accidental loss of messages
-    messageRetentionSeconds: 2 * 24 * 60 * 60, // 2 days (14 days is max)
+    messageRetentionSeconds: 60 * 60, // 1 hour
     sqsManagedSseEnabled: true,
     //this should probably be a fifo queue
     //fifoQueue: true,
@@ -17,8 +17,8 @@ export const taskQueue = new aws.sqs.Queue(`${appName}-task-queue`, {
 // Queue specifically for image maxsizing tasks
 export const maxSizeQueue = new aws.sqs.Queue(`${appName}-maxsize-queue`, {
     // visibilityTimeoutSeconds Set to match Lambda timeout of 15 minutes. Without this amazon will throw an error during resource creation
-    visibilityTimeoutSeconds: 15 * 60,
-    messageRetentionSeconds: 2 * 24 * 60 * 60, // 2 days
+    visibilityTimeoutSeconds: 5 * 60,
+    messageRetentionSeconds: 60 * 60, // 1 hour
     sqsManagedSseEnabled: true,
 });
 

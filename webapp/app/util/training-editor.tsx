@@ -3,13 +3,13 @@ import { getFormProps, getInputProps, getCollectionProps, getTextareaProps, useF
 import { getZodConstraint, parseWithZod } from '@conform-to/zod';
 import { Form, useActionData, useLoaderData } from 'react-router';
 import { CheckIcon, ExternalLinkIcon, InfoCircledIcon } from '@radix-ui/react-icons';
-import { Field as HeadlessField, Label as HeadlessLabel, Radio, RadioGroup } from '@headlessui/react';
+import { Field as HeadlessField, Label as HeadlessLabel, Legend, Radio, RadioGroup } from '@headlessui/react';
 import { z } from 'zod';
 
 import { useIsPending } from '~/util/hooks';
 import { type BaseModel, type Training } from '~/types/training';
 
-import { ErrorList, Field } from '~/components/forms';
+import { ErrorList, Field, Fieldset } from '~/components/forms';
 import { Label } from '~/components/forms/label';
 import { Button } from '~/components/button';
 import { StatusButton } from '~/components/status-button';
@@ -146,6 +146,7 @@ export function TrainingEditor({ training, baseModels }: { training?: Training; 
                             </Alert>
                         </div>
                         <div>
+                            <h3 className="mb-2 font-medium text-gray-300">Base model</h3>
                             <RadioGroup
                                 className="flex flex-col divide-y divide-gray-800 rounded-lg border border-gray-800 bg-black/40"
                                 value={baseModelState.selected}

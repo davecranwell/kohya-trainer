@@ -180,26 +180,43 @@ export default function ImageUpload() {
         }
     };
 
-    const handleTagChange = async (tags: string[], imageId: string) => {
+    const updateImageTags = async (imageId: string, tags: string[]): Promise<[string[], boolean]> => {
         const sanitisedTags = sanitiseTagArray(tags);
 
         const updateTextResponse = await fetch(`/api/trainingimage/${training.id}`, {
             method: 'PATCH',
-            body: JSON.stringify({
-                id: imageId,
-                text: sanitisedTags.join(','),
-            }),
+            body: JSON.stringify({ id: imageId, text: sanitisedTags.join(',') }),
         });
 
         if (updateTextResponse.ok) {
-            // setUploadedImages([
-            //     ...uploadedImages.filter((image) => image.id !== imageId),
-            //     {
-            //         ...uploadedImages.find((image) => image.id === imageId),
-            //         text: sanitisedTags.join(','),
-            //     } as ImageWithMetadata,
-            // ]);
+            setUploadedImages([
+                ...uploadedImages.filter((image) => image.id !== imageId),
+                {
+                    ...uploadedImages.find((image) => image.id === imageId),
+                    text: sanitisedTags.join(','),
+                } as ImageWithMetadata,
+            ]);
+        }
+
+        return [sanitisedTags, updateTextResponse.ok];
+    };
+
+    const handleTagChange = async (tags: string[], imageId: string) => {
+        const [sanitisedTags, updatedOk] = await updateImageTags(imageId, tags);
+
+        if (updatedOk) {
             setAllTags(sanitiseTagArray([...allTags, ...sanitisedTags]));
+        }
+    };
+
+    // TODO: Removing the last instance of a tag does reset the dropdown but doesn't reset the query, fix this
+    const handleTagRemove = async (tags: string[], removedTag: string, imageId: string) => {
+        const [sanitisedTags, updatedOk] = await updateImageTags(imageId, tags);
+
+        if (updatedOk) {
+            if (uploadedImages.filter((image) => image.id !== imageId).every((image) => !image.text?.includes(removedTag))) {
+                setAllTags([...tags.filter((tag) => tag !== removedTag), ...sanitisedTags]);
+            }
         }
     };
 
@@ -218,7 +235,7 @@ export default function ImageUpload() {
 
                 return true;
             }),
-        [uploadedImages, showUntaggedOnly, selectedTag, negateTag],
+        [showUntaggedOnly, selectedTag, negateTag],
     );
 
     // Create a cache for cell measurements
@@ -256,7 +273,10 @@ export default function ImageUpload() {
                                         defaultValue={image.text}
                                         options={allTags}
                                         onChange={(tags) => {
-                                            handleTagChange(tags, image.id);
+                                            handleTagChange(tags, image.id!);
+                                        }}
+                                        onRemove={(allTags, removedTag) => {
+                                            handleTagRemove(allTags, removedTag, image.id!);
                                         }}
                                     />
                                 </div>

@@ -1,5 +1,5 @@
 import { S3Client, ListObjectsV2Command, GetObjectCommand, PutObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
-import { SQSClient, SendMessageCommand } from '@aws-sdk/client-sqs';
+import { SQSClient, SendMessageCommand, DeleteMessageCommand } from '@aws-sdk/client-sqs';
 import sharp from 'sharp';
 
 export const handler = async (event) => {
@@ -50,6 +50,13 @@ export const handler = async (event) => {
                     }),
                 );
             }
+
+            await sqs.send(
+                new DeleteMessageCommand({
+                    QueueUrl: process.env.AWS_SQS_MAXSIZE_QUEUE_URL,
+                    ReceiptHandle: record.receiptHandle,
+                }),
+            );
 
             // After successful processing, send message to task queue
             await sqs.send(

@@ -2,20 +2,24 @@ import { useEffect } from 'react';
 import { data, type LoaderFunctionArgs, Form, NavLink, Outlet, useLoaderData } from 'react-router';
 import { type ActionFunctionArgs } from 'react-router';
 import { ImageIcon, LightningBoltIcon, Pencil1Icon, UploadIcon } from '@radix-ui/react-icons';
-import { useEventSource } from 'remix-utils/sse/react';
 import clsx from 'clsx';
 import type { Route } from './+types/training';
 
 import prisma from '#/prisma/db.server';
 import { enqueueTraining } from '#/lib/task.server';
 
+import { useIsPending } from '~/util/hooks';
+
 import { requireUserWithPermission } from '~/services/permissions.server';
 import { redirectWithToast } from '~/services/toast.server';
 
 import { StatusIndicator, type StatusType } from '~/components/status-indicator';
 import { EmptyState } from '~/components/empty-state';
+import { StatusButton } from '~/components/status-button';
 import { Button } from '~/components/button';
 import { Progress } from '~/components/progress';
+
+const POLL_INTERVAL = 5000;
 
 export async function action({ request, params }: ActionFunctionArgs) {
     await requireUserWithPermission(request, 'update:training:own');
@@ -88,14 +92,16 @@ export async function loader({ request }: Route.LoaderArgs) {
 
 export default function TrainingPage({ loaderData }: Route.ComponentProps) {
     const { userId, trainings, thumbnailBucketUrl } = loaderData;
-    const progressMessage = useEventSource(`/sse/${userId}`, { event: userId });
+    const isSubmitting = useIsPending();
 
     useEffect(() => {
-        if (!progressMessage) return;
+        const interval = setInterval(async () => {
+            const trainingRequest = await fetch(`/api/training`);
+            const trainingData = await trainingRequest.json();
+        }, POLL_INTERVAL);
 
-        const progressParsed = JSON.parse(progressMessage);
-        const key = progressParsed.Key.split('/').pop() || progressParsed.Key;
-    }, [progressMessage]);
+        return () => clearInterval(interval);
+    }, []);
 
     return (
         <div>
@@ -129,9 +135,9 @@ export default function TrainingPage({ loaderData }: Route.ComponentProps) {
                                 {!training.status ? (
                                     <Form method="POST">
                                         <input type="hidden" name="trainingId" value={training.id} />
-                                        <Button variant="default" type="submit">
+                                        <StatusButton type="submit" status={isSubmitting ? 'pending' : 'idle'}>
                                             Start training
-                                        </Button>
+                                        </StatusButton>
                                     </Form>
                                 ) : (
                                     <div className="flex-auto px-6">

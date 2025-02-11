@@ -10,6 +10,7 @@ type Props = {
     options: Option[];
     defaultValue: string | undefined | null;
     onChange: (options: Option[]) => void;
+    onRemove: (options: Option[], removedOption: Option) => void;
 };
 
 export type Option = string;
@@ -70,7 +71,7 @@ export const MultiComboBox: React.FC<Props> = memo(({ ...props }) => {
         (option: Option) => {
             setSelected((selected) => {
                 const newSelected = selected.filter((selectedItem) => selectedItem !== option);
-                props.onChange(newSelected);
+                props.onRemove(newSelected, option);
                 return newSelected;
             });
         },

@@ -4,6 +4,9 @@ import tsconfigPaths from 'vite-tsconfig-paths';
 import { parse } from 'jsonc-parser';
 
 export default defineConfig({
+    server: {
+        allowedHosts: ['6dda-88-97-214-5.ngrok-free.app'],
+    },
     plugins: [
         reactRouter(),
         tsconfigPaths(),

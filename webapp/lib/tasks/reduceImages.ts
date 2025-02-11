@@ -14,13 +14,20 @@ export const reduceImages = async ({ trainingId }: { trainingId: string }) => {
 
     // Add all the images to the queue to be resized
     const images = await prisma.trainingImage.findMany({
-        where: { trainingId },
+        where: { trainingId, isResized: false },
         select: { id: true, url: true },
     });
 
+    if (images.length < 1) {
+        // go straight to zipping
+        await createTask(process.env.AWS_SQS_TASK_QUEUE_URL!, { task: 'zipImages', trainingId });
+        return;
+    }
+
     // add each image to the resize queue
     for (const image of images) {
-        createTask(process.env.AWS_SQS_RESIZE_IMAGES_QUEUE_URL!, {
+        createTask(process.env.AWS_SQS_MAXSIZE_QUEUE_URL!, {
+            task: 'reduceImage',
             imageId: image.id,
             trainingId,
             imageUrl: image.url,
