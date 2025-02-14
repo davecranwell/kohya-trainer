@@ -22,6 +22,8 @@ export const reduceImageSuccess = async ({ imageId }: { imageId: string }) => {
     // if there are no unprocessed images, then we can zip the images
     if (unprocessedImages.length < 1) {
         console.log('No unprocessed images, zipping', imageId, unprocessedImages);
-        await createTask(process.env.AWS_SQS_TASK_QUEUE_URL!, { task: 'zipImages', trainingId: image.trainingId });
+        return true;
     }
+
+    return false;
 };

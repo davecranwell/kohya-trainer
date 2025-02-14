@@ -19,9 +19,8 @@ export const reduceImages = async ({ trainingId }: { trainingId: string }) => {
     });
 
     if (images.length < 1) {
-        // go straight to zipping
-        await createTask(process.env.AWS_SQS_TASK_QUEUE_URL!, { task: 'zipImages', trainingId });
-        return;
+        // If no images are unprocesed, go straight to zipping
+        return true;
     }
 
     // add each image to the resize queue
@@ -34,4 +33,6 @@ export const reduceImages = async ({ trainingId }: { trainingId: string }) => {
             webhookUrl: `${process.env.ROOT_URL}/training/${trainingId}/webhook`,
         });
     }
+
+    return false;
 };

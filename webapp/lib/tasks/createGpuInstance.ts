@@ -112,7 +112,7 @@ async function createGpuInstance(training: Training) {
 export async function assignGpuToTraining({ trainingId }: { trainingId: string }) {
     try {
         const training = await prisma.training.findFirst({
-            where: { id: trainingId, status: 'allocateGpu' },
+            where: { id: trainingId },
         });
 
         if (!training) {
@@ -133,5 +133,6 @@ export async function assignGpuToTraining({ trainingId }: { trainingId: string }
         return true;
     } catch (error) {
         console.error('Error assigning GPU to training:', error);
+        return false;
     }
 }

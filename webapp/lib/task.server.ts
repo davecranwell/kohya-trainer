@@ -37,13 +37,19 @@ export function subscribeToTasks() {
 
         switch (task) {
             case 'reduceImages': {
-                await reduceImages({ trainingId });
+                const isAllDone = await reduceImages({ trainingId });
+                if (isAllDone) {
+                    await createTask(process.env.AWS_SQS_TASK_QUEUE_URL!, { task: 'zipImages', trainingId });
+                }
                 break;
             }
 
             case 'reduceImageSuccess': {
                 if (imageId) {
-                    await reduceImageSuccess({ imageId });
+                    const isAllDone = await reduceImageSuccess({ imageId });
+                    if (isAllDone) {
+                        await createTask(process.env.AWS_SQS_TASK_QUEUE_URL!, { task: 'zipImages', trainingId });
+                    }
                 }
                 break;
             }
@@ -58,8 +64,10 @@ export function subscribeToTasks() {
             }
 
             case 'allocateGpu': {
-                await assignGpuToTraining({ trainingId });
-                await createTask(process.env.AWS_SQS_TASK_QUEUE_URL!, { task: 'awaitGpuReady', trainingId, userId }, 10);
+                const isDone = await assignGpuToTraining({ trainingId });
+                if (isDone) {
+                    await createTask(process.env.AWS_SQS_TASK_QUEUE_URL!, { task: 'awaitGpuReady', trainingId, userId }, 10);
+                }
                 break;
             }
 
@@ -86,19 +94,7 @@ export function subscribeToTasks() {
 export async function createTask(queueUrl: string, messageBody: TaskBody | ResizeBody, delaySeconds: number = 0) {
     const { trainingId, task } = messageBody;
 
-    // find any existing trainingStatuses that match this task and avoid creating another one
-    if (['zipImages', 'allocateGpu', 'startTraining'].includes(task)) {
-        const existingStatus = await prisma.trainingStatus.findFirst({
-            where: { trainingId, status: task },
-        });
-
-        if (existingStatus) {
-            console.log('Task already exists', queueUrl, task);
-            return existingStatus;
-        }
-    }
-
-    console.log('Creating task', queueUrl, messageBody);
+    console.log('Creating task', queueUrl, task);
 
     try {
         await sqs.sendMessage({
@@ -110,13 +106,6 @@ export async function createTask(queueUrl: string, messageBody: TaskBody | Resiz
         console.error('Error sending message:', queueUrl, error);
         return false;
     }
-
-    return prisma.trainingStatus.create({
-        data: {
-            trainingId,
-            status: task,
-        },
-    });
 }
 
 // Call this to begin the async training process
