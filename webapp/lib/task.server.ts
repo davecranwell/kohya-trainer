@@ -12,16 +12,14 @@ import { reduceImageSuccess } from './tasks/reduceImageSuccess';
 
 export type TaskBody = {
     task: 'reduceImages' | 'reduceImageSuccess' | 'zipImages' | 'allocateGpu' | 'awaitGpuReady' | 'startTraining';
-    trainingId: string;
-    userId?: string;
+    runId: string;
     zipKey?: string;
     imageId?: string;
 };
 
 export type ResizeBody = {
     task: 'reduceImage';
-    trainingId: string;
-    userId?: string;
+    runId: string;
     imageId?: string;
     imageUrl?: string;
     webhookUrl?: string;
@@ -33,13 +31,13 @@ export function subscribeToTasks() {
     console.log('Subscribing to task queue');
 
     taskSubscription(async (body: TaskBody | ResizeBody) => {
-        const { task, trainingId, imageId, userId } = body;
+        const { task, imageId, runId } = body;
 
         switch (task) {
             case 'reduceImages': {
-                const isAllDone = await reduceImages({ trainingId });
+                const isAllDone = await reduceImages({ runId });
                 if (isAllDone) {
-                    await createTask(process.env.AWS_SQS_TASK_QUEUE_URL!, { task: 'zipImages', trainingId });
+                    await createTask(process.env.AWS_SQS_TASK_QUEUE_URL!, { task: 'zipImages', runId });
                 }
                 break;
             }
@@ -48,43 +46,43 @@ export function subscribeToTasks() {
                 if (imageId) {
                     const isAllDone = await reduceImageSuccess({ imageId });
                     if (isAllDone) {
-                        await createTask(process.env.AWS_SQS_TASK_QUEUE_URL!, { task: 'zipImages', trainingId });
+                        await createTask(process.env.AWS_SQS_TASK_QUEUE_URL!, { task: 'zipImages', runId });
                     }
                 }
                 break;
             }
 
             case 'zipImages': {
-                const zipKey = await zipImages({ trainingId });
+                const zipKey = await zipImages({ runId });
                 if (zipKey) {
-                    await createTask(process.env.AWS_SQS_TASK_QUEUE_URL!, { task: 'allocateGpu', trainingId, userId, zipKey });
+                    await createTask(process.env.AWS_SQS_TASK_QUEUE_URL!, { task: 'allocateGpu', zipKey, runId });
                 }
 
                 break;
             }
 
             case 'allocateGpu': {
-                const isDone = await assignGpuToTraining({ trainingId });
+                const isDone = await assignGpuToTraining({ runId });
                 if (isDone) {
-                    await createTask(process.env.AWS_SQS_TASK_QUEUE_URL!, { task: 'awaitGpuReady', trainingId, userId }, 10);
+                    await createTask(process.env.AWS_SQS_TASK_QUEUE_URL!, { task: 'awaitGpuReady', runId }, 10);
                 }
                 break;
             }
 
             case 'awaitGpuReady': {
-                const isReady = await awaitGpuReady({ trainingId });
+                const isReady = await awaitGpuReady({ runId });
                 if (isReady) {
-                    await createTask(process.env.AWS_SQS_TASK_QUEUE_URL!, { task: 'startTraining', trainingId, userId });
+                    await createTask(process.env.AWS_SQS_TASK_QUEUE_URL!, { task: 'startTraining', runId });
                 } else {
-                    // if not ready, wait 10 seconds and try again
-                    await createTask(process.env.AWS_SQS_TASK_QUEUE_URL!, { task: 'awaitGpuReady', trainingId, userId }, 10);
+                    // if not ready, wait 30 seconds and try again
+                    await createTask(process.env.AWS_SQS_TASK_QUEUE_URL!, { task: 'awaitGpuReady', runId }, 30);
                 }
                 break;
             }
 
             // Actually begins the training through the kohya rest api
             case 'startTraining': {
-                await startTraining({ trainingId });
+                await startTraining({ runId });
                 break;
             }
         }
@@ -92,9 +90,7 @@ export function subscribeToTasks() {
 }
 
 export async function createTask(queueUrl: string, messageBody: TaskBody | ResizeBody, delaySeconds: number = 0) {
-    const { trainingId, task } = messageBody;
-
-    console.log('Creating task', queueUrl, task);
+    const { task } = messageBody;
 
     try {
         await sqs.sendMessage({
@@ -110,5 +106,14 @@ export async function createTask(queueUrl: string, messageBody: TaskBody | Resiz
 
 // Call this to begin the async training process
 export async function enqueueTraining(trainingId: string) {
-    return createTask(process.env.AWS_SQS_TASK_QUEUE_URL!, { task: 'reduceImages', trainingId });
+    const run = await prisma.trainingRun.create({
+        data: {
+            trainingId,
+            status: 'started',
+        },
+    });
+
+    console.log(run.id);
+
+    return createTask(process.env.AWS_SQS_TASK_QUEUE_URL!, { task: 'reduceImages', runId: run.id });
 }

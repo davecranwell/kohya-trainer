@@ -11,7 +11,7 @@ export const StatusButton = React.forwardRef<
         status: 'pending' | 'success' | 'error' | 'idle';
     }
 >(({ status, className, children, ...props }, ref) => {
-    const showSpinner = useSpinDelay(status === 'pending', { delay: 100, minDuration: 500 });
+    const showSpinner = useSpinDelay(status === 'pending', { delay: 50, minDuration: 1000 });
 
     const icon = {
         pending: showSpinner ? (

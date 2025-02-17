@@ -6,14 +6,29 @@ import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 
 import prisma from '#/prisma/db.server';
 
-export const startTraining = async ({ trainingId }: { trainingId: string }) => {
+export const startTraining = async ({ runId }: { runId: string }) => {
     // Get the training config from the database
-    const training = await prisma.training.findUnique({
-        where: { id: trainingId },
-        select: { config: true, gpu: true, ownerId: true },
+    const trainingRun = await prisma.trainingRun.findUnique({
+        where: { id: runId },
+        select: {
+            training: {
+                select: {
+                    id: true,
+                    config: true,
+                    gpu: true,
+                    ownerId: true,
+                },
+            },
+        },
     });
 
-    if (!training?.gpu) {
+    if (!trainingRun) {
+        throw new Error('Training run not found');
+    }
+
+    const { training } = trainingRun;
+
+    if (!training.gpu) {
         throw new Error('GPU not assigned to training');
     }
 
@@ -35,6 +50,10 @@ export const startTraining = async ({ trainingId }: { trainingId: string }) => {
     // and the mapped port of the kohya instance
     const { jupyter_token: jupyterToken, public_ipaddr: publicIp, ports } = instance;
 
+    console.log('jupyterToken', jupyterToken);
+    console.log('publicIp', publicIp);
+    console.log('ports', ports);
+
     if (!ports) {
         throw new Error('Ports not found');
     }
@@ -45,43 +64,53 @@ export const startTraining = async ({ trainingId }: { trainingId: string }) => {
     const client = new S3Client({ region: process.env.AWS_REGION });
     const command = new PutObjectCommand({
         Bucket: process.env.AWS_S3_UPLOAD_BUCKET_NAME,
-        Key: `${training.ownerId}/${trainingId}/models/checkpoint.safetensors`,
+        Key: `${training.ownerId}/${training.id}/models/checkpoint.safetensors`,
     });
     const presignedUrl = await getSignedUrl(client, command, { expiresIn: 60 * 60 * 12 }); // upload must occur within 12 hours. Yes this is a long time. TODO: Make this more JIT
 
     const httpsAgent = new https.Agent({ rejectUnauthorized: false });
+
     const createTraining = await axios.post(
-        `https://${publicIp}:${kohyaPort}/training/?jupyter_token=${jupyterToken}`,
+        `https://${publicIp}:${kohyaPort}/training`,
         {
             ...JSON.parse(training.config),
             upload_url: presignedUrl,
+            webhook_url: `${process.env.ROOT_URL}/training/${runId}/webhook`,
         },
         {
+            headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${jupyterToken}`,
+            },
             httpsAgent,
         },
     );
+
+    console.log('createTraining', createTraining.status);
+    console.log('createTraining', createTraining.data);
 
     if (createTraining.status !== 201) {
         throw new Error('Failed to create training');
     }
 
     const startTrainingResponse = await axios.post(
-        `https://${publicIp}:${kohyaPort}/training/${createTraining.data.session_id}/start/?jupyter_token=${jupyterToken}`,
+        `https://${publicIp}:${kohyaPort}/training/${createTraining.data.session_id}/start`,
         {},
         {
+            headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${jupyterToken}`,
+            },
             httpsAgent,
         },
     );
+
+    console.log('startTrainingResponse', startTrainingResponse.status);
+    console.log('startTrainingResponse', startTrainingResponse.data);
 
     if (startTrainingResponse.status !== 202) {
         throw new Error('Failed to start training');
     }
 
-    // Update the training with the training id
-    await prisma.trainingStatus.create({
-        data: {
-            trainingId,
-            status: 'starting',
-        },
-    });
+    return true;
 };

@@ -29,7 +29,7 @@ async function pollMessages(handler: (message: any) => Promise<void>) {
 
                 // Process message logic here
                 const body = JSON.parse(Body);
-                const { trainingId, task } = body;
+                const { runId, task } = body;
 
                 // check that another message with this ID hasn't already been processed
                 const existingStatus = await prisma.trainingStatus.findFirst({
@@ -41,17 +41,16 @@ async function pollMessages(handler: (message: any) => Promise<void>) {
                     continue;
                 }
 
+                // if the message has been received more than 10 times, it indicates a stale run that should be marked
                 if (Attributes?.ApproximateReceiveCount && parseInt(Attributes.ApproximateReceiveCount) > 10) {
                     console.log('Message deleted, too stale', MessageId);
                     await sqs.deleteMessage({
                         QueueUrl: queueUrl,
                         ReceiptHandle,
                     });
-                    await prisma.trainingStatus.create({
-                        data: {
-                            status: 'stalled',
-                            trainingId,
-                        },
+                    await prisma.trainingRun.update({
+                        where: { id: runId },
+                        data: { status: 'stalled' },
                     });
                     continue;
                 }
@@ -70,7 +69,7 @@ async function pollMessages(handler: (message: any) => Promise<void>) {
                         data: {
                             messageId: MessageId,
                             status: task,
-                            trainingId,
+                            runId,
                         },
                     });
                 } catch (error) {

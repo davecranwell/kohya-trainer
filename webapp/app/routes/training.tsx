@@ -31,12 +31,19 @@ export async function action({ request, params }: ActionFunctionArgs) {
         return data({ error: 'Invalid training ID' }, { status: 400 });
     }
 
-    //prevent duplicate tasks
-    const training = await prisma.training.findUnique({
-        where: { id: trainingId },
+    // prevent duplicate tasks
+    const trainingRun = await prisma.trainingRun.findUnique({
+        where: {
+            id: trainingId,
+            status: {
+                not: {
+                    in: ['stalled', 'onerror', 'completed'],
+                },
+            },
+        },
     });
 
-    if (training?.status) {
+    if (trainingRun) {
         return data({ error: 'Training already started' }, { status: 400 });
     }
 
@@ -66,7 +73,15 @@ export async function loader({ request }: Route.LoaderArgs) {
             updatedAt: true,
             triggerWord: true,
             baseModel: true,
-            status: true,
+            runs: {
+                select: {
+                    statuses: {
+                        select: {
+                            status: true,
+                        },
+                    },
+                },
+            },
             images: {
                 take: 3,
                 select: {
@@ -92,7 +107,7 @@ export async function loader({ request }: Route.LoaderArgs) {
 
 export default function TrainingPage({ loaderData }: Route.ComponentProps) {
     const { userId, trainings, thumbnailBucketUrl } = loaderData;
-    const isSubmitting = useIsPending();
+    const { isPending, pendingFormAction } = useIsPending();
 
     useEffect(() => {
         const interval = setInterval(async () => {
@@ -133,9 +148,11 @@ export default function TrainingPage({ loaderData }: Route.ComponentProps) {
                             </div>
                             <div className={clsx('flex w-full flex-1 flex-row', !training.status && 'items-center justify-end')}>
                                 {!training.status ? (
-                                    <Form method="POST">
+                                    <Form method="POST" action={`/training?trainingId=${training.id}`}>
                                         <input type="hidden" name="trainingId" value={training.id} />
-                                        <StatusButton type="submit" status={isSubmitting ? 'pending' : 'idle'}>
+                                        <StatusButton
+                                            type="submit"
+                                            status={isPending && pendingFormAction == `/training?trainingId=${training.id}` ? 'pending' : 'idle'}>
                                             Start training
                                         </StatusButton>
                                     </Form>

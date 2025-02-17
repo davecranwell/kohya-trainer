@@ -25,9 +25,11 @@ export function useIsPending({
 } = {}) {
     const contextualFormAction = useFormAction();
     const navigation = useNavigation();
-    console.log(navigation, contextualFormAction);
     const isPendingState = state === 'non-idle' ? navigation.state !== 'idle' : navigation.state === state;
-    return isPendingState && navigation.formAction === (formAction ?? contextualFormAction) && navigation.formMethod === formMethod;
+    return {
+        pendingFormAction: navigation.formAction || contextualFormAction,
+        isPending: state === 'non-idle' ? navigation.state !== 'idle' : navigation.state === state,
+    };
 }
 
 export function useToast(toast?: Toast | null) {

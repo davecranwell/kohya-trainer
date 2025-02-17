@@ -3,7 +3,7 @@ import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 
 import prisma from '#/prisma/db.server';
 
-export const zipImages = async ({ trainingId }: { trainingId: string }) => {
+export const zipImages = async ({ runId }: { runId: string }) => {
     const s3Client = new S3Client({
         region: process.env.AWS_REGION,
         credentials: {
@@ -12,18 +12,29 @@ export const zipImages = async ({ trainingId }: { trainingId: string }) => {
         },
     });
 
-    const training = await prisma.training.findUnique({
-        where: { id: trainingId },
-        select: { ownerId: true },
+    const trainingRun = await prisma.trainingRun.findUnique({
+        where: { id: runId },
+        select: {
+            training: {
+                select: {
+                    id: true,
+                    config: true,
+                    gpu: true,
+                    ownerId: true,
+                },
+            },
+        },
     });
 
-    if (!training?.ownerId) {
-        throw new Error('Training not found');
+    if (!trainingRun) {
+        throw new Error('Training run not found');
     }
+
+    const { training } = trainingRun;
 
     // upload all the captions from the Images table for this training as .txt files named after their image filenames, to the same location on S3
     const images = await prisma.trainingImage.findMany({
-        where: { trainingId },
+        where: { trainingId: training.id },
         select: { text: true, name: true },
     });
 
@@ -36,7 +47,7 @@ export const zipImages = async ({ trainingId }: { trainingId: string }) => {
         await s3Client.send(
             new PutObjectCommand({
                 Bucket: process.env.AWS_S3_MAXRES_BUCKET_NAME,
-                Key: `${training?.ownerId}/${trainingId}/images/${image.name}.txt`,
+                Key: `${training?.ownerId}/${training.id}/images/${image.name}.txt`,
                 Body: image.text,
             }),
         );
@@ -47,7 +58,7 @@ export const zipImages = async ({ trainingId }: { trainingId: string }) => {
 
     const command = new InvokeCommand({
         FunctionName: process.env.ZIP_IMAGES_LAMBDA_NAME,
-        Payload: JSON.stringify({ bucket: process.env.AWS_S3_MAXRES_BUCKET_NAME, key: `${training?.ownerId}/${trainingId}/` }),
+        Payload: JSON.stringify({ bucket: process.env.AWS_S3_MAXRES_BUCKET_NAME, key: `${training?.ownerId}/${training.id}/` }),
     });
 
     const { Payload, LogResult, StatusCode } = await client.send(command);
@@ -59,22 +70,15 @@ export const zipImages = async ({ trainingId }: { trainingId: string }) => {
 
     const lambdaResult = Payload && (JSON.parse(Buffer.from(Payload).toString()) as ZipPayloadResponse);
 
-    if (lambdaResult?.zipKey) {
-        const training = await prisma.training.findUnique({
-            where: { id: trainingId },
-            select: { config: true },
+    if (lambdaResult?.zipKey && training?.config) {
+        const configJson = JSON.parse(training.config);
+        configJson.training_images_url = `https://${process.env.AWS_S3_MAXRES_BUCKET_NAME}.s3.amazonaws.com/${lambdaResult.zipKey}`;
+
+        //update the training config to set training_images_url to the zip key
+        await prisma.training.update({
+            where: { id: training.id },
+            data: { config: JSON.stringify(configJson) },
         });
-
-        if (training?.config) {
-            const configJson = JSON.parse(training.config);
-            configJson.training_images_url = `https://${process.env.AWS_S3_MAXRES_BUCKET_NAME}.s3.amazonaws.com/${lambdaResult.zipKey}`;
-
-            //update the training config to set training_images_url to the zip key
-            await prisma.training.update({
-                where: { id: trainingId },
-                data: { config: JSON.stringify(configJson) },
-            });
-        }
 
         return lambdaResult?.zipKey;
     }

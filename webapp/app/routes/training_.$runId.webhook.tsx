@@ -4,19 +4,17 @@ import { type ActionFunctionArgs, LoaderFunctionArgs, data } from 'react-router'
 import prisma from '#/prisma/db.server';
 
 export async function action({ request, params }: ActionFunctionArgs) {
-    const { id } = params;
+    const { runId } = params;
 
-    if (!id) return;
+    if (!runId) return;
 
     // get the training session
-    const trainingSession = await prisma.training.findFirst({
-        where: {
-            id,
-        },
+    const trainingRun = await prisma.trainingRun.findFirst({
+        where: { id: runId },
     });
 
-    if (!trainingSession) {
-        return data({ error: 'Training not found' }, { status: 404 });
+    if (!trainingRun) {
+        return data({ error: 'Training runnot found' }, { status: 404 });
     }
 
     const body = await request.json();
@@ -42,7 +40,7 @@ export async function action({ request, params }: ActionFunctionArgs) {
             await prisma.trainingStatus.create({
                 data: {
                     status: body.status,
-                    trainingId: id,
+                    runId,
                 },
             });
             break;
@@ -51,7 +49,7 @@ export async function action({ request, params }: ActionFunctionArgs) {
             await prisma.trainingStatus.create({
                 data: {
                     status: body.status,
-                    trainingId: id,
+                    runId,
                     // epoch: body.epoch,
                     // step: body.step,
                     // loss: body.loss,

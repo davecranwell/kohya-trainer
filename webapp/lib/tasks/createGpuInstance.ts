@@ -6,7 +6,7 @@ import type { TaskBody } from '../task.server';
 const prisma = new PrismaClient();
 
 // Function to create a new GPU instance using Vast API
-async function createGpuInstance(training: Training) {
+async function createGpuInstance() {
     // find instances available:
     // This query string is discoverable from the Network tab here: https://cloud.vast.ai/create/
     const query = {
@@ -16,9 +16,40 @@ async function createGpuInstance(training: Training) {
         verified: { eq: true },
         rentable: { eq: true },
         num_gpus: { gte: 1, lte: 1 },
+        inet_down: { gte: 500 },
         gpu_totalram: { gte: 23987.58004237308, lte: 51418.50343976141 },
         dlperf: { lte: 51.840222312450926 },
         sort_option: { 0: ['dph_total', 'asc'], 1: ['total_flops', 'asc'] },
+        geolocation: {
+            in: [
+                'SE',
+                'UA',
+                'GB',
+                'PL',
+                'PT',
+                'SI',
+                'DE',
+                'IT',
+                'CH',
+                'LT',
+                'GR',
+                'FI',
+                'IS',
+                'AT',
+                'FR',
+                'RO',
+                'MD',
+                'HU',
+                'NO',
+                'MK',
+                'BG',
+                'ES',
+                'HR',
+                'NL',
+                'CZ',
+                'EE',
+            ],
+        },
         gpu_name: { in: ['RTX 3090 Ti', 'RTX 3090', 'RTX 4090', 'RTX 4090D', 'RTX 4080S', 'RTX 4080'] },
         order: [
             ['dph_total', 'asc'],
@@ -56,8 +87,8 @@ async function createGpuInstance(training: Training) {
                 //CIVITAI_TOKEN: training.civitaiToken,
                 WEB_ENABLE_AUTH: 'true',
                 WEB_ENABLE_HTTPS: 'true',
-                //WEB_USER: process.env.VAST_WEB_USER,
-                //WEB_PASSWORD: process.env.VAST_WEB_PASSWORD,
+                WEB_USER: 'admin', //process.env.VAST_WEB_USER,
+                WEB_PASSWORD: 'admin', //process.env.VAST_WEB_PASSWORD,
                 //TRAINING_ID: training.id,
                 //ZIP_URL: `${process.env.AWS_S3_MAXRES_BUCKET_NAME}/${zipKey}`,
                 KOHYA_ARGS: '',
@@ -99,36 +130,49 @@ async function createGpuInstance(training: Training) {
     const newInstanceId = newGpuResponse.data.new_contract;
 
     console.log(`Created new GPU instance with Vast ID: ${newInstanceId}`);
-    // Create a new GpuInstance in the database
-    return await prisma.gpu.create({
-        data: {
-            instanceId: newInstanceId.toString(),
-            status: 'running',
-            trainingId: training.id,
-        },
-    });
+
+    return newInstanceId.toString();
 }
 
-export async function assignGpuToTraining({ trainingId }: { trainingId: string }) {
+export async function assignGpuToTraining({ runId }: { runId: string }) {
     try {
-        const training = await prisma.training.findFirst({
-            where: { id: trainingId },
-        });
-
-        if (!training) {
-            return false;
-        }
-
-        const gpuRecord = await createGpuInstance(training);
-
-        await prisma.training.update({
-            where: { id: trainingId },
-            data: {
-                gpuId: gpuRecord.id,
+        const trainingRun = await prisma.trainingRun.findUnique({
+            where: { id: runId },
+            select: {
+                training: {
+                    select: {
+                        id: true,
+                        config: true,
+                        gpu: true,
+                        ownerId: true,
+                    },
+                },
             },
         });
 
-        console.log(`Assigned GPU ${gpuRecord.id} to training ${trainingId}`);
+        if (!trainingRun) {
+            throw new Error('Training run not found');
+        }
+
+        const { training } = trainingRun;
+
+        const instanceId = await createGpuInstance();
+
+        // Create a new GpuInstance in the database
+        await prisma.training.update({
+            where: { id: training.id },
+            data: {
+                gpu: {
+                    create: {
+                        instanceId: instanceId,
+                        status: 'running',
+                        trainingId: training.id,
+                    },
+                },
+            },
+        });
+
+        console.log(`Assigned GPU ${instanceId} to training ${training.id}`);
 
         return true;
     } catch (error) {
