@@ -38,7 +38,6 @@ CHECKPOINT_MODELS=(
     #"https://huggingface.co/stabilityai/stable-diffusion-2-1/resolve/main/v2-1_768-ema-pruned.ckpt"
     #"https://huggingface.co/stabilityai/stable-diffusion-xl-base-1.0/resolve/main/sd_xl_base_1.0.safetensors"
     #"https://huggingface.co/stabilityai/stable-diffusion-xl-refiner-1.0/resolve/main/sd_xl_refiner_1.0.safetensors"
-    "https://civitai.com/api/download/models/1094291?type=Model&format=SafeTensor&size=pruned&fp=fp16"
 )
 
 UNET_MODELS=(
@@ -46,21 +45,7 @@ UNET_MODELS=(
 )
 
 LORA_MODELS=(
-    "https://davecranwellgeneral.s3.us-east-1.amazonaws.com/qinn-lustify-endgame-57352.1094291-15.safetensors"
-    "https://davecranwellgeneral.s3.us-east-1.amazonaws.com/qinn-lustify-endgame-57352.1094291-14.safetensors"
-    "https://davecranwellgeneral.s3.us-east-1.amazonaws.com/qinn-lustify-endgame-57352.1094291-13.safetensors"
-    #"https://davecranwellgeneral.s3.us-east-1.amazonaws.com/qinn.civitai.safetensors"
-    #"https://davecranwellgeneral.s3.us-east-1.amazonaws.com/nat0.civitai.safetensors"
-    #"https://davecranwellgeneral.s3.us-east-1.amazonaws.com/qinn.afrodite.1.safetensors"
-    #"https://davecranwellgeneral.s3.us-east-1.amazonaws.com/qinn.afrodite.2.safetensors"
-    #"https://davecranwellgeneral.s3.us-east-1.amazonaws.com/qinn.afrodite.3.safetensors"
-    #"https://davecranwellgeneral.s3.us-east-1.amazonaws.com/qinn.afrodite.4.safetensors"
-    #"https://davecranwellgeneral.s3.us-east-1.amazonaws.com/qinn.afrodite.5.safetensors"
-    #"https://davecranwellgeneral.s3.us-east-1.amazonaws.com/qinn.lustify.1.safetensors"
-    #"https://davecranwellgeneral.s3.us-east-1.amazonaws.com/qinn.lustify.2.safetensors"
-    #"https://davecranwellgeneral.s3.us-east-1.amazonaws.com/qinn.lustify.3.safetensors"
-    #"https://davecranwellgeneral.s3.us-east-1.amazonaws.com/qinn.lustify.4.safetensors"
-    #"https://davecranwellgeneral.s3.us-east-1.amazonaws.com/qinn.lustify.5.safetensors"
+
 )
 
 VAE_MODELS=(
