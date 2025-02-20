@@ -47,7 +47,7 @@ export const zipImages = async ({ runId }: { runId: string }) => {
         await s3Client.send(
             new PutObjectCommand({
                 Bucket: process.env.AWS_S3_MAXRES_BUCKET_NAME,
-                Key: `${training?.ownerId}/${training.id}/images/${image.name}.txt`,
+                Key: `${training?.ownerId}/${training.id}/images/${image.name.replace(/\.[^.]+$/, '.txt')}`,
                 Body: image.text,
             }),
         );
