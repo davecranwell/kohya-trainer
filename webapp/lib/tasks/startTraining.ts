@@ -50,10 +50,6 @@ export const startTraining = async ({ runId }: { runId: string }) => {
     // and the mapped port of the kohya instance
     const { jupyter_token: jupyterToken, public_ipaddr: publicIp, ports } = instance;
 
-    console.log('jupyterToken', jupyterToken);
-    console.log('publicIp', publicIp);
-    console.log('ports', ports);
-
     if (!ports) {
         throw new Error('Ports not found');
     }
@@ -86,9 +82,6 @@ export const startTraining = async ({ runId }: { runId: string }) => {
         },
     );
 
-    console.log('createTraining', createTraining.status);
-    console.log('createTraining', createTraining.data);
-
     if (createTraining.status !== 201) {
         throw new Error('Failed to create training');
     }
@@ -104,9 +97,6 @@ export const startTraining = async ({ runId }: { runId: string }) => {
             httpsAgent,
         },
     );
-
-    console.log('startTrainingResponse', startTrainingResponse.status);
-    console.log('startTrainingResponse', startTrainingResponse.data);
 
     if (startTrainingResponse.status !== 202) {
         throw new Error('Failed to start training');
