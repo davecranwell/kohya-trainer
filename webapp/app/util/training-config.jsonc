@@ -12,7 +12,7 @@
     "civitai_key": "", // REMOVE BEFORE TRAINING - the civitai key
     "trigger_word": "", // REMOVE BEFORE TRAINING - the trigger word and class e.g "ohxw man"
     "upload_url": "", // REMOVE BEFORE TRAINING - the presignedurl of the s3 bucket to upload the checkpoint to
-    "image_repeats": 4, // REMOVE BEFORE TRAINING - the number of times to repeat each image
+    "image_repeats": 1, // REMOVE BEFORE TRAINING - the number of times to repeat each image
     // "pretrained_model_name_or_path": "", // DO NOT SEND THIS - this is set on the gpu side
 
     // Core params
@@ -23,7 +23,7 @@
     "train_batch_size": 4, // might need to tweak this based on memory
     "network_module": "networks.lora", // the name of the thing we're creating
     "clip_skip": 1, // depends on the model but most models don't say, perhaps leave as 1 for now.
-    "epoch": 20, // should be calculated based on the number of images and the learning rate
+    "epoch": 15, // should be calculated based on the number of images and the learning rate
     "flip_aug": false,
     "fp8_base": false,
     "full_bf16": false,
