@@ -29,6 +29,11 @@ sequenceDiagram
     User->>S3: Downloads trained model
 ```
 
+# ERD
+
+ERD can be found here: [ERD.md](ERD.md).
+Generated with `npm run prisma:generate`
+
 Training statuses:
 
 ```mermaid

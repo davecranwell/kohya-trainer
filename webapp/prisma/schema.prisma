@@ -5,6 +5,12 @@ generator client {
   provider = "prisma-client-js"
 }
 
+generator erd {
+  provider = "prisma-erd-generator"
+  output = "../ERD.md"
+  mmdcPath = "../webapp/node_modules/.bin"
+}
+
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
