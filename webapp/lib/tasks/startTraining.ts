@@ -70,6 +70,8 @@ export const startTraining = async ({ runId }: { runId: string }) => {
         `https://${publicIp}:${kohyaPort}/training`,
         {
             ...JSON.parse(training.config),
+            id: runId,
+            civitai_key: process.env.CIVITAI_KEY,
             upload_url: presignedUrl,
             webhook_url: `${process.env.ROOT_URL}/training/${runId}/webhook`,
         },

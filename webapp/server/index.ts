@@ -197,7 +197,8 @@ async function startServer() {
         max: 100 * maxMultiple,
     });
 
-    const strongPaths = ['/login', '/signup', '/verify', '/reset-password'];
+    const strongPaths = ['/login', '/reset-password'];
+    const strongestPaths = ['/sign-up', '/verify'];
 
     const generalRateLimit = rateLimit(rateLimitDefault);
 
@@ -209,9 +210,7 @@ async function startServer() {
             return strongRateLimit(req, res, next);
         }
 
-        // the verify route is a special case because it's a GET route that
-        // can have a token in the query string
-        if (req.path.includes('/verify')) {
+        if (strongestPaths.some((p) => req.path.includes(p))) {
             return strongestRateLimit(req, res, next);
         }
 

@@ -2,7 +2,7 @@ import { Link, type MetaFunction } from 'react-router';
 import { ArrowRightIcon } from '@radix-ui/react-icons';
 
 export const meta: MetaFunction = () => {
-    return [{ title: 'Hi' }, { name: 'description', content: 'And welcome' }];
+    return [{ title: 'Likera' }, { name: 'description', content: 'Likeness LoRas without the hassle' }];
 };
 
 export default function Index() {

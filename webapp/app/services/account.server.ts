@@ -10,7 +10,7 @@ export const hashPassword = async (password: string) => {
     return await bcrypt.hash(password, 10);
 };
 
-export const createAccount = async (data: { email: string; name: string; password?: string }) => {
+export const createAccount = async (data: { email: string; name?: string; password?: string }) => {
     const result = await prisma.user.findFirst({ where: { email: data.email } });
 
     if (result) {
@@ -18,11 +18,11 @@ export const createAccount = async (data: { email: string; name: string; passwor
     }
 
     const newUser = {
-        name: data.name,
+        name: data.name || undefined,
         email: data.email,
         createdAt: new Date(),
         roles: {
-            create: {
+            connect: {
                 name: 'user',
             },
         },

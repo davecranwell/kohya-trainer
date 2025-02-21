@@ -10,6 +10,14 @@ erDiagram
     }
   
 
+  "Invite" {
+    String id "🗝️"
+    DateTime createdAt 
+    DateTime updatedAt 
+    DateTime expiresAt "❓"
+    }
+  
+
   "Training" {
     String id "🗝️"
     String name 

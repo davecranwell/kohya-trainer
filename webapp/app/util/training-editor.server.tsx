@@ -29,12 +29,10 @@ export async function action({ request, params }: ActionFunctionArgs) {
 
     const config = {
         ...TrainingConfig.default,
-        id: trainingId,
         output_name: triggerWord.trim(),
         trigger_word: triggerWord.trim(),
         checkpoint_url: baseModel.url.trim(),
         checkpoint_filename: baseModel.filename.trim(),
-        civitai_key: process.env.CIVITAI_KEY,
         metadata_description: `Trigger word(s): ${triggerWord.trim()}. Base model: ${baseModel.name} (${baseModel.url}). Trained through: ${process.env.ROOT_URL}`,
         metadata_title: name.trim(),
     };

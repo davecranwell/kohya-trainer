@@ -88,9 +88,7 @@ export function TrainingEditor({ training, baseModels }: { training?: Training; 
                 <div className="space-y-8 border-b border-gray-900/10">
                     <div className="grid grid-cols-2 gap-4 border-b border-gray-900/10 pb-12">
                         <Alert variant="info">
-                            <p className="basis-1/2 text-sm leading-6">
-                                The name given has no impact on the training process. It just allows you to identify this training later.
-                            </p>
+                            <p className="basis-1/2 text-sm leading-6">An easy way to identify this training later.</p>
                         </Alert>
                         <Field
                             labelProps={{ children: 'Training name' }}
@@ -109,7 +107,7 @@ export function TrainingEditor({ training, baseModels }: { training?: Training; 
                                     <br />
                                     <br />
                                     Loras teach a base model a brand new concept, or enhance an existing one. For new concepts use a trigger word that
-                                    is <em className="text-semantic-info">unknown</em> to the base model. Most English dictionary words are already
+                                    is <em className="text-semantic-warning">unknown</em> to the base model. Most English dictionary words are already
                                     known. Random-letter, or username-like words work well (e.g 'ohxw', 'johndoe420') because no dictionary word could
                                     clash and dilute the concept you're teaching.
                                 </p>
@@ -117,6 +115,7 @@ export function TrainingEditor({ training, baseModels }: { training?: Training; 
                             <Alert variant="warning">
                                 <p className="text-sm leading-6">
                                     NB: Combining multiple loras all trained with the same trigger word will cause confusion in your image generation.
+                                    Consider which other loras you plan to use in your generations.
                                 </p>
                             </Alert>
                         </div>
@@ -133,14 +132,14 @@ export function TrainingEditor({ training, baseModels }: { training?: Training; 
                         <div>
                             <Alert variant="info">
                                 <p className="text-sm leading-6">
-                                    Loras are like music remixes, building upon an original idea. The base model will define key characteristics of
-                                    the Lora's output, so select one that matches the style or content of the output you want.
+                                    Loras are like music remixes - they build on an existing idea. The base model provides that foundation, and
+                                    defines the Lora's output, so select one that matches the style or content of the output you want.
                                 </p>
                             </Alert>
                             <Alert variant="warning">
                                 <p className="text-sm leading-6">
                                     NB: Your Lora will generate the best images{' '}
-                                    <em className="text-semantic-warning">only when used with the base model you choose here</em>. Use of a different
+                                    <em className="text-semantic-warning">only when used with the base model you choose here</em>. Using a different
                                     base model with this Lora may cause poor results.
                                 </p>
                             </Alert>
@@ -210,7 +209,7 @@ export function TrainingEditor({ training, baseModels }: { training?: Training; 
                 <input type="hidden" name="baseModel.type" value={baseModelState.selected?.type || training?.baseModel?.type || ''} />
 
                 <div className="mt-6 flex items-center justify-end gap-x-6">
-                    <StatusButton form={form.id} type="submit" disabled={isPending} status={isPending ? 'pending' : 'idle'}>
+                    <StatusButton form={form.id} type="submit" disabled={isPending.isPending} status={isPending.isPending ? 'pending' : 'idle'}>
                         Continue
                     </StatusButton>
                 </div>

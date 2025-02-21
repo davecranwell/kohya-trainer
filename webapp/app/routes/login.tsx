@@ -58,10 +58,11 @@ export async function loader({ request }: LoaderFunctionArgs) {
         return redirect('/training');
     }
 
-    return null;
+    return { inviteOnly: process.env.INVITE_ONLY === 'true' };
 }
 
 export default function Login() {
+    const { inviteOnly } = useLoaderData<typeof loader>();
     const actionData = useActionData<typeof action>();
     const isSubmitting = useIsPending();
     const [form, fields] = useForm({
@@ -92,7 +93,7 @@ export default function Login() {
                             }}
                             errors={fields.password.errors}
                         />
-                        <StatusButton type="submit" status={isSubmitting ? 'pending' : 'idle'} size="full">
+                        <StatusButton type="submit" status={isSubmitting.isPending ? 'pending' : 'idle'} size="full">
                             Sign In
                         </StatusButton>
                     </Fieldset>
@@ -102,13 +103,17 @@ export default function Login() {
 
                 <SocialButton provider={'discord'} label="Sign in with Discord" />
 
-                <Divider />
+                {!inviteOnly && (
+                    <>
+                        <Divider />
 
-                <div className="flex justify-center text-sm">
-                    <Button asChild variant="secondary" size="lg">
-                        <Link to="/sign-up">Create an account</Link>
-                    </Button>
-                </div>
+                        <div className="flex justify-center text-sm">
+                            <Button asChild variant="secondary" size="lg">
+                                <Link to="/sign-up">Create an account</Link>
+                            </Button>
+                        </div>
+                    </>
+                )}
             </Container>
         </div>
     );
