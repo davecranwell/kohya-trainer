@@ -1,8 +1,8 @@
 import * as React from 'react';
-import { useEffect, useState } from 'react';
-import { Description, Dialog, DialogPanel, DialogTitle, Listbox, ListboxButton, ListboxOption, ListboxOptions } from '@headlessui/react';
-import { useQuery, useQueryClient, QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { useState } from 'react';
+import { Dialog, DialogPanel, Listbox, ListboxButton, ListboxOption, ListboxOptions } from '@headlessui/react';
 import { ChevronDownIcon, ExternalLinkIcon, UpdateIcon } from '@radix-ui/react-icons';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useDebounce } from 'use-debounce';
 
 import { Button } from './button';

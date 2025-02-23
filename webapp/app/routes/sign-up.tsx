@@ -100,7 +100,6 @@ export async function action({ request }: ActionFunctionArgs) {
     try {
         return await authenticator.authenticate('email-pass', request);
     } catch (error) {
-        console.log({ error });
         if (error instanceof Response) return error;
         if (error instanceof Error) {
             return submission.reply({ formErrors: ['Invalid username or password'] });

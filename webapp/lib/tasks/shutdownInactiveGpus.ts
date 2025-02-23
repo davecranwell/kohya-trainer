@@ -3,7 +3,7 @@ import axios from 'axios';
 
 const prisma = new PrismaClient();
 
-const STALL_PERIOD = 2 * 60 * 1000; // 10 minutes
+const STALL_PERIOD = 15 * 60 * 1000; // 15 minutes
 
 const getLiveInstances = async () => {
     const response = await axios.get('https://console.vast.ai/api/v0/instances', {
@@ -21,46 +21,59 @@ const getKnownGpus = async () => {
 
 const getFinishedTrainingInstanceIds = async () => {
     const finishedTrainingRuns = await prisma.trainingRun.findMany({
+        select: {
+            gpu: true,
+        },
         where: {
             status: 'completed',
-            training: {
-                NOT: {
-                    gpuId: null,
-                },
+        },
+    });
+
+    return finishedTrainingRuns.map((trainingRun) => trainingRun.gpu?.instanceId);
+};
+
+const getEffectivelyStalledTrainingInstanceIds = async () => {
+    // find training runs that are not known to be stalled, but haven't received an update
+    const stalledTrainingRuns = await prisma.trainingRun.findMany({
+        select: {
+            gpu: true,
+            statuses: {
+                orderBy: { createdAt: 'desc' },
+                take: 1,
             },
         },
-        include: {
-            training: {
-                include: {
-                    gpu: true,
+        where: {
+            status: { not: 'stalled' },
+            statuses: {
+                some: {
+                    createdAt: {
+                        lte: new Date(Date.now() - STALL_PERIOD),
+                    },
                 },
+            },
+            gpu: {
+                isNot: null,
             },
         },
     });
 
-    return finishedTrainingRuns.map((trainingRun) => trainingRun.training.gpu?.instanceId);
+    return stalledTrainingRuns.map((trainingRun) => trainingRun.gpu?.instanceId);
 };
 
 const getStalledTrainingInstanceIds = async () => {
     const stalledTrainingRuns = await prisma.trainingRun.findMany({
+        select: {
+            gpu: true,
+        },
         where: {
             status: 'stalled',
-            training: {
-                NOT: {
-                    gpuId: null,
-                },
-            },
-        },
-        include: {
-            training: {
-                include: {
-                    gpu: true,
-                },
+            gpu: {
+                isNot: null,
             },
         },
     });
 
-    return stalledTrainingRuns.map((trainingRun) => trainingRun.training.gpu?.instanceId);
+    return stalledTrainingRuns.map((trainingRun) => trainingRun.gpu?.instanceId);
 };
 
 // Function to shut down inactive GPU instances
@@ -90,6 +103,12 @@ export async function shutdownInactiveGpus() {
     toShutDownIds.push(...finishedTrainingInstanceIds);
 
     // We want to delete those where they are linked but training hasn't received an update in more than 10 minutes
+    const effectivelyStalledGpuIds = await getEffectivelyStalledTrainingInstanceIds();
+    effectivelyStalledGpuIds.length &&
+        console.log(`Stalled GPU instances: ${effectivelyStalledGpuIds.length ? effectivelyStalledGpuIds.join(',') : 'none'}`);
+    toShutDownIds.push(...effectivelyStalledGpuIds);
+
+    // get known stalled gpus
     const stalledGpuIds = await getStalledTrainingInstanceIds();
     stalledGpuIds.length && console.log(`Stalled GPU instances: ${stalledGpuIds.length ? stalledGpuIds.join(',') : 'none'}`);
     toShutDownIds.push(...stalledGpuIds);
@@ -111,12 +130,12 @@ export async function shutdownInactiveGpus() {
         // set training using this gpu as onerror
         await prisma.trainingRun.updateMany({
             where: {
-                training: {
-                    gpuId: gpu.toString(),
+                gpu: {
+                    instanceId: gpu.toString(),
                 },
             },
             data: {
-                status: 'onerror',
+                status: 'stalled',
             },
         });
 

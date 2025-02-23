@@ -14,7 +14,7 @@ export async function action({ request, params }: ActionFunctionArgs) {
     });
 
     if (!trainingRun) {
-        return data({ error: 'Training runnot found' }, { status: 404 });
+        return Response.json({ error: 'Training run not found' }, { status: 404 });
     }
 
     const body = await request.json();
@@ -57,10 +57,10 @@ export async function action({ request, params }: ActionFunctionArgs) {
             });
             break;
         default:
-            return data({ error: 'Invalid status' }, { status: 400 });
+            return Response.json({ error: 'Invalid status' }, { status: 400 });
     }
 
-    // update the training session
+    return Response.json({ message: 'Status updated' }, { status: 200 });
 }
 
 export async function loader({ request }: LoaderFunctionArgs) {

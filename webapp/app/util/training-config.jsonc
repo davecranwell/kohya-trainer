@@ -12,7 +12,6 @@
     "civitai_key": "", // REMOVE BEFORE TRAINING - the civitai key
     "trigger_word": "", // REMOVE BEFORE TRAINING - the trigger word and class e.g "ohxw man"
     "upload_url": "", // REMOVE BEFORE TRAINING - the presignedurl of the s3 bucket to upload the checkpoint to
-    "image_repeats": 1, // REMOVE BEFORE TRAINING - the number of times to repeat each image
     // "pretrained_model_name_or_path": "", // DO NOT SEND THIS - this is set on the gpu side
 
     // Core params

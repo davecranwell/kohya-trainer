@@ -55,7 +55,7 @@ export function subscribeToTasks() {
             case 'zipImages': {
                 const zipKey = await zipImages({ runId });
                 if (zipKey) {
-                    await createTask(process.env.AWS_SQS_TASK_QUEUE_URL!, { task: 'allocateGpu', zipKey, runId });
+                    await createTask(process.env.AWS_SQS_TASK_QUEUE_URL!, { task: 'allocateGpu', runId });
                 }
 
                 break;
@@ -75,14 +75,14 @@ export function subscribeToTasks() {
                     await createTask(process.env.AWS_SQS_TASK_QUEUE_URL!, { task: 'startTraining', runId });
                 } else {
                     // if not ready, wait 30 seconds and try again
-                    await createTask(process.env.AWS_SQS_TASK_QUEUE_URL!, { task: 'awaitGpuReady', runId }, 30);
+                    await createTask(process.env.AWS_SQS_TASK_QUEUE_URL!, { task: 'awaitGpuReady', runId }, 60);
                 }
                 break;
             }
 
             // Actually begins the training through the kohya rest api
             case 'startTraining': {
-                await startTraining({ runId });
+                const started = await startTraining({ runId });
                 break;
             }
         }
@@ -106,14 +106,23 @@ export async function createTask(queueUrl: string, messageBody: TaskBody | Resiz
 
 // Call this to begin the async training process
 export async function enqueueTraining(trainingId: string) {
+    const training = await prisma.training.findUnique({
+        where: { id: trainingId },
+        select: {
+            config: true,
+        },
+    });
+
+    if (!training) {
+        throw new Error('Training not found');
+    }
+
     const run = await prisma.trainingRun.create({
         data: {
             trainingId,
             status: 'started',
         },
     });
-
-    console.log(run.id);
 
     return createTask(process.env.AWS_SQS_TASK_QUEUE_URL!, { task: 'reduceImages', runId: run.id });
 }

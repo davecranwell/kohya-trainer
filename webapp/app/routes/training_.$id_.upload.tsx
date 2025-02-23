@@ -385,10 +385,9 @@ export default function ImageUpload() {
                             the image. Tagging things that can't be seen will confuse the model.
                         </li>
                         <li>
-                            Tags teach the model what is presentTag things you{' '}
-                            <strong className="text-accent1">would want to change when generating images from your Lora</strong>. Don't tag things you
-                            want to be fixed. e.g If images are of yourself, and you have brown hair, tagging the hair as "brunette" or "brown" can
-                            indicate this is a changeable property. If brown hair should never change, don't tag it.
+                            Tag things you <strong className="text-accent1">would want to change when generating images from your Lora</strong>. Don't
+                            tag things you want to be fixed. e.g If images are of yourself, and you have brown hair, tagging the hair as "brunette" or
+                            "brown" can indicate this is a changeable property. If brown hair should never change, don't tag it.
                         </li>
                         <li>
                             Avoid <strong className="text-accent1">ambiguous or non-specific tags</strong>. e.g "person", "picture", "image", "light"
@@ -402,7 +401,7 @@ export default function ImageUpload() {
                             image don't tag it as "corroded" in another
                         </li>
                         <li>
-                            Try to ensure your tags describe <strong className="text-accent1">a few common details</strong>, such as:
+                            Try to ensure your tags include <strong className="text-accent1">common details</strong>, such as:
                             <ul className="marker:text-grey-800 mt-4 list-disc space-y-4 pl-8">
                                 <li>
                                     The <strong className="text-accent1">quality and type</strong> of the image e.g{' '}

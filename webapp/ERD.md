@@ -120,7 +120,7 @@ erDiagram
     String status 
     DateTime createdAt 
     DateTime updatedAt 
-    String trainingId "❓"
+    String trainingRunId "❓"
     }
   
     "User" o{--}o "Password" : "password"
@@ -128,10 +128,10 @@ erDiagram
     "User" o{--}o "Role" : "roles"
     "User" o{--}o "Session" : "sessions"
     "User" o{--}o "Connection" : "connections"
-    "Training" o|--|o "Gpu" : "gpu"
     "Training" o|--|| "User" : "owner"
     "Training" o{--}o "TrainingImage" : "images"
     "Training" o{--}o "TrainingRun" : "runs"
+    "TrainingRun" o|--|o "Gpu" : "gpu"
     "TrainingRun" o|--|| "Training" : "training"
     "TrainingRun" o{--}o "TrainingStatus" : "statuses"
     "TrainingStatus" o|--|| "TrainingRun" : "run"
@@ -142,5 +142,5 @@ erDiagram
     "Role" o{--}o "User" : "users"
     "Role" o{--}o "Permission" : "permissions"
     "Connection" o|--|| "User" : "user"
-    "Gpu" o{--}o "Training" : "training"
+    "Gpu" o{--}o "TrainingRun" : "trainingRun"
 ```

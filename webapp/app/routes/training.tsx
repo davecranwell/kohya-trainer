@@ -31,10 +31,21 @@ export async function action({ request, params }: ActionFunctionArgs) {
         return data({ error: 'Invalid training ID' }, { status: 400 });
     }
 
+    const training = await prisma.training.findUnique({
+        where: { id: trainingId },
+        select: {
+            config: true,
+        },
+    });
+
+    if (!training) {
+        return data({ error: 'Training not found' }, { status: 404 });
+    }
+
     // prevent duplicate tasks
-    const trainingRun = await prisma.trainingRun.findUnique({
+    const existingTrainingRun = await prisma.trainingRun.findFirst({
         where: {
-            id: trainingId,
+            trainingId,
             status: {
                 not: {
                     in: ['stalled', 'onerror', 'completed'],
@@ -43,11 +54,26 @@ export async function action({ request, params }: ActionFunctionArgs) {
         },
     });
 
-    if (trainingRun) {
+    if (existingTrainingRun) {
         return data({ error: 'Training already started' }, { status: 400 });
     }
 
     try {
+        // We have to do the jsonc here because anywhere else and we have to jump
+        // through a crazy number of hoops to support the import
+        const defaultTrainingConfig = await import('~/util/training-config.jsonc');
+        const trainingConfig = JSON.parse(training.config);
+
+        await prisma.training.update({
+            where: { id: trainingId },
+            data: {
+                config: JSON.stringify({
+                    ...defaultTrainingConfig.default,
+                    ...trainingConfig,
+                }),
+            },
+        });
+
         const start = await enqueueTraining(trainingId);
         if (start) {
             return redirectWithToast(

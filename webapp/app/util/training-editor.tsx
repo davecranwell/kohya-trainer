@@ -19,6 +19,7 @@ import { CivitaiBrowser } from '~/components/civitai-browser';
 
 import { type action } from './training-editor.server';
 import civitai from '../assets/civitai.png';
+import { Tooltip, TooltipTrigger, TooltipContent } from '~/components/tooltip';
 
 export const TrainingEditorSchema = z.object({
     id: z.string().optional(),
@@ -85,7 +86,7 @@ export function TrainingEditor({ training, baseModels }: { training?: Training; 
         <Container>
             <Form method="POST" {...getFormProps(form)} encType="multipart/form-data">
                 {training ? <input type="hidden" name="id" value={training.id} /> : null}
-                <div className="space-y-8 border-b border-gray-900/10">
+                <div className="space-y-6 border-b border-gray-900/10">
                     <div className="grid grid-cols-2 gap-4 border-b border-gray-900/10 pb-12">
                         <Alert variant="info">
                             <p className="basis-1/2 text-sm leading-6">An easy way to identify this training later.</p>
@@ -95,6 +96,7 @@ export function TrainingEditor({ training, baseModels }: { training?: Training; 
                             inputProps={{
                                 autoFocus: true,
                                 ...nameProps,
+                                placeholder: 'e.g "My first Lora"',
                             }}
                             errors={fields.name.errors}
                         />
@@ -102,15 +104,7 @@ export function TrainingEditor({ training, baseModels }: { training?: Training; 
                     <div className="grid grid-cols-2 gap-4 border-b border-gray-900/10 pb-12">
                         <div>
                             <Alert variant="info">
-                                <p className="basis-1/2 text-sm leading-6">
-                                    The word(s) to activate the Lora while generating an image.
-                                    <br />
-                                    <br />
-                                    Loras teach a base model a brand new concept, or enhance an existing one. For new concepts use a trigger word that
-                                    is <em className="text-semantic-warning">unknown</em> to the base model. Most English dictionary words are already
-                                    known. Random-letter, or username-like words work well (e.g 'ohxw', 'johndoe420') because no dictionary word could
-                                    clash and dilute the concept you're teaching.
-                                </p>
+                                <p className="basis-1/2 text-sm leading-6">The word(s) to activate the Lora while generating an image.</p>
                             </Alert>
                             <Alert variant="warning">
                                 <p className="text-sm leading-6">
@@ -123,9 +117,24 @@ export function TrainingEditor({ training, baseModels }: { training?: Training; 
                             labelProps={{ children: 'Trigger word(s)' }}
                             inputProps={{
                                 ...triggerWordProps,
+                                placeholder: 'e.g "ohxw"',
                             }}
                             errors={fields.triggerWord.errors}
-                            help="e.g 'ohxw'. 4-10 characters long"
+                            help={
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <span className="flex items-center gap-2 text-sm leading-6">
+                                            <InfoCircledIcon className="size-4" /> 4-10 characters long
+                                        </span>
+                                    </TooltipTrigger>
+                                    <TooltipContent className="">
+                                        Loras teach a base model a brand new concept, or enhance an existing one. For new concepts use a trigger word
+                                        that is <em className="text-semantic-warning">unknown</em> to the base model. Most English dictionary words
+                                        are already known. Random-letter, or username-like words work well (e.g 'ohxw', 'johndoe420') because no
+                                        dictionary word could clash and dilute the concept you're teaching.
+                                    </TooltipContent>
+                                </Tooltip>
+                            }
                         />
                     </div>
                     <div className="grid grid-cols-2 gap-4 pb-12">

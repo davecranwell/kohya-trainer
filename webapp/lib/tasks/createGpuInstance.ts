@@ -67,9 +67,8 @@ async function createGpuInstance() {
     const bundlesResponse = await axios.get('https://cloud.vast.ai/api/v0/bundles?q=' + encodeURIComponent(JSON.stringify(query)));
     const bundles = bundlesResponse.data.offers;
 
-    // get the first bundle (cheapest based on the `order` above)
-    const bundle = bundles[0];
-
+    //pick a bundle in the middle of the list
+    const bundle = bundles[Math.floor(bundles.length / 2)];
     const bundleId = bundle.ask_contract_id;
 
     // This query string is discoverable from network tab when creating an instance: https://cloud.vast.ai/create/
@@ -89,8 +88,6 @@ async function createGpuInstance() {
                 WEB_ENABLE_HTTPS: 'true',
                 WEB_USER: 'admin', //process.env.VAST_WEB_USER,
                 WEB_PASSWORD: 'admin', //process.env.VAST_WEB_PASSWORD,
-                //TRAINING_ID: training.id,
-                //ZIP_URL: `${process.env.AWS_S3_MAXRES_BUCKET_NAME}/${zipKey}`,
                 KOHYA_ARGS: '',
                 TENSORBOARD_ARGS: '--logdir /opt/kohya_ss/logs',
                 AUTO_UPDATE: 'false',
@@ -138,41 +135,28 @@ export async function assignGpuToTraining({ runId }: { runId: string }) {
     try {
         const trainingRun = await prisma.trainingRun.findUnique({
             where: { id: runId },
-            select: {
-                training: {
-                    select: {
-                        id: true,
-                        config: true,
-                        gpu: true,
-                        ownerId: true,
-                    },
-                },
-            },
         });
 
         if (!trainingRun) {
             throw new Error('Training run not found');
         }
 
-        const { training } = trainingRun;
-
         const instanceId = await createGpuInstance();
 
         // Create a new GpuInstance in the database
-        await prisma.training.update({
-            where: { id: training.id },
+        await prisma.trainingRun.update({
+            where: { id: runId },
             data: {
                 gpu: {
                     create: {
                         instanceId: instanceId,
                         status: 'running',
-                        trainingId: training.id,
                     },
                 },
             },
         });
 
-        console.log(`Assigned GPU ${instanceId} to training ${training.id}`);
+        console.log(`Assigned GPU ${instanceId} to training run ${runId}`);
 
         return true;
     } catch (error) {

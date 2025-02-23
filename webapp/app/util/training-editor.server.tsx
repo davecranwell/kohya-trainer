@@ -25,10 +25,7 @@ export async function action({ request, params }: ActionFunctionArgs) {
 
     const { id: trainingId, name, triggerWord, baseModel } = submission.value;
 
-    const TrainingConfig = await import('~/util/training-config.jsonc');
-
     const config = {
-        ...TrainingConfig.default,
         output_name: triggerWord.trim(),
         trigger_word: triggerWord.trim(),
         checkpoint_url: baseModel.url.trim(),

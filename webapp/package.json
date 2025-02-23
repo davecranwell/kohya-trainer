@@ -6,7 +6,7 @@
     "scripts": {
         "build": "DISABLE_ERD=true npm-run-all build:*",
         "build:remix": "NODE_ENV=production react-router build",
-        "build:server": "NODE_ENV=production npx esbuild server/index.ts --outfile=build/index.cjs --platform=node --target=node22 --format=cjs --bundle --external:lightningcss --external:esbuild",
+        "build:server": "NODE_ENV=production tsx scripts/build-server.ts",
         "dev": "tsx --trace-warnings ./server/index.ts",
         "lint": "eslint --ignore-path .gitignore --cache --cache-location ./node_modules/.cache/eslint .",
         "start": "NODE_ENV=production node ./build/index.cjs",

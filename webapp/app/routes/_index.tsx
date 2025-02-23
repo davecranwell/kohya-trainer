@@ -2,7 +2,7 @@ import { Link, type MetaFunction } from 'react-router';
 import { ArrowRightIcon } from '@radix-ui/react-icons';
 
 export const meta: MetaFunction = () => {
-    return [{ title: 'Likera' }, { name: 'description', content: 'Likeness LoRas without the hassle' }];
+    return [{ title: 'Likera' }, { name: 'description', content: 'Likeness Loras without the hassle' }];
 };
 
 export default function Index() {
@@ -14,7 +14,7 @@ export default function Index() {
                     <h1 className="text-5xl font-bold tracking-tight sm:text-6xl">
                         <span className="bg-gradient-to-r from-primary via-accent1 to-accent2 bg-clip-text text-transparent">Likera</span>
                     </h1>
-                    <p className="mx-auto mt-6 max-w-2xl text-xl leading-relaxed text-gray-300">Likeness LoRas without the hassle.</p>
+                    <p className="mx-auto mt-6 max-w-2xl text-xl leading-relaxed text-gray-300">Likeness Loras without the hassle.</p>
                 </div>
 
                 <div className="flex flex-col items-center justify-center gap-4 pt-8 sm:flex-row">

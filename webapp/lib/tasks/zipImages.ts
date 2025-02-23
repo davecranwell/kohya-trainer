@@ -13,17 +13,16 @@ export const zipImages = async ({ runId }: { runId: string }) => {
     });
 
     const trainingRun = await prisma.trainingRun.findUnique({
-        where: { id: runId },
         select: {
             training: {
                 select: {
                     id: true,
                     config: true,
-                    gpu: true,
                     ownerId: true,
                 },
             },
         },
+        where: { id: runId },
     });
 
     if (!trainingRun) {

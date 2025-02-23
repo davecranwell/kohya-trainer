@@ -5,7 +5,8 @@ import { parse } from 'jsonc-parser';
 
 export default defineConfig({
     server: {
-        allowedHosts: ['6dda-88-97-214-5.ngrok-free.app'],
+        // allows any hosts such as for testing over ngrok
+        allowedHosts: true,
     },
     plugins: [
         reactRouter(),
