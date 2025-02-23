@@ -1,5 +1,4 @@
-import crypto from 'crypto';
-import { type ActionFunctionArgs, LoaderFunctionArgs, data } from 'react-router';
+import { type ActionFunctionArgs, LoaderFunctionArgs } from 'react-router';
 
 import prisma from '#/prisma/db.server';
 
@@ -20,14 +19,6 @@ export async function action({ request, params }: ActionFunctionArgs) {
     const body = await request.json();
 
     switch (body.status) {
-        case 'image_maxres_resized':
-            await prisma.trainingImage.update({
-                where: { id: body.imageId },
-                data: {
-                    isResized: true,
-                },
-            });
-            break;
         case 'downloading_checkpoint_started':
         case 'downloading_checkpoint_progress':
         case 'downloading_checkpoint_completed':
@@ -37,26 +28,17 @@ export async function action({ request, params }: ActionFunctionArgs) {
         case 'training_starting':
         case 'training_completed':
         case 'training_failed':
-            await prisma.trainingStatus.create({
-                data: {
-                    status: body.status,
-                    runId,
-                },
-            });
-            break;
-
         case 'training_progress':
             await prisma.trainingStatus.create({
                 data: {
                     status: body.status,
                     runId,
-                    // epoch: body.epoch,
-                    // step: body.step,
-                    // loss: body.loss,
                 },
             });
+
             break;
         default:
+            console.error('Invalid status', body);
             return Response.json({ error: 'Invalid status' }, { status: 400 });
     }
 
