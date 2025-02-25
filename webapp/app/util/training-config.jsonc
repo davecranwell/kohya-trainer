@@ -15,10 +15,10 @@
     // "pretrained_model_name_or_path": "", // DO NOT SEND THIS - this is set on the gpu side
 
     // Core params
-    "LoRA_type": "Standard", // the type of lora we're making
+    // "LoRA_type": "Standard", // the type of lora we're making
     "output_name": "", // the name of the files it creates should be same as the name of the training or the first of the trigger word and class e.g "ohxw"
-    "sdxl": true, // likely to change
-    "sdxl_cache_text_encoder_outputs": false,
+    // "sdxl": true, // likely to change
+    // "sdxl_cache_text_encoder_outputs": false,
     "train_batch_size": 4, // might need to tweak this based on memory
     "network_module": "networks.lora", // the name of the thing we're creating
     "clip_skip": 1, // depends on the model but most models don't say, perhaps leave as 1 for now.
@@ -28,7 +28,7 @@
     "full_bf16": false,
     "full_fp16": false,
     "keep_tokens": 2, // identifies how many tokens from the start should NOT experience caption/tag shuffling. The most important tokens should always be kept at the start i.e trigger and class
-    "max_resolution": "1024,1024",
+    "resolution": "1024,1024",
 
     // metadata
     "metadata_author": "", // this will be nice to provide - an opportunity for a vanity tag of our own?
