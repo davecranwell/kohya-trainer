@@ -34,6 +34,7 @@ export async function action({ request, params }: ActionFunctionArgs) {
             await prisma.trainingStatus.create({
                 data: {
                     status: bodyJson.status,
+                    dataJson: bodyJson,
                     runId,
                 },
             });

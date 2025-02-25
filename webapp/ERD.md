@@ -41,6 +41,7 @@ erDiagram
     String id "🗝️"
     String messageId "❓"
     String status 
+    Json dataJson "❓"
     DateTime createdAt 
     DateTime updatedAt 
     }

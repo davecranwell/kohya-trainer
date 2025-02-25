@@ -85,6 +85,7 @@ model TrainingStatus {
   id          String  @id @default(cuid())
   messageId   String?
   status      String
+  dataJson    Json?
   runId       String
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
