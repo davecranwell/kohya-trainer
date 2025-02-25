@@ -18,7 +18,9 @@ export async function action({ request, params }: ActionFunctionArgs) {
 
     const body = await request.json();
 
-    switch (body.status) {
+    const bodyJson = JSON.parse(body);
+
+    switch (bodyJson.status) {
         case 'downloading_checkpoint_started':
         case 'downloading_checkpoint_progress':
         case 'downloading_checkpoint_completed':
@@ -31,14 +33,14 @@ export async function action({ request, params }: ActionFunctionArgs) {
         case 'training_progress':
             await prisma.trainingStatus.create({
                 data: {
-                    status: body.status,
+                    status: bodyJson.status,
                     runId,
                 },
             });
 
             break;
         default:
-            console.error('Invalid status', body);
+            console.error('Invalid status', bodyJson);
             return Response.json({ error: 'Invalid status' }, { status: 400 });
     }
 
