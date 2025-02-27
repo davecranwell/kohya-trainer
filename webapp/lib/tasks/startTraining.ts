@@ -70,10 +70,8 @@ export const startTraining = async ({ runId }: { runId: string }) => {
 
     const httpsAgent = new https.Agent({ rejectUnauthorized: false });
 
-    let createTraining;
-
     try {
-        createTraining = await axios.post(
+        await axios.post(
             `https://${publicIp}:${kohyaPort}/training`,
             {
                 ...JSON.parse(training.config),
@@ -91,13 +89,14 @@ export const startTraining = async ({ runId }: { runId: string }) => {
             },
         );
     } catch (error: any) {
-        console.error('Error starting training:', error.message);
+        console.error('Error starting training:', error);
         return false;
     }
 
     try {
         await axios.post(
-            `https://${publicIp}:${kohyaPort}/training/${createTraining.data.session_id}/start`,
+            // same runID as the config above
+            `https://${publicIp}:${kohyaPort}/training/${runId}/start`,
             {},
             {
                 headers: {
@@ -108,7 +107,7 @@ export const startTraining = async ({ runId }: { runId: string }) => {
             },
         );
     } catch (error: any) {
-        console.error('Error starting training:', error.message);
+        console.error('Error starting training:', error);
         return false;
     }
 
