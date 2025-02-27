@@ -83,6 +83,9 @@ export function subscribeToTasks() {
             // Actually begins the training through the kohya rest api
             case 'startTraining': {
                 const started = await startTraining({ runId });
+                if (!started) {
+                    await createTask(process.env.AWS_SQS_TASK_QUEUE_URL!, { task: 'startTraining', runId }, 20);
+                }
                 break;
             }
         }
