@@ -26,6 +26,25 @@ export const startTraining = async ({ runId }: { runId: string }) => {
         throw new Error('Training run not found');
     }
 
+    const previousStatuses = await prisma.trainingStatus.findMany({
+        where: { runId, status: 'startTraining' },
+        orderBy: { createdAt: 'asc' },
+    });
+
+    if (previousStatuses.length) {
+        const oldestStatus = previousStatuses[0];
+        const timeDiff = new Date().getTime() - oldestStatus.createdAt.getTime();
+
+        // If the oldest status is older than 10 minutes, set the run to failed
+        if (timeDiff > 1000 * 60 * 5) {
+            prisma.trainingRun.update({
+                where: { id: runId },
+                data: { status: 'stalled' },
+            });
+            throw new Error(`Training could not start after 5 minutes`);
+        }
+    }
+
     const { training, gpu } = trainingRun;
 
     if (!gpu) {
@@ -89,7 +108,9 @@ export const startTraining = async ({ runId }: { runId: string }) => {
             },
         );
     } catch (error: any) {
-        console.error('Error starting training:', error);
+        if (error.response.status === 400) {
+            throw new Error(`Training could not start: ${error}`);
+        }
         return false;
     }
 

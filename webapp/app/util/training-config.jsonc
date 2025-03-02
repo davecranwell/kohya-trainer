@@ -3,6 +3,8 @@
     // NB NONE OF THIS IS BEING USED UNLESS WE CHANGE THE API ON THE KOHYA SIDE TO ACCEPT EVERY ONE OF THESE VALUES
     // The rest are provided on the gpu side.
 
+    // This file is in JSON format, but must be converted to TOML format before being sent to the gpu side.
+
     // These must be synced with the training_session_manager.py run_training() function
     "id": "", // REMOVE BEFORE TRAINING - the id of the training session
     "webhook_url": "", // REMOVE BEFORE TRAINING - the webhook url to call when the training is complete
@@ -16,10 +18,9 @@
 
     // Core params
     "output_name": "", // the name of the files it creates should be same as the name of the training or the first of the trigger word and class e.g "ohxw"
-    "train_batch_size": 4, // might need to tweak this based on memory
+    "train_batch_size": 1, // might need to tweak this based on memory. 4 seems too high for 3090 24gb
     "network_module": "networks.lora", // the name of the thing we're creating
     "clip_skip": 1, // depends on the model but most models don't say, perhaps leave as 1 for now.
-    "epoch": 15, // should be calculated based on the number of images and the learning rate
     "flip_aug": false,
     "fp8_base": false,
     "full_bf16": false,
@@ -46,7 +47,7 @@
     "network_alpha": 16, //should be half of the network_dim
     "network_dim": 32,
     "optimizer_type": "Adafactor", // might need to change
-    "optimizer_args": "scale_parameter=False relative_step=False warmup_init=False",
+    "optimizer_args": ["scale_parameter=False", "relative_step=False", "warmup_init=False"],
     "lr_scheduler": "cosine", // cosine_with_restarts is another option
 
     // sampling
@@ -54,5 +55,7 @@
     "sample_every_n_steps": 0,
     "sample_prompts": "",
     "sample_sampler": "euler_a",
-    "seed": 0,
+
+    // checkpointing
+    "save_every_n_epochs": 1, // this is vital to getting multiple checkpoints output
 }
