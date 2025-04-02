@@ -29,7 +29,6 @@ export async function action({ request, params }: ActionFunctionArgs) {
         case 'downloading_images_completed':
         case 'training_starting':
         case 'training_completed':
-        case 'training_failed':
         case 'training_progress':
             await prisma.trainingStatus.create({
                 data: {
@@ -39,6 +38,21 @@ export async function action({ request, params }: ActionFunctionArgs) {
                 },
             });
 
+            break;
+        case 'training_failed':
+            await prisma.trainingRun.update({
+                where: { id: runId },
+                data: {
+                    status: 'failed',
+                },
+            });
+            await prisma.trainingStatus.create({
+                data: {
+                    status: bodyJson.status,
+                    dataJson: bodyJson,
+                    runId,
+                },
+            });
             break;
         default:
             console.error('Invalid status', bodyJson);

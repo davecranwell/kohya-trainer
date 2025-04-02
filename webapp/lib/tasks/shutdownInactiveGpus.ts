@@ -66,7 +66,9 @@ const getStalledTrainingInstanceIds = async () => {
             gpu: true,
         },
         where: {
-            status: 'stalled',
+            status: {
+                in: ['stalled', 'failed'],
+            },
             gpu: {
                 isNot: null,
             },
