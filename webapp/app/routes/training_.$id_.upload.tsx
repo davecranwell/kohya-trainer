@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { Form, useLoaderData } from 'react-router';
+import { Form, useLoaderData, data, Link } from 'react-router';
 import type { LoaderFunctionArgs } from 'react-router';
-import { data } from 'react-router';
 import { toast } from 'sonner';
 import { createId } from '@paralleldrive/cuid2';
 import { List, CellMeasurer, CellMeasurerCache, AutoSizer } from 'react-virtualized';
@@ -48,16 +47,21 @@ export async function loader({ params, request }: LoaderFunctionArgs) {
         where: { trainingId: params.id },
     });
 
+    const imageGroups = await prisma.imageGroup.findMany({
+        where: { trainingId: params.id },
+    });
+
     return {
         thumbnailBucketUrl: `https://${process.env.AWS_S3_THUMBNAILS_BUCKET_NAME!}.s3.us-east-1.amazonaws.com/`,
         userId,
         images: images.map((image) => ({ ...image, filenameNoExtension: image.name.split('.').slice(0, -1).join('.') })),
         training,
+        imageGroups,
     };
 }
 
 export default function ImageUpload() {
-    const { userId, images, training, thumbnailBucketUrl } = useLoaderData<typeof loader>();
+    const { userId, images, training, thumbnailBucketUrl, imageGroups } = useLoaderData<typeof loader>();
     const [uploadedImages, setUploadedImages] = useState<ImageWithMetadata[]>(images as ImageWithMetadata[]);
     const [uploadProgress, setUploadProgress] = useState<Record<string, number>>({});
     const [allTags, setAllTags] = useState<string[]>(sanitiseTagArray(images.map((image) => (image.text || '').split(',')).flat()));
@@ -73,7 +77,7 @@ export default function ImageUpload() {
         // get the text files
         let textFiles = files.filter((file) => ACCEPTED_TEXT_TYPES.includes(file.type));
 
-        // get the image files and add an
+        // get the image files and add an ID
         let imageFiles = files
             .filter((file) => ACCEPTED_IMAGE_TYPES.includes(file.type))
             .map((file) => Object.assign(file, { id: createId() })) as FileWithId[];
@@ -88,7 +92,6 @@ export default function ImageUpload() {
             }
 
             allImages = [
-                ...uploadedImages,
                 ...imageFiles.map((file) => ({
                     id: file.id,
                     name: file.name,
@@ -98,6 +101,7 @@ export default function ImageUpload() {
                     filenameNoExtension: file.name.split('.').slice(0, -1).join('.'),
                     updatedAt: new Date(),
                 })),
+                ...uploadedImages,
             ];
 
             setUploadedImages(allImages);
@@ -189,13 +193,12 @@ export default function ImageUpload() {
         });
 
         if (updateTextResponse.ok) {
-            setUploadedImages([
-                ...uploadedImages.filter((image) => image.id !== imageId),
-                {
-                    ...uploadedImages.find((image) => image.id === imageId),
-                    text: sanitisedTags.join(','),
-                } as ImageWithMetadata,
-            ]);
+            const updatedImage = uploadedImages.find((image) => image.id === imageId);
+            if (updatedImage) {
+                updatedImage.text = sanitisedTags.join(',');
+            }
+
+            setUploadedImages(uploadedImages);
         }
 
         return [sanitisedTags, updateTextResponse.ok];
@@ -235,7 +238,7 @@ export default function ImageUpload() {
 
                 return true;
             }),
-        [showUntaggedOnly, selectedTag, negateTag],
+        [showUntaggedOnly, selectedTag, negateTag, uploadedImages],
     );
 
     // Create a cache for cell measurements
@@ -254,6 +257,8 @@ export default function ImageUpload() {
     const rowRenderer = useCallback(
         ({ key, index, parent, style }: any) => {
             const image = filteredImages[index];
+            const imagePath = image.url.split('/').slice(0, -1).join('/');
+            const imageFilename = image.url.split('/').pop();
 
             return (
                 <CellMeasurer cache={cache} columnIndex={0} key={key} parent={parent} rowIndex={index}>
@@ -261,7 +266,7 @@ export default function ImageUpload() {
                         <div ref={registerChild as any} style={style}>
                             <li className="mb-4 flex flex-row gap-6 rounded-xl border border-gray-800 bg-gray-900 p-6">
                                 <ImagePreview
-                                    url={`${image.url?.startsWith('blob') ? image.url : `${thumbnailBucketUrl}${image.url}`}`}
+                                    url={`${image.url?.startsWith('blob') ? image.url : `${thumbnailBucketUrl}${imagePath}/200/${imageFilename}`}`}
                                     id={image.id}
                                     width={200}
                                 />
@@ -290,9 +295,8 @@ export default function ImageUpload() {
     );
 
     return (
-        <Form key={training.id} id={training.id} method="post" encType="multipart/form-data" className="relative">
+        <>
             <h2 className="mb-4 text-2xl font-bold tracking-tight text-white">Training images</h2>
-
             <div className="flex flex-row gap-8">
                 <div className="flex-1 basis-3/5">
                     <FileUploadPreview
@@ -353,7 +357,7 @@ export default function ImageUpload() {
                                     </div>
                                 </div>
 
-                                <div className="mt-4 h-[calc(100vh-350px)]">
+                                <div className="mt-4 h-[calc(100vh-250px)]">
                                     {isHydrated && (
                                         <AutoSizer>
                                             {({ width, height }) => (
@@ -376,6 +380,25 @@ export default function ImageUpload() {
                 </div>
 
                 <div className="flex-1 basis-2/5">
+                    {imageGroups.length > 0 && (
+                        <div>
+                            <h3 className="text-lg font-bold tracking-tight text-white">Image groups</h3>
+                            <ul className="list-disc space-y-4 pl-4 text-sm leading-6 marker:text-accent1">
+                                {imageGroups.map((group) => (
+                                    <li key={group.id}>
+                                        <Link to={`/training/${training.id}/imagegroup/${group.id}`}>{group.name}</Link>
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+                    )}
+
+                    <Form action={`/training/${training.id}/createimagegroup`} method="post">
+                        <Button variant="secondary" size="lg" className="mb-4">
+                            Create new image group
+                        </Button>
+                    </Form>
+
                     <h3 className="text-lg font-bold tracking-tight text-white">Tagging tips</h3>
 
                     <ul className="list-disc space-y-4 pl-4 text-sm leading-6 marker:text-accent1">
@@ -444,6 +467,6 @@ export default function ImageUpload() {
                     </ul>
                 </div>
             </div>
-        </Form>
+        </>
     );
 }

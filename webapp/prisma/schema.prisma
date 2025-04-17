@@ -55,6 +55,7 @@ model Training {
 
   images TrainingImage[]
   runs TrainingRun[]
+  imageGroups ImageGroup[]
 
   // non-unique foreign key
   @@index([ownerId])
@@ -102,17 +103,49 @@ model TrainingImage {
   url         String
   name        String
   type        String
-  isResized   Boolean @default(false)
+  isResized   Boolean @default(false) // only indicates if it has been resized down to the max size or not.
+  trainingId String
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   training   Training   @relation(fields: [trainingId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  trainingId String
+  sizes ImageSize[]
 
-  // non-unique foreign key
   @@index([trainingId])
 }
+
+// A subset of the training images, grouped by a purpose, size, focal point etc.
+model ImageGroup {
+  id String @id @default(cuid())
+  name String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  trainingId String
+
+  images ImageSize[]
+
+  training Training @relation(fields: [trainingId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+}
+
+// A kind of training image with optional cropping. The cropping means a different url for the image is used
+model ImageSize {
+  imageId String
+  imageGroupId String
+  url String?
+  width Int?
+  height Int?
+  x Int?
+  y Int?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  image TrainingImage @relation(fields: [imageId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  imageGroup ImageGroup? @relation(fields: [imageGroupId], references: [id])
+
+  @@unique([imageId, imageGroupId])
+}
+
 
 model Password {
   hash String

@@ -59,6 +59,25 @@ erDiagram
     }
   
 
+  "ImageGroup" {
+    String id "🗝️"
+    String name 
+    DateTime createdAt 
+    DateTime updatedAt 
+    }
+  
+
+  "ImageSize" {
+    String url "❓"
+    Int width "❓"
+    Int height "❓"
+    Int x "❓"
+    Int y "❓"
+    DateTime createdAt 
+    DateTime updatedAt 
+    }
+  
+
   "Password" {
     String hash 
     }
@@ -132,11 +151,17 @@ erDiagram
     "Training" o|--|| "User" : "owner"
     "Training" o{--}o "TrainingImage" : "images"
     "Training" o{--}o "TrainingRun" : "runs"
+    "Training" o{--}o "ImageGroup" : "imageGroups"
     "TrainingRun" o|--|o "Gpu" : "gpu"
     "TrainingRun" o|--|| "Training" : "training"
     "TrainingRun" o{--}o "TrainingStatus" : "statuses"
     "TrainingStatus" o|--|| "TrainingRun" : "run"
     "TrainingImage" o|--|| "Training" : "training"
+    "TrainingImage" o{--}o "ImageSize" : "sizes"
+    "ImageGroup" o{--}o "ImageSize" : "images"
+    "ImageGroup" o|--|| "Training" : "training"
+    "ImageSize" o|--|| "TrainingImage" : "image"
+    "ImageSize" o|--|o "ImageGroup" : "imageGroup"
     "Password" o|--|| "User" : "user"
     "Session" o|--|| "User" : "user"
     "Permission" o{--}o "Role" : "roles"

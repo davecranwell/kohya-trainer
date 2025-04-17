@@ -13,7 +13,7 @@ export const action = async ({ params, request }: ActionFunctionArgs) => {
     const data = await request.json();
 
     const training = await prisma.training.findUnique({
-        where: { id: trainingId },
+        where: { id: trainingId, ownerId: userId },
     });
 
     if (!training) {
