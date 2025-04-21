@@ -11,18 +11,24 @@ import { startTraining } from './tasks/startTraining';
 import { reduceImageSuccess } from './tasks/reduceImageSuccess';
 
 export type TaskBody = {
-    task: 'reduceImages' | 'reduceImageSuccess' | 'zipImages' | 'allocateGpu' | 'awaitGpuReady' | 'startTraining';
+    task: 'reduceImages' | 'resizeImages' | 'reduceImageSuccess' | 'zipImages' | 'allocateGpu' | 'awaitGpuReady' | 'startTraining';
     runId: string;
     zipKey?: string;
     imageId?: string;
 };
 
 export type ResizeBody = {
-    task: 'reduceImage';
+    task: 'reduceImage' | 'resizeImage';
     runId: string;
     imageId?: string;
     imageUrl?: string;
-    webhookUrl?: string;
+    targetUrl?: string;
+    cropX?: number;
+    cropY?: number;
+    cropWidth?: number;
+    cropHeight?: number;
+    size?: number;
+    imageGroupId?: string;
 };
 
 const sqs = new SQS({ region: 'us-east-1' });
@@ -108,7 +114,7 @@ export async function createTask(queueUrl: string, messageBody: TaskBody | Resiz
 }
 
 // Call this to begin the async training process
-export async function enqueueTraining(trainingId: string) {
+export async function enqueueTraining(trainingId: string, imageGroupId?: string) {
     const training = await prisma.training.findUnique({
         where: { id: trainingId },
         select: {
@@ -123,6 +129,7 @@ export async function enqueueTraining(trainingId: string) {
     const run = await prisma.trainingRun.create({
         data: {
             trainingId,
+            imageGroupId,
             status: 'started',
         },
     });

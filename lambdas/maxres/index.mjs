@@ -2,6 +2,22 @@ import { S3Client, ListObjectsV2Command, GetObjectCommand, PutObjectCommand, Del
 import { SQSClient, SendMessageCommand, DeleteMessageCommand } from '@aws-sdk/client-sqs';
 import sharp from 'sharp';
 
+/**
+ * Lambda function to process image resizing requests from SQS
+ * @param {Object} event - The AWS Lambda event object containing SQS records
+ * @param {Object[]} event.Records - Array of SQS message records
+ * @param {Object} event.Records[].body - The message body containing image processing details
+ * @param {string} event.Records[].body.imageId - Unique identifier for the image being processed
+ * @param {string} event.Records[].body.runId - Identifier for the training run this image belongs to
+ * @param {string} event.Records[].body.imageUrl - S3 key/path of the source image to be processed, must include full filename
+ * @param {string} event.Records[].body.targetUrl - S3 key/path where the processed image should be stored, must include full filename
+ * @param {float} [event.Records[].body.cropX] - Optional x-coordinate for cropping the image
+ * @param {float} [event.Records[].body.cropY] - Optional y-coordinate for cropping the image
+ * @param {float} [event.Records[].body.cropWidth] - Optional width for cropping the image
+ * @param {float} [event.Records[].body.cropHeight] - Optional height for cropping the image
+ * @param {number} [event.Records[].body.size] - Optional max size (any dimension) for the image to be fitted within
+ * @returns {Promise<Object>} Response object with status code and message
+ */
 export const handler = async (event) => {
     const s3 = new S3Client({ region: 'us-east-1' });
     const sqs = new SQSClient({ region: 'us-east-1' });
@@ -10,7 +26,7 @@ export const handler = async (event) => {
     for (const record of event.Records) {
         try {
             const message = JSON.parse(record.body);
-            const { imageId, trainingId, imageUrl, webhookUrl } = message;
+            const { imageId, imageGroupId, imageUrl, targetUrl, cropX, cropY, cropWidth, cropHeight, size } = message;
 
             // Load the image from S3
             const imageObject = await s3.send(
@@ -19,37 +35,54 @@ export const handler = async (event) => {
                     Key: imageUrl,
                 }),
             );
+
             // We need to await the stream and convert it to a buffer before passing to sharp
             const imageBuffer = await imageObject.Body.transformToByteArray();
             const image = sharp(imageBuffer);
 
-            const sizes = [
-                {
-                    size: 2048,
-                    options: {
-                        fit: 'inside',
-                        withoutEnlargement: true,
-                    },
-                    getKey: (key) => key,
-                },
-            ];
+            // Get original image dimensions
+            const metadata = await image.metadata();
+            const originalWidth = metadata.width;
+            const originalHeight = metadata.height;
 
-            for (const size of sizes) {
-                // https://sharp.pixelplumbing.com/api-resize#resize
-                const newImage = await image.resize(size.size, size.size, size.options).toBuffer();
+            const isCropping = x !== undefined && y !== undefined && width !== undefined && height !== undefined;
 
-                const key = size.getKey(imageUrl);
+            let processedImage = image;
 
-                await s3.send(
-                    new PutObjectCommand({
-                        Bucket: process.env.TARGET_BUCKET_NAME,
-                        Key: key,
-                        Body: newImage,
-                        ContentType: imageObject.ContentType,
-                        CacheControl: imageObject.CacheControl,
-                    }),
-                );
+            if (isCropping) {
+                // Convert percentages to actual pixel values
+                const left = Math.round(originalWidth * (cropX / 100));
+                const top = Math.round(originalHeight * (cropY / 100));
+                const width = Math.round(originalWidth * (cropWidth / 100));
+                const height = Math.round(originalHeight * (cropHeight / 100));
+
+                processedImage = processedImage.extract({
+                    left,
+                    top,
+                    width,
+                    height,
+                });
             }
+
+            if (size) {
+                // Resize down only, maintaining aspect ratio, fitting within the specified size
+                processedImage = processedImage.resize(size, size, {
+                    fit: 'inside',
+                    withoutEnlargement: true, // Prevents upscaling
+                });
+            }
+
+            const newImage = await processedImage.toBuffer();
+
+            await s3.send(
+                new PutObjectCommand({
+                    Bucket: process.env.TARGET_BUCKET_NAME,
+                    Key: targetUrl || imageUrl,
+                    Body: newImage,
+                    ContentType: imageObject.ContentType,
+                    CacheControl: imageObject.CacheControl,
+                }),
+            );
 
             await sqs.send(
                 new DeleteMessageCommand({
@@ -65,6 +98,7 @@ export const handler = async (event) => {
                     MessageBody: JSON.stringify({
                         task: 'reduceImageSuccess',
                         imageId,
+                        imageGroupId,
                     }),
                 }),
             );

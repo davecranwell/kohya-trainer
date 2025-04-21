@@ -16,6 +16,13 @@ import { Tooltip, TooltipTrigger, TooltipContent } from '~/components/tooltip';
 
 const cellSize = 400;
 
+type CropPercentage = {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+};
+
 export async function action({ params, request }: ActionFunctionArgs) {
     const userId = await requireUserWithPermission(request, 'create:training:own');
 
@@ -191,7 +198,7 @@ export default function ImageUpload() {
         return false;
     };
 
-    const debouncedSetFinalCrop = useDebouncedCallback((cropPerc: any, imageId: string) => {
+    const debouncedSetFinalCrop = useDebouncedCallback((cropPerc: CropPercentage, imageId: string) => {
         fetcher.submit({ setcrop: JSON.stringify(cropPerc), imageid: imageId }, { action: '', method: 'post' });
     }, 500);
 

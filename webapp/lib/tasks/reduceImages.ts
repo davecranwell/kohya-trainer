@@ -3,10 +3,10 @@ import prisma from '#/prisma/db.server';
 import { createTask } from '../task.server';
 
 export const reduceImages = async ({ runId }: { runId: string }) => {
-    console.log('runId', runId);
     const trainingRun = await prisma.trainingRun.findUnique({
         select: {
             trainingId: true,
+            imageGroupId: true,
         },
         where: { id: runId },
     });
@@ -15,25 +15,67 @@ export const reduceImages = async ({ runId }: { runId: string }) => {
         throw new Error('Training run not found');
     }
 
-    // Add all the images to the queue to be resized
-    const images = await prisma.trainingImage.findMany({
-        where: { trainingId: trainingRun.trainingId, isResized: false },
-        select: { id: true, url: true },
-    });
-
-    if (images.length < 1) {
-        // If no images are unprocesed, go straight to zipping
-        return true;
-    }
-
-    // add each image to the resize queue
-    for (const image of images) {
-        createTask(process.env.AWS_SQS_MAXSIZE_QUEUE_URL!, {
-            task: 'reduceImage',
-            imageId: image.id,
-            runId,
-            imageUrl: image.url,
+    // If the image group is set, only process the images in the image group.
+    // Also expect cropping, so send through the x, y, width, height.
+    if (trainingRun.imageGroupId) {
+        const images = await prisma.imageSize.findMany({
+            where: { imageGroupId: trainingRun.imageGroupId, isResized: false },
+            select: {
+                x: true,
+                y: true,
+                width: true,
+                height: true,
+                image: {
+                    select: {
+                        id: true,
+                        url: true,
+                    },
+                },
+            },
         });
+
+        if (images?.length < 1) {
+            // If no images are unprocesed, go straight to zipping
+            return true;
+        }
+
+        for (const image of images) {
+            createTask(process.env.AWS_SQS_MAXSIZE_QUEUE_URL!, {
+                task: 'reduceImage',
+                imageId: image.image.id,
+                imageGroupId: trainingRun.imageGroupId ?? undefined,
+                runId, // unused currently?
+                imageUrl: image.image.url,
+                targetUrl: image.image.url,
+                size: 2048,
+                cropX: image.x ?? undefined,
+                cropY: image.y ?? undefined,
+                cropWidth: image.width ?? undefined,
+                cropHeight: image.height ?? undefined,
+            });
+        }
+    } else {
+        // Add all the "original" images to the queue to be resized
+        const images = await prisma.trainingImage.findMany({
+            where: { trainingId: trainingRun.trainingId, isResized: false },
+            select: { id: true, url: true },
+        });
+
+        if (images.length < 1) {
+            // If no images are unprocesed, go straight to zipping
+            return true;
+        }
+
+        for (const image of images) {
+            createTask(process.env.AWS_SQS_MAXSIZE_QUEUE_URL!, {
+                task: 'reduceImage',
+                imageId: image.id,
+                runId,
+                imageUrl: image.url,
+                targetUrl: image.url,
+                size: 2048,
+            });
+        }
     }
 
     return false;
