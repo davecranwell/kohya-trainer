@@ -91,7 +91,8 @@ export async function action({ params, request }: ActionFunctionArgs) {
         const crop = JSON.parse(setCrop);
         await prisma.imageSize.update({
             where: { imageId_imageGroupId: { imageId, imageGroupId: params.groupId as string } },
-            data: { x: crop.x, y: crop.y, width: crop.width, height: crop.height },
+            // important that we reset isResized so that images aren't stuck in their first resizing forever
+            data: { x: crop.x, y: crop.y, width: crop.width, height: crop.height, isResized: false },
         });
     }
 

@@ -1,6 +1,12 @@
 import prisma from '#/prisma/db.server';
 
 export const reduceImageSuccess = async ({ imageId, imageGroupId }: { imageId: string; imageGroupId?: string }) => {
+    let imagesRemaining = 0;
+
+    if (!imageId) {
+        throw new Error('Image ID is required');
+    }
+
     if (imageGroupId) {
         const imageSize = await prisma.imageSize.update({
             where: { imageId_imageGroupId: { imageId, imageGroupId } },
@@ -17,10 +23,7 @@ export const reduceImageSuccess = async ({ imageId, imageGroupId }: { imageId: s
             select: { imageId: true },
         });
 
-        if (unprocessedImages.length < 1) {
-            console.log('No unprocessed images, zipping', imageId, unprocessedImages);
-            return true;
-        }
+        imagesRemaining = unprocessedImages.length;
     } else {
         const image = await prisma.trainingImage.update({
             where: { id: imageId },
@@ -38,12 +41,14 @@ export const reduceImageSuccess = async ({ imageId, imageGroupId }: { imageId: s
             select: { id: true },
         });
 
-        // if there are no unprocessed images, then we can zip the images
-        if (unprocessedImages.length < 1) {
-            console.log('No unprocessed images, zipping', imageId, unprocessedImages);
-            return true;
-        }
+        imagesRemaining = unprocessedImages.length;
     }
 
-    return false;
+    // if there are no unprocessed images, then we can zip the images
+    if (imagesRemaining < 1) {
+        console.log('No unprocessed images', imageId, imagesRemaining);
+        return true;
+    }
+
+    return imagesRemaining;
 };
