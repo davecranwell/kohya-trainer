@@ -22,7 +22,7 @@ import { Progress } from '~/components/progress';
 const POLL_INTERVAL = 5000;
 
 export async function action({ request, params }: ActionFunctionArgs) {
-    await requireUserWithPermission(request, 'update:training:own');
+    const userId = await requireUserWithPermission(request, 'update:training:own');
 
     const formData = await request.formData();
     const trainingId = formData.get('trainingId');
@@ -32,7 +32,7 @@ export async function action({ request, params }: ActionFunctionArgs) {
     }
 
     const training = await prisma.training.findUnique({
-        where: { id: trainingId },
+        where: { id: trainingId, ownerId: userId },
         select: {
             config: true,
         },
