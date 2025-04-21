@@ -4,6 +4,7 @@
 generator client {
   provider = "prisma-client-js"
   previewFeatures = ["postgresqlExtensions"]
+  // output   = "app/generated/prisma/client"
 }
 
 generator erd {
@@ -69,12 +70,13 @@ model TrainingRun {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   status String
-  gpu   Gpu? @relation(fields: [gpuId], references: [id])
   gpuId String? @unique
-
-  training Training @relation(fields: [trainingId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   trainingId String
+  imageGroupId String?
 
+  gpu   Gpu? @relation(fields: [gpuId], references: [id])
+  training Training @relation(fields: [trainingId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  imageGroup ImageGroup? @relation(fields: [imageGroupId], references: [id])
   statuses TrainingStatus[]
 
   // non-unique foreign key
@@ -124,6 +126,7 @@ model ImageGroup {
   trainingId String
 
   images ImageSize[]
+  trainingRun TrainingRun[]
 
   training Training @relation(fields: [trainingId], references: [id], onDelete: Cascade, onUpdate: Cascade)
 }
@@ -132,16 +135,17 @@ model ImageGroup {
 model ImageSize {
   imageId String
   imageGroupId String
+  isResized Boolean @default(false)
   url String?
-  width Int?
-  height Int?
-  x Int?
-  y Int?
+  width Float?
+  height Float?
+  x Float?
+  y Float?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   image TrainingImage @relation(fields: [imageId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  imageGroup ImageGroup? @relation(fields: [imageGroupId], references: [id])
+  imageGroup ImageGroup @relation(fields: [imageGroupId], references: [id])
 
   @@unique([imageId, imageGroupId])
 }
@@ -246,6 +250,7 @@ model Gpu {
   status        String   // running, stopped NB: this status currently unused
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
-  trainingRun      TrainingRun?
   trainingRunId    String?
+
+  trainingRun      TrainingRun?
 }
