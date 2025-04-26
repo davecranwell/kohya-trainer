@@ -5,13 +5,11 @@ import { ImageIcon, LightningBoltIcon, Pencil1Icon, UploadIcon } from '@radix-ui
 import clsx from 'clsx';
 import type { Route } from './+types/training';
 
-import prisma from '#/prisma/db.server';
-import { enqueueTraining } from '#/lib/task.server';
-
 import { useIsPending } from '~/util/hooks';
 
 import { requireUserWithPermission } from '~/services/permissions.server';
 import { redirectWithToast } from '~/services/toast.server';
+import { beginTraining, checkIncompleteTrainingRun, getAllTrainingsByUser, getTrainingByUser } from '~/services/training.server';
 
 import { StatusIndicator, type StatusType } from '~/components/status-indicator';
 import { EmptyState } from '~/components/empty-state';
@@ -31,51 +29,18 @@ export async function action({ request, params }: ActionFunctionArgs) {
         return data({ error: 'Invalid training ID' }, { status: 400 });
     }
 
-    const training = await prisma.training.findUnique({
-        where: { id: trainingId, ownerId: userId },
-        select: {
-            config: true,
-        },
-    });
+    const training = await getTrainingByUser(trainingId, userId);
 
     if (!training) {
         return data({ error: 'Training not found' }, { status: 404 });
     }
 
-    // prevent duplicate tasks
-    const existingTrainingRun = await prisma.trainingRun.findFirst({
-        where: {
-            trainingId,
-            status: {
-                not: {
-                    in: ['stalled', 'onerror', 'completed'],
-                },
-            },
-        },
-    });
-
-    if (existingTrainingRun) {
+    if (await checkIncompleteTrainingRun(trainingId)) {
         return data({ error: 'Training already started' }, { status: 400 });
     }
 
     try {
-        // We have to do the jsonc here because anywhere else and we have to jump
-        // through a crazy number of hoops to support the import
-        const defaultTrainingConfig = await import('~/util/training-config.jsonc');
-        const trainingConfig = JSON.parse(training.config);
-
-        await prisma.training.update({
-            where: { id: trainingId },
-            data: {
-                config: JSON.stringify({
-                    ...defaultTrainingConfig.default,
-                    ...trainingConfig,
-                }),
-            },
-        });
-
-        const start = await enqueueTraining(trainingId);
-        if (start) {
+        if (await beginTraining(training)) {
             return redirectWithToast(
                 `/training`,
                 {
@@ -92,41 +57,7 @@ export async function action({ request, params }: ActionFunctionArgs) {
 export async function loader({ request }: Route.LoaderArgs) {
     const userId = await requireUserWithPermission(request, 'read:training:own');
 
-    const trainings = await prisma.training.findMany({
-        select: {
-            id: true,
-            name: true,
-            updatedAt: true,
-            triggerWord: true,
-            baseModel: true,
-            runs: {
-                select: {
-                    statuses: {
-                        select: {
-                            status: true,
-                        },
-                    },
-                },
-            },
-            images: {
-                take: 3,
-                select: {
-                    url: true,
-                },
-            },
-            _count: {
-                select: {
-                    images: true,
-                },
-            },
-        },
-        where: {
-            ownerId: userId,
-        },
-        orderBy: {
-            updatedAt: 'desc',
-        },
-    });
+    const trainings = await getAllTrainingsByUser(userId);
 
     return { userId, trainings, thumbnailBucketUrl: `https://${process.env.AWS_S3_THUMBNAILS_BUCKET_NAME!}.s3.us-east-1.amazonaws.com/` };
 }
@@ -172,8 +103,8 @@ export default function TrainingPage({ loaderData }: Route.ComponentProps) {
                                     </p>
                                 </div>
                             </div>
-                            <div className={clsx('flex w-full flex-1 flex-row', !training.status && 'items-center justify-end')}>
-                                {!training.status ? (
+                            <div className={clsx('flex w-full flex-1 flex-row', !training.runs.length && 'items-center justify-end')}>
+                                {!training.runs.length ? (
                                     <Form method="POST" action={`/training?trainingId=${training.id}`}>
                                         <input type="hidden" name="trainingId" value={training.id} />
                                         <StatusButton
@@ -183,9 +114,7 @@ export default function TrainingPage({ loaderData }: Route.ComponentProps) {
                                         </StatusButton>
                                     </Form>
                                 ) : (
-                                    <div className="flex-auto px-6">
-                                        <Progress value={training.status} />
-                                    </div>
+                                    <div className="flex-auto px-6">{/* <Progress value={training.runs[0].status} /> */}</div>
                                 )}
                             </div>
                         </div>

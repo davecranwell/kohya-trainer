@@ -12,6 +12,7 @@ export const reduceImages = async ({ runId }: { runId: string }) => {
     });
 
     if (!trainingRun) {
+        console.log('trainingRun not found', runId);
         throw new Error('Training run not found');
     }
 
@@ -40,13 +41,17 @@ export const reduceImages = async ({ runId }: { runId: string }) => {
         }
 
         for (const image of images) {
+            const filename = image.image.url.split('/').pop();
+            const restOfPath = image.image.url.split('/').slice(0, -1).join('/');
+            const targetUrl = `${restOfPath}/${trainingRun.imageGroupId}/${filename}`;
+
             createTask(process.env.AWS_SQS_MAXSIZE_QUEUE_URL!, {
                 task: 'reduceImage',
                 imageId: image.image.id,
                 imageGroupId: trainingRun.imageGroupId ?? undefined,
                 runId, // unused currently?
                 imageUrl: image.image.url,
-                targetUrl: image.image.url,
+                targetUrl,
                 size: 2048,
                 cropX: image.x ?? undefined,
                 cropY: image.y ?? undefined,

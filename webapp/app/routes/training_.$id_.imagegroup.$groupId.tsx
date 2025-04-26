@@ -11,6 +11,9 @@ import { useDebounce, useDebouncedCallback } from 'use-debounce';
 import prisma from '#/prisma/db.server';
 
 import { requireUserWithPermission } from '~/services/permissions.server';
+import { beginTraining, checkIncompleteTrainingRun, getTrainingByUser } from '~/services/training.server';
+import { addAllImageToGroup, addImageToGroup, removeAllImagesFromGroup, removeImageFromGroup, setImageCrop } from '~/services/imagesizes.server';
+
 import { Button } from '~/components/button';
 import { Tooltip, TooltipTrigger, TooltipContent } from '~/components/tooltip';
 
@@ -26,9 +29,7 @@ type CropPercentage = {
 export async function action({ params, request }: ActionFunctionArgs) {
     const userId = await requireUserWithPermission(request, 'create:training:own');
 
-    const training = await prisma.training.findUnique({
-        where: { id: params.id, ownerId: userId },
-    });
+    const training = await getTrainingByUser(params.id!, userId);
 
     if (!training) {
         throw data('Not found', { status: 404 });
@@ -37,63 +38,39 @@ export async function action({ params, request }: ActionFunctionArgs) {
     const formData = await request.formData();
     const includeall = formData.get('includeall');
     const excludeall = formData.get('excludeall');
+    const run = formData.get('run');
     const include = formData.get('include') as string;
     const exclude = formData.get('exclude') as string;
     const setCrop = formData.get('setcrop') as string;
     const imageId = formData.get('imageid') as string;
 
-    if (includeall) {
-        const images = await prisma.trainingImage.findMany({
-            where: { trainingId: params.id },
-        });
-        if (images.length > 0) {
-            await prisma.imageSize.deleteMany({
-                where: { imageGroupId: params.groupId as string },
-            });
-            await prisma.imageSize.createMany({
-                data: images.map((image) => ({
-                    imageId: image.id,
-                    imageGroupId: params.groupId as string,
-                })),
-            });
+    if (run) {
+        if (await checkIncompleteTrainingRun(training.id)) {
+            return data({ error: 'Training already started' }, { status: 400 });
         }
+
+        await beginTraining(training, params.groupId);
+    }
+
+    if (includeall) {
+        await addAllImageToGroup(training.id, params.groupId as string);
     }
 
     if (excludeall) {
-        const images = await prisma.trainingImage.findMany({
-            where: { trainingId: params.id },
-        });
-        if (images.length > 0) {
-            await prisma.imageSize.deleteMany({
-                where: { imageGroupId: params.groupId as string },
-            });
-        }
+        await removeAllImagesFromGroup(params.groupId as string);
     }
 
     if (include) {
-        await prisma.imageSize.upsert({
-            where: { imageId_imageGroupId: { imageId: include, imageGroupId: params.groupId as string } },
-            update: {},
-            create: {
-                imageId: include,
-                imageGroupId: params.groupId as string,
-            },
-        });
+        await addImageToGroup(params.groupId as string, include);
     }
 
     if (exclude) {
-        await prisma.imageSize.delete({
-            where: { imageId_imageGroupId: { imageId: exclude, imageGroupId: params.groupId as string } },
-        });
+        await removeImageFromGroup(params.groupId as string, exclude);
     }
 
     if (setCrop && imageId) {
         const crop = JSON.parse(setCrop);
-        await prisma.imageSize.update({
-            where: { imageId_imageGroupId: { imageId, imageGroupId: params.groupId as string } },
-            // important that we reset isResized so that images aren't stuck in their first resizing forever
-            data: { x: crop.x, y: crop.y, width: crop.width, height: crop.height, isResized: false },
-        });
+        await setImageCrop(params.groupId as string, imageId, crop);
     }
 
     return {
@@ -281,6 +258,9 @@ export default function ImageUpload() {
             </Button>
             <Button type="submit" className="mb-4" name="excludeall" value="true">
                 Exclude all original images from group
+            </Button>
+            <Button type="submit" className="mb-4" name="run" value="true">
+                Run training on this group
             </Button>
 
             <p>Use ⌘ + scroll (or ctrl + scroll), or two fingers, to zoom images</p>
