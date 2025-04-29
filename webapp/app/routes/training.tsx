@@ -9,7 +9,7 @@ import { useIsPending } from '~/util/hooks';
 
 import { requireUserWithPermission } from '~/services/permissions.server';
 import { redirectWithToast } from '~/services/toast.server';
-import { beginTraining, checkIncompleteTrainingRun, getAllTrainingsByUser, getTrainingByUser } from '~/services/training.server';
+import { beginTraining, checkIncompleteTrainingRun, getAllTrainingsByUser, getTrainingByUser, abortTraining } from '~/services/training.server';
 
 import { StatusIndicator, type StatusType } from '~/components/status-indicator';
 import { EmptyState } from '~/components/empty-state';
@@ -24,6 +24,7 @@ export async function action({ request, params }: ActionFunctionArgs) {
 
     const formData = await request.formData();
     const trainingId = formData.get('trainingId');
+    const abort = formData.get('abort');
 
     if (typeof trainingId !== 'string') {
         return data({ error: 'Invalid training ID' }, { status: 400 });
@@ -33,6 +34,11 @@ export async function action({ request, params }: ActionFunctionArgs) {
 
     if (!training) {
         return data({ error: 'Training not found' }, { status: 404 });
+    }
+
+    if (abort) {
+        await abortTraining(trainingId);
+        return redirectWithToast(`/training`, { type: 'success', title: 'Training aborted', description: 'Training aborted' });
     }
 
     if (await checkIncompleteTrainingRun(trainingId)) {
@@ -114,7 +120,19 @@ export default function TrainingPage({ loaderData }: Route.ComponentProps) {
                                         </StatusButton>
                                     </Form>
                                 ) : (
-                                    <div className="flex-auto px-6">{/* <Progress value={training.runs[0].status} /> */}</div>
+                                    <div className="flex-auto px-6">
+                                        {/* <Progress value={training.runs[0].status} /> */}
+                                        <Form method="POST" action={`/training?trainingId=${training.id}`}>
+                                            <input type="hidden" name="trainingId" value={training.id} />
+                                            <StatusButton
+                                                type="submit"
+                                                name="abort"
+                                                value="true"
+                                                status={isPending && pendingFormAction == `/training?trainingId=${training.id}` ? 'pending' : 'idle'}>
+                                                Abort training
+                                            </StatusButton>
+                                        </Form>
+                                    </div>
                                 )}
                             </div>
                         </div>

@@ -1,4 +1,4 @@
-import axios from 'axios';
+import axios, { AxiosError } from 'axios';
 import https from 'https';
 
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
@@ -11,6 +11,7 @@ export const startTraining = async ({ runId }: { runId: string }) => {
     const trainingRun = await prisma.trainingRun.findUnique({
         select: {
             gpu: true,
+            imageGroupId: true,
             training: {
                 select: {
                     id: true,
@@ -52,11 +53,16 @@ export const startTraining = async ({ runId }: { runId: string }) => {
     }
 
     // Get information from the vast API about the instance using axios
-    const vastInstance = await axios.get(`https://console.vast.ai/api/v0/instances/${gpu.instanceId}`, {
-        headers: {
-            Authorization: `Bearer ${process.env.VAST_API_KEY}`,
-        },
-    });
+    const vastInstance = await axios
+        .get(`https://console.vast.ai/api/v0/instances/${gpu.instanceId}`, {
+            headers: {
+                Authorization: `Bearer ${process.env.VAST_API_KEY}`,
+            },
+        })
+        .catch(function (error) {
+            console.error('Error getting vast instance:', error);
+            return false;
+        });
 
     // NB unusual pluralisation of instances
     const instance = vastInstance?.data?.instances;
@@ -89,8 +95,8 @@ export const startTraining = async ({ runId }: { runId: string }) => {
 
     const httpsAgent = new https.Agent({ rejectUnauthorized: false });
 
-    try {
-        await axios.post(
+    await axios
+        .post(
             `https://${publicIp}:${kohyaPort}/training`,
             {
                 ...JSON.parse(training.config),
@@ -106,16 +112,22 @@ export const startTraining = async ({ runId }: { runId: string }) => {
                 },
                 httpsAgent,
             },
-        );
-    } catch (error: any) {
-        if (error.response.status === 400) {
-            throw new Error(`Training could not start: ${error}`);
-        }
-        return false;
-    }
+        )
+        .catch(function (error) {
+            const axiosError = error as AxiosError;
 
-    try {
-        await axios.post(
+            // Rethrow the error if it's a 400 as future calls aren't magically going to be different
+            // This is a hard failure scenario.
+            if (error.response.status === 400) {
+                const customError = new Error(`Training could not start: ${error.response.data?.error}`);
+                (customError as any).originalResponse = axiosError.response?.data;
+                throw customError;
+            }
+            return false;
+        });
+
+    await axios
+        .post(
             // same runID as the config above
             `https://${publicIp}:${kohyaPort}/training/${runId}/start`,
             {},
@@ -126,11 +138,11 @@ export const startTraining = async ({ runId }: { runId: string }) => {
                 },
                 httpsAgent,
             },
-        );
-    } catch (error: any) {
-        console.error('Error starting training:', error);
-        return false;
-    }
+        )
+        .catch(function (error) {
+            console.error('Error starting training:', error);
+            return false;
+        });
 
     return true;
 };

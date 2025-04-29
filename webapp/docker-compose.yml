@@ -19,6 +19,18 @@ services:
         ports:
             - 8090:8080
 
+    localstack:
+        container_name: localstack
+        image: localstack/localstack
+        ports:
+            - 4566:4566
+        environment:
+            - AWS_DEFAULT_REGION=us-east-1
+            - AWS_S3_BUCKET_NAME=modeller-maxres
+            - AWS_ACCESS_KEY_ID=test
+            - AWS_SECRET_ACCESS_KEY=test
+            - AWS_S3_ENDPOINT=http://localstack:4566
+
     # webapp:
     #     image: webapp:latest
     #     ports:

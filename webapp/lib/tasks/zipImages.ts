@@ -14,9 +14,11 @@ export const zipImages = async ({ runId }: { runId: string }) => {
 
     const trainingRun = await prisma.trainingRun.findUnique({
         select: {
+            imageGroupId: true,
             training: {
                 select: {
                     id: true,
+                    triggerWord: true,
                     config: true,
                     ownerId: true,
                 },
@@ -46,8 +48,8 @@ export const zipImages = async ({ runId }: { runId: string }) => {
         await s3Client.send(
             new PutObjectCommand({
                 Bucket: process.env.AWS_S3_MAXRES_BUCKET_NAME,
-                Key: `${training?.ownerId}/${training.id}/images/${image.name.replace(/\.[^.]+$/, '.txt')}`,
-                Body: image.text,
+                Key: `${training.ownerId}/${training.id}/images/${trainingRun.imageGroupId ? `${trainingRun.imageGroupId}/` : ''}${image.name.replace(/\.[^.]+$/, '.txt')}`,
+                Body: `${training.triggerWord},${image.text}`,
             }),
         );
     }
@@ -57,7 +59,10 @@ export const zipImages = async ({ runId }: { runId: string }) => {
 
     const command = new InvokeCommand({
         FunctionName: process.env.ZIP_IMAGES_LAMBDA_NAME,
-        Payload: JSON.stringify({ bucket: process.env.AWS_S3_MAXRES_BUCKET_NAME, key: `${training?.ownerId}/${training.id}/` }),
+        Payload: JSON.stringify({
+            bucket: process.env.AWS_S3_MAXRES_BUCKET_NAME,
+            key: `${training?.ownerId}/${training.id}/images/${trainingRun.imageGroupId ? `${trainingRun.imageGroupId}/` : ''}`,
+        }),
     });
 
     const { Payload, LogResult, StatusCode } = await client.send(command);

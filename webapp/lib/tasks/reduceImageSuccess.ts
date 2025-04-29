@@ -14,6 +14,8 @@ export const reduceImageSuccess = async ({ imageId, imageGroupId }: { imageId: s
             select: { imageGroupId: true },
         });
 
+        console.log('imageSize', imageSize);
+
         if (!imageSize?.imageGroupId) {
             throw new Error('Image not found');
         }

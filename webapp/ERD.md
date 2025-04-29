@@ -37,9 +37,22 @@ erDiagram
     }
   
 
+  "TrainingTask" {
+    String id "🗝️"
+    String task 
+    String status 
+    String messageId 
+    DateTime startedAt "❓"
+    DateTime completedAt "❓"
+    Json dataJson "❓"
+    String runId 
+    DateTime createdAt 
+    DateTime updatedAt 
+    }
+  
+
   "TrainingStatus" {
     String id "🗝️"
-    String messageId "❓"
     String status 
     Json dataJson "❓"
     DateTime createdAt 

@@ -1,7 +1,7 @@
 import { PrismaClient, Training } from '@prisma/client';
 import axios from 'axios';
 
-import type { TaskBody } from '../task.server';
+import type { TaskBody } from '../taskDag.server';
 
 const prisma = new PrismaClient();
 

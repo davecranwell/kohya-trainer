@@ -12,7 +12,7 @@ import type { Request, Response } from 'express';
 import { createRequestHandler } from '@react-router/express';
 import type { ServerBuild } from 'react-router';
 
-import { subscribeToTasks } from '../lib/task.server';
+import { registerDag } from '../lib/taskDag.server';
 import { shutdownInactiveGpus } from '../lib/tasks/shutdownInactiveGpus';
 import { emitter } from '~/util/emitter.server';
 
@@ -263,7 +263,7 @@ async function startServer() {
         console.log(`http://localhost:${PORT}`);
 
         if (USE_QUEUE) {
-            subscribeToTasks();
+            registerDag();
         }
 
         if (USE_CRON) {

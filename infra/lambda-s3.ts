@@ -218,7 +218,7 @@ export const maxSizeLambda = new aws.lambda.Function('maxSizeLambda', {
     ephemeralStorage: { size: 1024 },
     environment: {
         variables: {
-            QUEUE_URL: maxSizeQueue.url, // doesn't actually use this queue
+            QUEUE_URL: maxSizeQueue.url,
             TASK_QUEUE_URL: taskQueue.url,
             SOURCE_BUCKET_NAME: uploadBucket.id,
             TARGET_BUCKET_NAME: maxresBucket.id,

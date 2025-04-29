@@ -1,6 +1,8 @@
 import prisma from '#/prisma/db.server';
-import { enqueueTraining } from '#/lib/task.server';
+import { enqueueTraining } from '#/lib/taskDag.server';
 import { Training } from '@prisma/client';
+
+const NOT_RUNNING_STATUS = ['stalled', 'onerror', 'completed', 'aborted'];
 
 export const getTrainingByUser = async (trainingId: string, userId: string) => {
     return await prisma.training.findUnique({
@@ -24,7 +26,7 @@ export const getAllTrainingsByUser = async (userId: string) => {
                 where: {
                     status: {
                         not: {
-                            in: ['stalled', 'onerror', 'completed'],
+                            in: NOT_RUNNING_STATUS,
                         },
                     },
                 },
@@ -57,7 +59,7 @@ export const checkIncompleteTrainingRun = async (trainingId: string) => {
             trainingId,
             status: {
                 not: {
-                    in: ['stalled', 'onerror', 'completed'],
+                    in: NOT_RUNNING_STATUS,
                 },
             },
         },
@@ -81,4 +83,15 @@ export const beginTraining = async (training: Pick<Training, 'id' | 'config'>, i
     });
 
     return await enqueueTraining(training.id, imageGroupId);
+};
+
+export const abortTraining = async (trainingId: string) => {
+    const trainingRuns = await prisma.trainingRun.findMany({
+        where: { trainingId },
+    });
+
+    await prisma.trainingRun.updateMany({
+        where: { id: { in: trainingRuns.map((run) => run.id) } },
+        data: { status: 'aborted' },
+    });
 };

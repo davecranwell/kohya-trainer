@@ -1,6 +1,6 @@
 import prisma from '#/prisma/db.server';
 
-import { createTask } from '../task.server';
+import { queueTask } from '../taskQueue';
 
 export const reduceImages = async ({ runId }: { runId: string }) => {
     const trainingRun = await prisma.trainingRun.findUnique({
@@ -45,18 +45,21 @@ export const reduceImages = async ({ runId }: { runId: string }) => {
             const restOfPath = image.image.url.split('/').slice(0, -1).join('/');
             const targetUrl = `${restOfPath}/${trainingRun.imageGroupId}/${filename}`;
 
-            createTask(process.env.AWS_SQS_MAXSIZE_QUEUE_URL!, {
-                task: 'reduceImage',
-                imageId: image.image.id,
-                imageGroupId: trainingRun.imageGroupId ?? undefined,
-                runId, // unused currently?
-                imageUrl: image.image.url,
-                targetUrl,
-                size: 2048,
-                cropX: image.x ?? undefined,
-                cropY: image.y ?? undefined,
-                cropWidth: image.width ?? undefined,
-                cropHeight: image.height ?? undefined,
+            queueTask({
+                queueUrl: process.env.AWS_SQS_MAXSIZE_QUEUE_URL!,
+                messageBody: {
+                    task: 'reduceImage',
+                    imageId: image.image.id,
+                    imageGroupId: trainingRun.imageGroupId ?? undefined,
+                    runId,
+                    imageUrl: image.image.url,
+                    targetUrl,
+                    size: 2048,
+                    cropX: image.x ?? undefined,
+                    cropY: image.y ?? undefined,
+                    cropWidth: image.width ?? undefined,
+                    cropHeight: image.height ?? undefined,
+                },
             });
         }
     } else {
@@ -72,13 +75,16 @@ export const reduceImages = async ({ runId }: { runId: string }) => {
         }
 
         for (const image of images) {
-            createTask(process.env.AWS_SQS_MAXSIZE_QUEUE_URL!, {
-                task: 'reduceImage',
-                imageId: image.id,
-                runId,
-                imageUrl: image.url,
-                targetUrl: image.url,
-                size: 2048,
+            queueTask({
+                queueUrl: process.env.AWS_SQS_MAXSIZE_QUEUE_URL!,
+                messageBody: {
+                    task: 'reduceImage',
+                    imageId: image.id,
+                    runId,
+                    imageUrl: image.url,
+                    targetUrl: image.url,
+                    size: 2048,
+                },
             });
         }
     }

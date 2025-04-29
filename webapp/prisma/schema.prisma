@@ -83,17 +83,31 @@ model TrainingRun {
   @@index([trainingId])
 }
 
-// Statuses of each part of a TrainingRun
-model TrainingStatus {
+model TrainingTask {
   id          String  @id @default(cuid())
-  messageId   String?
+  task        String
   status      String
+  messageId   String
+  startedAt   DateTime?
+  completedAt DateTime?
   dataJson    Json?
   runId       String
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   @@index([messageId])
+  @@index([runId])
+}
+
+// Statuses of each part of a TrainingRun
+model TrainingStatus {
+  id          String  @id @default(cuid())
+  status      String
+  dataJson    Json?
+  runId       String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
   @@index([runId])
 
   run TrainingRun @relation(fields: [runId], references: [id], onDelete: Cascade, onUpdate: Cascade)

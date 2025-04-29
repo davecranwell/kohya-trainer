@@ -26,7 +26,7 @@ export const handler = async (event) => {
     for (const record of event.Records) {
         try {
             const message = JSON.parse(record.body);
-            const { imageId, imageGroupId, imageUrl, targetUrl, cropX, cropY, cropWidth, cropHeight, size } = message;
+            const { imageId, imageGroupId, imageUrl, targetUrl, cropX, cropY, cropWidth, cropHeight, size, runId } = message;
 
             // Load the image from S3
             const imageObject = await s3.send(
@@ -45,7 +45,7 @@ export const handler = async (event) => {
             const originalWidth = metadata.width;
             const originalHeight = metadata.height;
 
-            const isCropping = x !== undefined && y !== undefined && width !== undefined && height !== undefined;
+            const isCropping = cropX !== undefined && cropY !== undefined && cropWidth !== undefined && cropHeight !== undefined;
 
             let processedImage = image;
 
@@ -86,7 +86,7 @@ export const handler = async (event) => {
 
             await sqs.send(
                 new DeleteMessageCommand({
-                    QueueUrl: process.env.AWS_SQS_MAXSIZE_QUEUE_URL,
+                    QueueUrl: process.env.QUEUE_URL,
                     ReceiptHandle: record.receiptHandle,
                 }),
             );
@@ -99,6 +99,7 @@ export const handler = async (event) => {
                         task: 'reduceImageSuccess',
                         imageId,
                         imageGroupId,
+                        runId,
                     }),
                 }),
             );
