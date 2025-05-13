@@ -13,6 +13,7 @@ import prisma from '#/prisma/db.server';
 import { requireUserWithPermission } from '~/services/permissions.server';
 import { beginTraining, checkIncompleteTrainingRun, getTrainingByUser } from '~/services/training.server';
 import { addAllImageToGroup, addImageToGroup, removeAllImagesFromGroup, removeImageFromGroup, setImageCrop } from '~/services/imagesizes.server';
+import { getThumbnailUrl } from '~/util/misc';
 
 import { Button } from '~/components/button';
 import { Tooltip, TooltipTrigger, TooltipContent } from '~/components/tooltip';
@@ -183,8 +184,6 @@ export default function ImageUpload() {
     const cellRenderer = useCallback(
         ({ index, key, parent, style }: any) => {
             const image = images[index];
-            const imagePath = image.url.split('/').slice(0, -1).join('/');
-            const imageFilename = image.url.split('/').pop();
             const isIncludedInGroup = image.isIncludedInGroup;
 
             const groupImage = groupImageHashmap[image.id] || {};
@@ -223,7 +222,7 @@ export default function ImageUpload() {
                             className="data-[included=false]:opacity-10 data-[included=true]:opacity-100">
                             <Cropper
                                 key={image.id}
-                                image={`${thumbnailBucketUrl}${imagePath}/600/${imageFilename}`}
+                                image={getThumbnailUrl(thumbnailBucketUrl, image.url, 600)}
                                 showGrid={false}
                                 zoomSpeed={0.1}
                                 crop={crop[image.id]}

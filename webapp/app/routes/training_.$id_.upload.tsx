@@ -10,7 +10,7 @@ import prisma from '#/prisma/db.server';
 
 import { requireUserWithPermission } from '~/services/permissions.server';
 
-import { sanitiseTagArray, sanitiseTagString } from '~/util/misc';
+import { sanitiseTagArray, sanitiseTagString, getThumbnailUrl } from '~/util/misc';
 
 import { FileUploadPreview, ImageWithMetadata } from '~/components/file-upload-preview';
 import { Button } from '~/components/button';
@@ -257,8 +257,6 @@ export default function ImageUpload() {
     const rowRenderer = useCallback(
         ({ key, index, parent, style }: any) => {
             const image = filteredImages[index];
-            const imagePath = image.url.split('/').slice(0, -1).join('/');
-            const imageFilename = image.url.split('/').pop();
 
             return (
                 <CellMeasurer cache={cache} columnIndex={0} key={key} parent={parent} rowIndex={index}>
@@ -266,7 +264,7 @@ export default function ImageUpload() {
                         <div ref={registerChild as any} style={style}>
                             <li className="mb-4 flex flex-row gap-6 rounded-xl border border-gray-800 bg-gray-900 p-6">
                                 <ImagePreview
-                                    url={`${image.url?.startsWith('blob') ? image.url : `${thumbnailBucketUrl}${imagePath}/200/${imageFilename}`}`}
+                                    url={`${image.url?.startsWith('blob') ? image.url : getThumbnailUrl(thumbnailBucketUrl, image.url, 200)}`}
                                     id={image.id}
                                     width={200}
                                 />

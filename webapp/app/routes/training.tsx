@@ -16,6 +16,7 @@ import { EmptyState } from '~/components/empty-state';
 import { StatusButton } from '~/components/status-button';
 import { Button } from '~/components/button';
 import { Progress } from '~/components/progress';
+import { getThumbnailUrl } from '~/util/misc';
 
 const POLL_INTERVAL = 5000;
 
@@ -158,17 +159,19 @@ export default function TrainingPage({ loaderData }: Route.ComponentProps) {
                                 <ImageIcon className="text-accent1" />
                                 <NavLink to={`/training/${training.id}/upload`}>{training._count.images} images</NavLink>
                                 <div className="flex justify-center -space-x-3 font-mono text-sm font-bold leading-6 text-white">
-                                    {training.images.map((image) => (
-                                        <img
-                                            // Add key prop to force React to recreate the img element when error state changes
-                                            key={`${image.url}`}
-                                            src={`${thumbnailBucketUrl}${image.url}`}
-                                            width="50"
-                                            height="50"
-                                            alt=""
-                                            className={`m-auto block h-[50px] w-[50px] rounded-full object-cover text-center shadow-lg ring-2 ring-white dark:ring-slate-900`}
-                                        />
-                                    ))}
+                                    {training.images.map((image) => {
+                                        return (
+                                            <img
+                                                // Add key prop to force React to recreate the img element when error state changes
+                                                key={`${image.url}`}
+                                                src={getThumbnailUrl(thumbnailBucketUrl, image.url, 200)}
+                                                width="50"
+                                                height="50"
+                                                alt=""
+                                                className={`m-auto block h-[50px] w-[50px] rounded-full object-cover text-center shadow-lg ring-2 ring-white dark:ring-slate-900`}
+                                            />
+                                        );
+                                    })}
                                 </div>
                             </div>
                         </div>

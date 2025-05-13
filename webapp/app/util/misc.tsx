@@ -68,3 +68,10 @@ export function sanitiseTagArray(tagArray: string[], filterTags?: string[]) {
 // export function getThumbnailKey(s3Key: string) {
 //     return s3Key.replace(/\.[^.]+$/, '_thumbnail-200$&');
 // }
+
+export function getThumbnailUrl(s3root: string, origionalKey: string, size: number) {
+    const origionalPath = origionalKey.split('/').slice(0, -1).join('/');
+    const origionalFilename = origionalKey.split('/').pop();
+
+    return `${s3root}${origionalPath}/${size}/${origionalFilename}`;
+}
