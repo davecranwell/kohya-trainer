@@ -203,6 +203,7 @@ export function TrainingEditor({ training, baseModels }: { training?: Training; 
 
                                     handleChosenNewBaseModel(newModel);
                                 }}
+                                supportedModels={baseModels.map((model) => model.type)}
                                 isOpen={isCivitaiBrowserOpen}
                                 setIsOpen={setIsCivitaiBrowserOpen}
                             />

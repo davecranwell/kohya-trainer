@@ -4,14 +4,14 @@ export const baseModels = [
         name: 'SD 1.5',
         url: 'https://huggingface.co/runwayml/stable-diffusion-v1-5/resolve/main/v1-5-pruned.ckpt',
         filename: 'v1-5-pruned.ckpt',
-        type: 'SD1.5',
+        type: 'SD 1.5',
     },
     {
         id: '2',
         name: 'SDXL',
         url: 'https://huggingface.co/stabilityai/stable-diffusion-xl-base-1.0/resolve/main/sd_xl_base_1.0.safetensors',
         filename: 'sd_xl_base_1.0.safetensors',
-        type: 'SDXL',
+        type: 'SDXL 1.0',
     },
     {
         id: '3',

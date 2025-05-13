@@ -121,10 +121,12 @@ export function CivitaiBrowser({
     onSelect,
     isOpen = false,
     setIsOpen,
+    supportedModels = ['SDXL 1.0', 'SD 1.5'],
 }: {
     onSelect: (version: any) => void;
     isOpen: boolean;
     setIsOpen: (isOpen: boolean) => void;
+    supportedModels: string[];
 }) {
     const queryClient = useQueryClient();
     const [search, setSearch] = useState('');
@@ -174,7 +176,7 @@ export function CivitaiBrowser({
                                             key={model.id}
                                             model={model}
                                             as="li"
-                                            supported={['SDXL 1.0', 'SD 1.5']}
+                                            supported={supportedModels}
                                             className="mb-4 mr-4 w-[250px] flex-1 grow-0"
                                             onSelect={handleChooseModel}
                                         />

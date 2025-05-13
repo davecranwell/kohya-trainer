@@ -31,7 +31,8 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
         throw data('Not found', { status: 404 });
     }
 
-    const ourBaseModels = [...baseModels];
+    const ourBaseModels = baseModels.filter((model) => model.type === process.env.MODELS);
+
     if (training.baseModel) {
         const currentBaseModel = JSON.parse(training.baseModel as string);
         training.baseModel = currentBaseModel;

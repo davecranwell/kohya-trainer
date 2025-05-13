@@ -10,7 +10,7 @@ import { baseModels } from '~/util/difussion-models';
 export async function loader({ request }: LoaderFunctionArgs) {
     const userId = await requireUserWithPermission(request, 'create:training:own');
 
-    return { userId, baseModels };
+    return { userId, baseModels: baseModels.filter((model) => model.type === process.env.MODELS) };
 }
 
 export default function TrainingRoute() {
