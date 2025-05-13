@@ -92,6 +92,30 @@ export const abortTraining = async (trainingId: string) => {
 
     await prisma.trainingRun.updateMany({
         where: { id: { in: trainingRuns.map((run) => run.id) } },
-        data: { status: 'aborted' },
+        data: { status: 'aborted', gpuId: null },
+    });
+};
+
+export const completeTrainingRun = async (trainingId: string) => {
+    await prisma.trainingRun.update({
+        where: { id: trainingId },
+        data: { status: 'completed', gpuId: null },
+    });
+};
+
+export const failTrainingRun = async (runId: string) => {
+    await prisma.trainingRun.update({
+        where: { id: runId },
+        data: { status: 'failed', gpuId: null },
+    });
+};
+
+export const createTrainingStatus = async (runId: string, status: string, dataJson?: string) => {
+    await prisma.trainingStatus.create({
+        data: {
+            runId,
+            status,
+            dataJson,
+        },
     });
 };

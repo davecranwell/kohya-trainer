@@ -1,6 +1,7 @@
 import { type ActionFunctionArgs, LoaderFunctionArgs } from 'react-router';
 
 import prisma from '#/prisma/db.server';
+import { createTrainingStatus, completeTrainingRun, failTrainingRun } from '~/services/training.server';
 
 export async function action({ request, params }: ActionFunctionArgs) {
     const { runId } = params;
@@ -30,29 +31,16 @@ export async function action({ request, params }: ActionFunctionArgs) {
         case 'training_starting':
         case 'training_completed':
         case 'training_progress':
-            await prisma.trainingStatus.create({
-                data: {
-                    status: bodyJson.status,
-                    dataJson: bodyJson,
-                    runId,
-                },
-            });
+            await createTrainingStatus(runId, bodyJson.status, JSON.stringify(bodyJson));
 
             break;
         case 'training_failed':
-            await prisma.trainingRun.update({
-                where: { id: runId },
-                data: {
-                    status: 'failed',
-                },
-            });
-            await prisma.trainingStatus.create({
-                data: {
-                    status: bodyJson.status,
-                    dataJson: bodyJson,
-                    runId,
-                },
-            });
+            await createTrainingStatus(runId, bodyJson.status, JSON.stringify(bodyJson));
+            await failTrainingRun(runId);
+
+            break;
+        case 'completed':
+            await completeTrainingRun(runId);
             break;
         default:
             console.error('Invalid status', bodyJson);
