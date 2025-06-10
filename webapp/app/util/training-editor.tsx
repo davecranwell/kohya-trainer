@@ -16,10 +16,12 @@ import { StatusButton } from '~/components/status-button';
 import { Container } from '~/components/container';
 import { Alert } from '~/components/alert';
 import { CivitaiBrowser } from '~/components/civitai-browser';
+import { Tooltip, TooltipTrigger, TooltipContent } from '~/components/tooltip';
 
 import { type action } from './training-editor.server';
+import { useHelp } from './help.provider';
+
 import civitai from '../assets/civitai.png';
-import { Tooltip, TooltipTrigger, TooltipContent } from '~/components/tooltip';
 
 export const TrainingEditorSchema = z.object({
     id: z.string().optional(),
@@ -59,6 +61,7 @@ function baseModelReducer(state: BaseModelState, action: BaseModelAction): BaseM
 }
 
 export function TrainingEditor({ training, baseModels }: { training?: Training; baseModels: BaseModel[] }) {
+    const { setHelp, toggleHelp } = useHelp();
     const actionData = useActionData<typeof action>();
     const isPending = useIsPending();
     const [isCivitaiBrowserOpen, setIsCivitaiBrowserOpen] = useState(false);
@@ -83,14 +86,11 @@ export function TrainingEditor({ training, baseModels }: { training?: Training; 
     const { key: triggerWordKey, ...triggerWordProps } = getInputProps(fields.triggerWord, { type: 'text' });
     const baseModelFields = fields.baseModel.getFieldset();
     return (
-        <Container>
+        <div>
             <Form method="POST" {...getFormProps(form)} encType="multipart/form-data">
                 {training ? <input type="hidden" name="id" value={training.id} /> : null}
-                <div className="space-y-6 border-b border-gray-900/10">
-                    <div className="grid grid-cols-2 gap-4 border-b border-gray-900/10 pb-12">
-                        <Alert variant="info">
-                            <p className="basis-1/2 text-sm leading-6">An easy way to identify this training later.</p>
-                        </Alert>
+                <div className="space-y-6 border-b border-gray-800">
+                    <div>
                         <Field
                             labelProps={{ children: 'Training name' }}
                             inputProps={{
@@ -98,61 +98,49 @@ export function TrainingEditor({ training, baseModels }: { training?: Training; 
                                 ...nameProps,
                                 placeholder: 'e.g "My first Lora"',
                             }}
+                            help={
+                                <span className="flex items-center gap-2 text-sm leading-6">
+                                    <InfoCircledIcon className="size-4 flex-none" /> An easy way to identify this training later.
+                                </span>
+                            }
                             errors={fields.name.errors}
                         />
                     </div>
-                    <div className="grid grid-cols-2 gap-4 border-b border-gray-900/10 pb-12">
-                        <div>
-                            <Alert variant="info">
-                                <p className="basis-1/2 text-sm leading-6">The word(s) to activate the Lora while generating an image.</p>
-                            </Alert>
-                            <Alert variant="warning">
-                                <p className="text-sm leading-6">
-                                    NB: Combining multiple loras all trained with the same trigger word will cause confusion in your image generation.
-                                    Consider which other loras you plan to use in your generations.
-                                </p>
-                            </Alert>
-                        </div>
+                    <div>
                         <Field
                             labelProps={{ children: 'Trigger word(s)' }}
                             inputProps={{
                                 ...triggerWordProps,
                                 placeholder: 'e.g "ohxw"',
+                                onMouseEnter: () =>
+                                    setHelp(
+                                        <p className="mb-2 text-sm leading-6">
+                                            Loras teach a base model a brand new concept, or enhance an existing one. For new concepts use a trigger
+                                            word that is <em className="text-semantic-warning">unknown</em> to the base model. Dictionary words are
+                                            already known. Random, or username-style words work well (e.g 'ohxw', 'johndoe420') because no dictionary
+                                            word could confuse their meaning. Case does not matter.
+                                            <br />
+                                            <br />
+                                            <Alert variant="warning">
+                                                <p className="text-sm leading-6">
+                                                    Combining multiple loras which share the same trigger words could interfere in your image
+                                                    generation. Try to use different trigger words for each Lora.
+                                                </p>
+                                            </Alert>
+                                        </p>,
+                                    ),
+                                onMouseLeave: () => toggleHelp(),
                             }}
                             errors={fields.triggerWord.errors}
                             help={
-                                <Tooltip>
-                                    <TooltipTrigger asChild>
-                                        <span className="flex items-center gap-2 text-sm leading-6">
-                                            <InfoCircledIcon className="size-4" /> 4-10 characters long
-                                        </span>
-                                    </TooltipTrigger>
-                                    <TooltipContent className="">
-                                        Loras teach a base model a brand new concept, or enhance an existing one. For new concepts use a trigger word
-                                        that is <em className="text-semantic-warning">unknown</em> to the base model. Most English dictionary words
-                                        are already known. Random-letter, or username-like words work well (e.g 'ohxw', 'johndoe420') because no
-                                        dictionary word could clash and dilute the concept you're teaching.
-                                    </TooltipContent>
-                                </Tooltip>
+                                <span className="flex items-center gap-2 text-sm leading-6">
+                                    <InfoCircledIcon className="size-4 flex-none" /> The word(s) to activate the Lora while generating an image. 4-10
+                                    characters long
+                                </span>
                             }
                         />
                     </div>
-                    <div className="grid grid-cols-2 gap-4 pb-12">
-                        <div>
-                            <Alert variant="info">
-                                <p className="text-sm leading-6">
-                                    Loras are like music remixes - they build on an existing idea. The base model provides that foundation, and
-                                    defines the Lora's output, so select one that matches the style or content of the output you want.
-                                </p>
-                            </Alert>
-                            <Alert variant="warning">
-                                <p className="text-sm leading-6">
-                                    NB: Your Lora will generate the best images{' '}
-                                    <em className="text-semantic-warning">only when used with the base model you choose here</em>. Using a different
-                                    base model with this Lora may cause poor results.
-                                </p>
-                            </Alert>
-                        </div>
+                    <div>
                         <div>
                             <h3 className="mb-2 font-medium text-gray-300">Base model</h3>
                             <RadioGroup
@@ -161,7 +149,28 @@ export function TrainingEditor({ training, baseModels }: { training?: Training; 
                                 by="id"
                                 onChange={(value) => {
                                     dispatch({ type: 'SELECT', payload: value as BaseModel });
-                                }}>
+                                }}
+                                onMouseEnter={() =>
+                                    setHelp(
+                                        <>
+                                            <p className="text-sm leading-6">
+                                                Loras are like game mods - they need an existing game to build on. The base model provides that
+                                                foundation and largely defines the Lora's output, so select a base model that matches the style or
+                                                content of the output you want.
+                                            </p>
+
+                                            <Alert variant="warning">
+                                                <p className="text-sm leading-6">
+                                                    NB: Like game mods, you can't put Loras into a game for which they weren't designed. Your Lora
+                                                    will generate the best images{' '}
+                                                    <em className="text-semantic-warning">only when used with the base model you choose here</em>.
+                                                    Using a different base model with this Lora may cause poor results.
+                                                </p>
+                                            </Alert>
+                                        </>,
+                                    )
+                                }
+                                onMouseLeave={() => toggleHelp()}>
                                 {baseModelState.options.map((model) => (
                                     <HeadlessField
                                         key={model?.id}
@@ -224,6 +233,6 @@ export function TrainingEditor({ training, baseModels }: { training?: Training; 
                     </StatusButton>
                 </div>
             </Form>
-        </Container>
+        </div>
     );
 }

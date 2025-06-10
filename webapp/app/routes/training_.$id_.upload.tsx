@@ -17,6 +17,7 @@ import { Button } from '~/components/button';
 import { ImagePreview } from '~/components/image-preview';
 import { Label } from '~/components/forms/label';
 import { MultiComboBox } from '~/components/forms/multi-combo-box';
+import { Panel } from '~/components/panel';
 
 const MAX_IMAGES = 200;
 const ACCEPTED_IMAGE_TYPES = ['image/png', 'image/jpeg'];
@@ -293,8 +294,7 @@ export default function ImageUpload() {
     );
 
     return (
-        <>
-            <h2 className="mb-4 text-2xl font-bold tracking-tight text-white">Training images</h2>
+        <Panel heading="Original images">
             <div className="flex flex-row gap-8">
                 <div className="flex-1 basis-3/5">
                     <FileUploadPreview
@@ -465,6 +465,6 @@ export default function ImageUpload() {
                     </ul>
                 </div>
             </div>
-        </>
+        </Panel>
     );
 }

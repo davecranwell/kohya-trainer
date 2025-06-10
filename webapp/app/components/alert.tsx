@@ -3,7 +3,7 @@ import { CheckCircledIcon, ExclamationTriangleIcon, InfoCircledIcon } from '@rad
 import { cva, type VariantProps } from 'class-variance-authority';
 import { clsx } from 'clsx';
 
-const alertVariants = cva('flex gap-2 rounded p-4', {
+const alertVariants = cva('flex gap-2 rounded py-4', {
     variants: {
         prominence: {
             default: '',

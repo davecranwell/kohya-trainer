@@ -50,41 +50,37 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 <Meta />
                 <Links />
             </head>
-            <body className="min-h-screen bg-gradient-to-br from-gray-950 via-gray-900 to-slate-900 text-gray-400">
-                <div className="mx-auto w-full max-w-6xl">
-                    <TooltipProvider delayDuration={100} skipDelayDuration={500}>
-                        <QueryClientProvider client={queryClient}>
-                            <div className="overflow-auto p-8">{children}</div>
-                        </QueryClientProvider>
-                    </TooltipProvider>
-                    <ScrollRestoration nonce={nonce} />
-                    <Scripts nonce={nonce} />
-                    <Toaster
-                        position="bottom-center"
-                        toastOptions={{
-                            unstyled: true,
-                            classNames: {
-                                error: 'border-semantic-error',
-                                success: 'border-semantic-success',
-                                warning: 'border-semantic-warning',
-                                info: 'border-semantic-info',
-                                toast: 'items-start group toast rounded-lg border bg-black/40 p-6 flex gap-2',
-                                title: 'group-data-[type="success"]:text-semantic-success group-data-[type="error"]:text-semantic-error group-data-[type="warning"]:text-semantic-warning group-data-[type="info"]:text-semantic-info',
-                                description: 'text-white',
-                                actionButton: 'bg-zinc-400',
-                                cancelButton: 'bg-orange-400',
-                                closeButton: 'bg-lime-400',
-                                icon: 'm-2 group-data-[type="success"]:text-semantic-success group-data-[type="error"]:text-semantic-error group-data-[type="warning"]:text-semantic-warning group-data-[type="info"]:text-semantic-info',
-                            },
-                        }}
-                        icons={{
-                            error: <ExclamationTriangleIcon className="h-6 w-6" />,
-                            success: <CheckCircledIcon className="h-6 w-6" />,
-                            warning: <ExclamationTriangleIcon className="h-6 w-6" />,
-                            info: <InfoCircledIcon className="h-6 w-6" />,
-                        }}
-                    />
-                </div>
+            <body className="min-h-screen overflow-hidden bg-gradient-to-br from-gray-950 via-gray-900 to-slate-900 text-gray-400">
+                <TooltipProvider delayDuration={100} skipDelayDuration={500}>
+                    <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+                </TooltipProvider>
+                <ScrollRestoration nonce={nonce} />
+                <Scripts nonce={nonce} />
+                <Toaster
+                    position="bottom-center"
+                    toastOptions={{
+                        unstyled: true,
+                        classNames: {
+                            error: 'border-semantic-error',
+                            success: 'border-semantic-success',
+                            warning: 'border-semantic-warning',
+                            info: 'border-semantic-info',
+                            toast: 'items-start group toast rounded-lg border bg-black/40 p-6 flex gap-2',
+                            title: 'group-data-[type="success"]:text-semantic-success group-data-[type="error"]:text-semantic-error group-data-[type="warning"]:text-semantic-warning group-data-[type="info"]:text-semantic-info',
+                            description: 'text-white',
+                            actionButton: 'bg-zinc-400',
+                            cancelButton: 'bg-orange-400',
+                            closeButton: 'bg-lime-400',
+                            icon: 'm-2 group-data-[type="success"]:text-semantic-success group-data-[type="error"]:text-semantic-error group-data-[type="warning"]:text-semantic-warning group-data-[type="info"]:text-semantic-info',
+                        },
+                    }}
+                    icons={{
+                        error: <ExclamationTriangleIcon className="h-6 w-6" />,
+                        success: <CheckCircledIcon className="h-6 w-6" />,
+                        warning: <ExclamationTriangleIcon className="h-6 w-6" />,
+                        info: <InfoCircledIcon className="h-6 w-6" />,
+                    }}
+                />
             </body>
         </html>
     );
