@@ -17,6 +17,7 @@ import { getThumbnailUrl } from '~/util/misc';
 
 import { Button } from '~/components/button';
 import { Tooltip, TooltipTrigger, TooltipContent } from '~/components/tooltip';
+import { Panel } from '~/components/panel';
 
 const cellSize = 400;
 
@@ -250,40 +251,41 @@ export default function ImageUpload() {
     );
 
     return (
-        <fetcher.Form key={`${training.id}-${group.id}`} id={training.id} method="post" className="relative">
-            <h2 className="mb-4 text-2xl font-bold tracking-tight text-white">Image group: {group.name}</h2>
-            <Button type="submit" className="mb-4" name="includeall" value="true">
-                Include all original images in group
-            </Button>
-            <Button type="submit" className="mb-4" name="excludeall" value="true">
-                Exclude all original images from group
-            </Button>
-            <Button type="submit" className="mb-4" name="run" value="true">
-                Run training on this group
-            </Button>
+        <Panel heading={group.name}>
+            <fetcher.Form key={`${training.id}-${group.id}`} id={training.id} method="post" className="relative">
+                <Button type="submit" className="mb-4" name="includeall" value="true">
+                    Include all original images in group
+                </Button>
+                <Button type="submit" className="mb-4" name="excludeall" value="true">
+                    Exclude all original images from group
+                </Button>
+                <Button type="submit" className="mb-4" name="run" value="true">
+                    Run training on this group
+                </Button>
 
-            <p>Use ⌘ + scroll (or ctrl + scroll), or two fingers, to zoom images</p>
-            <div className="flex flex-row gap-8">
-                <div className="flex-1 basis-3/5">
-                    <div className="mt-4 h-[calc(100vh-250px)]">
-                        {isHydrated && (
-                            <AutoSizer>
-                                {({ width, height }) => (
-                                    <Masonry
-                                        cellMeasurerCache={cache}
-                                        cellPositioner={cellPositioner}
-                                        cellRenderer={cellRenderer}
-                                        cellCount={images.length}
-                                        width={width + 100}
-                                        height={height}
-                                        autoHeight={false}
-                                    />
-                                )}
-                            </AutoSizer>
-                        )}
+                <p>Use ⌘ + scroll (or ctrl + scroll), or two fingers, to zoom images</p>
+                <div className="flex flex-row gap-8">
+                    <div className="flex-1 basis-3/5">
+                        <div className="mt-4 h-[calc(100vh-250px)]">
+                            {isHydrated && (
+                                <AutoSizer>
+                                    {({ width, height }) => (
+                                        <Masonry
+                                            cellMeasurerCache={cache}
+                                            cellPositioner={cellPositioner}
+                                            cellRenderer={cellRenderer}
+                                            cellCount={images.length}
+                                            width={width + 100}
+                                            height={height}
+                                            autoHeight={false}
+                                        />
+                                    )}
+                                </AutoSizer>
+                            )}
+                        </div>
                     </div>
                 </div>
-            </div>
-        </fetcher.Form>
+            </fetcher.Form>
+        </Panel>
     );
 }

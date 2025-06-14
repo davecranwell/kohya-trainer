@@ -52,7 +52,7 @@ export async function action({ request, params }: ActionFunctionArgs) {
         },
     });
 
-    return redirectWithToast(`/training/${updateTraining.id}/upload`, {
+    return redirectWithToast(`/training/${updateTraining.id}`, {
         type: 'success',
         title: 'Success',
         description: trainingId ? 'Training configuration has been updated.' : 'New training has been created.',

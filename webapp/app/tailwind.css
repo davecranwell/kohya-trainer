@@ -2,6 +2,11 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+    --scrollbar-color-thumb: #314258;
+    --scrollbar-color-track: #1f2937;
+}
+
 html,
 body {
     @apply bg-white dark:bg-gray-950;
@@ -9,9 +14,15 @@ body {
     @media (prefers-color-scheme: dark) {
         color-scheme: dark;
     }
+
+    scrollbar-color: var(--scrollbar-color-thumb) var(--scrollbar-color-track);
 }
 
 img {
     max-width: none;
     max-height: none;
+}
+
+[aria-label='tags'] ul {
+    scrollbar-width: thin;
 }

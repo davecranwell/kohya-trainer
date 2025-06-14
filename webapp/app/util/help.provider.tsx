@@ -5,6 +5,7 @@ type HelpContextType = {
     setIsOpen: (isOpen: boolean) => void;
     help: React.ReactNode;
     setHelp: (help: React.ReactNode) => void;
+    toggleHelp: () => void;
 };
 
 export const HelpContext = React.createContext<HelpContextType | null>(null);

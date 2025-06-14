@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { useEffect, useState, useMemo, useCallback, memo } from 'react';
+import { useEffect, useState, useMemo, useCallback, memo, forwardRef, useRef } from 'react';
 import { Combobox, ComboboxInput, ComboboxButton, ComboboxOption, ComboboxOptions } from '@headlessui/react';
 import { Cross1Icon, ArrowDownIcon, PlusIcon, TargetIcon, QuoteIcon, ChevronDownIcon, BookmarkFilledIcon } from '@radix-ui/react-icons';
 
@@ -11,6 +11,7 @@ type Props = {
     defaultValue: string | undefined | null;
     onChange: (options: Option[]) => void;
     onRemove: (options: Option[], removedOption: Option) => void;
+    className?: string;
 };
 
 export type Option = string;
@@ -18,41 +19,46 @@ export type Option = string;
 export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {}
 
 // Separate component for selected items to prevent re-renders of the entire combobox
-const SelectedItems = memo(({ selected, name, onRemove }: { selected: Option[]; name: string; onRemove: (option: Option) => void }) => {
-    if (selected.length === 0) return null;
+const SelectedItems = memo(
+    forwardRef<HTMLUListElement, { selected: Option[]; name: string; onRemove: (option: Option) => void; className?: string }>(
+        ({ selected, name, onRemove, className }, ref) => {
+            if (selected.length === 0) return null;
 
-    // Event delegation handler
-    const handleClick = (e: React.MouseEvent) => {
-        // Look for closest button element from click target
-        const button = (e.target as HTMLElement).closest('[data-remove-option]');
-        if (button) {
-            const option = button.getAttribute('data-remove-option');
-            if (option) onRemove(option);
-        }
-    };
+            // Event delegation handler
+            const handleClick = (e: React.MouseEvent) => {
+                // Look for closest button element from click target
+                const button = (e.target as HTMLElement).closest('[data-remove-option]');
+                if (button) {
+                    const option = button.getAttribute('data-remove-option');
+                    if (option) onRemove(option);
+                }
+            };
 
-    return (
-        <ul className="mb-2 flex flex-wrap border-b border-gray-800 py-2" onClick={handleClick}>
-            {selected.map((option: Option, index) => (
-                <li
-                    key={`${name}-${option}-${index}`}
-                    className="group relative mb-1 mr-1 flex items-center items-stretch whitespace-nowrap rounded rounded-full bg-primary-dark p-1 px-2 text-xs text-white">
-                    <span>{option}</span>
-                    <span
-                        title={`Remove ${option}`}
-                        data-remove-option={option}
-                        className="inset-0 flex cursor-pointer content-center items-center justify-center justify-items-center justify-items-stretch justify-self-center rounded rounded-full">
-                        <Cross1Icon className="m-auto ml-1 h-3 w-3 hover:text-semantic-error-dark" aria-label={`Remove ${option}`} />
-                    </span>
-                </li>
-            ))}
-        </ul>
-    );
-});
+            return (
+                <ul ref={ref} className="mb-2 flex max-h-[100px] flex-wrap overflow-y-auto border-b border-gray-800 py-2" onClick={handleClick}>
+                    {selected.map((option: Option, index) => (
+                        <li
+                            key={`${name}-${option}-${index}`}
+                            className="group relative mb-1 mr-1 flex items-center items-stretch whitespace-nowrap rounded rounded-full bg-gray-800 p-1 px-2 text-xs text-white">
+                            <span>{option}</span>
+                            <span
+                                title={`Remove ${option}`}
+                                data-remove-option={option}
+                                className="absolute inset-0 m-auto flex hidden w-full cursor-pointer rounded rounded-full bg-gray-800 text-semantic-error-dark group-hover:flex">
+                                <Cross1Icon className="m-auto h-3 w-3" aria-label={`Remove ${option}`} />
+                            </span>
+                        </li>
+                    ))}
+                </ul>
+            );
+        },
+    ),
+);
 
 export const MultiComboBox: React.FC<Props> = memo(({ ...props }) => {
     const [selected, setSelected] = useState<Option[]>(props.defaultValue ? commaSeparatedStringToArray(props.defaultValue) : []);
     const [query, setQuery] = useState('');
+    const selectedItemsRef = useRef<HTMLUListElement>(null);
 
     useEffect(() => {
         setSelected(props.defaultValue ? commaSeparatedStringToArray(props.defaultValue) : []);
@@ -62,6 +68,7 @@ export const MultiComboBox: React.FC<Props> = memo(({ ...props }) => {
         (selectedOptions: Option[]) => {
             setSelected(selectedOptions);
             setQuery('');
+            selectedItemsRef.current?.scrollTo({ top: selectedItemsRef.current.scrollHeight, behavior: 'smooth' });
             props.onChange(selectedOptions);
         },
         [props.onChange],
@@ -88,8 +95,8 @@ export const MultiComboBox: React.FC<Props> = memo(({ ...props }) => {
     const unSelectedItems = useMemo(() => filteredItems?.filter((item) => !selected.includes(item)) || [], [filteredItems, selected]);
 
     return (
-        <div className="rounded rounded-lg border border-gray-800 bg-black/40 p-2">
-            <SelectedItems selected={selected} name={props.name} onRemove={handleRemove} />
+        <div className={`rounded rounded-lg border border-gray-800 bg-black/40 p-2 ${props.className}`} aria-label="tags">
+            <SelectedItems ref={selectedItemsRef} selected={selected} name={props.name} onRemove={handleRemove} />
 
             <Combobox value={selected} onChange={handleChange} multiple>
                 {({ value }) => (
@@ -100,7 +107,7 @@ export const MultiComboBox: React.FC<Props> = memo(({ ...props }) => {
                         <input type="hidden" name={props.name} value={value} />
                         <div className="dropdown relative w-full">
                             <ComboboxInput
-                                placeholder="Choose or type"
+                                placeholder="Choose or type tags"
                                 value={query}
                                 onChange={(event) => {
                                     setQuery(event.target.value);
@@ -132,7 +139,7 @@ export const MultiComboBox: React.FC<Props> = memo(({ ...props }) => {
                                                 key={`${option}-${index}`}
                                                 value={option}
                                                 className="flex items-center p-1 text-left text-white hover:bg-primary-dark/30 data-[focus]:bg-primary-dark/30">
-                                                <BookmarkFilledIcon className="mr-1 text-primary" />
+                                                {/* <BookmarkFilledIcon className="mr-1 text-primary" /> */}
                                                 {option}
                                             </ComboboxOption>
                                         ))}

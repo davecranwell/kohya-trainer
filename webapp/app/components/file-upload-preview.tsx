@@ -1,5 +1,6 @@
 import React, { useCallback, useState, useRef } from 'react';
 import clsx from 'clsx';
+import { ImageIcon } from '@radix-ui/react-icons';
 
 export type Preview = {
     url: string;
@@ -10,6 +11,8 @@ export type Preview = {
 interface FileUploadPreviewProps extends React.HTMLAttributes<HTMLDivElement> {
     acceptedImageTypes?: string[];
     acceptedTextTypes?: string[];
+    acceptedImageTypesHumanised?: string[];
+    acceptedTextTypesHumanised?: string[];
     previousImages: ImageWithMetadata[];
     maxImages: number;
     onDropped: (files: File[]) => void;
@@ -29,7 +32,9 @@ export type ImageWithMetadata = {
 
 export const FileUploadPreview: React.FC<FileUploadPreviewProps> = ({
     acceptedImageTypes = ['image/png', 'image/jpeg'],
+    acceptedImageTypesHumanised = ['png', 'jpeg'],
     acceptedTextTypes = ['text/plain'],
+    acceptedTextTypesHumanised = ['txt'],
     children,
     previousImages,
     onDropped,
@@ -114,7 +119,7 @@ export const FileUploadPreview: React.FC<FileUploadPreviewProps> = ({
     );
 
     return (
-        <div {...props}>
+        <div {...props} className="flex h-full flex-col justify-stretch overflow-hidden">
             <input
                 ref={fileInputRef}
                 type="file"
@@ -140,7 +145,7 @@ export const FileUploadPreview: React.FC<FileUploadPreviewProps> = ({
                     setDragMessage('');
                 }}
                 className={clsx(
-                    `rounded border-2 border-dashed`,
+                    `flex flex-1 cursor-pointer flex-col rounded border-2 border-dashed p-8`,
                     isDraggedOver && isInvalidDrag && 'border-semantic-error',
                     isDraggedOver && !isInvalidDrag && 'border-semantic-success',
                     !isDraggedOver && 'border-gray-800',
@@ -148,13 +153,29 @@ export const FileUploadPreview: React.FC<FileUploadPreviewProps> = ({
                 onClick={(e) => {
                     e.target === dragDropRef.current && fileInputRef.current?.click();
                 }}>
-                <label htmlFor="file-upload-input" className="block cursor-pointer p-4">
-                    {dragMessage ||
-                        `Drag and drop ${[...acceptedImageTypes, ...acceptedTextTypes].map((type) => `*.${type.split(',')}`).join(', ')} files here or click here to
-                    select from your computer. Any *.txt files which match the filename of an image (minus the extension) will be used to tag that image.`}
-                </label>
+                {children ? (
+                    <label htmlFor="file-upload-input" className="block flex cursor-pointer items-center justify-center text-sm text-gray-600">
+                        <ImageIcon className="mr-4 h-6 w-6 text-gray-700" />
+                        {dragMessage ||
+                            `Drag and drop ${[...acceptedImageTypesHumanised, ...acceptedTextTypesHumanised].map((type) => `*.${type.split(',')}`).join(', ')} files here, or click, to
+                    select from your computer. Any *.txt files matching the filename of an image (minus the extension) will be used to tag that image.`}
+                    </label>
+                ) : (
+                    <div className="pointer-events-none flex max-w-3xl flex-1 cursor-pointer flex-col items-center justify-center space-y-6 self-center text-center">
+                        <h2 className="text-xl text-white">Upload images to train your Lora</h2>
+                        <p>
+                            Drag and drop
+                            {[...acceptedImageTypesHumanised, ...acceptedTextTypesHumanised]
+                                .map((type) => `*.${type.split(',')}`)
 
-                <div className="p-4">{children}</div>
+                                .join(', ')}
+                            files here, or click, to select from your computer. Any *.txt files matching the filename of an image (minus the
+                            extension) will be used to tag that image.
+                        </p>
+                        <ImageIcon className="h-[40px] w-[40px] text-gray-700" />
+                    </div>
+                )}
+                {children && <div className="flex-1 pt-4">{children}</div>}
             </div>
         </div>
     );

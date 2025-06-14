@@ -3,11 +3,11 @@ import { Slot } from '@radix-ui/react-slot';
 import { cva, type VariantProps } from 'class-variance-authority';
 import { clsx } from 'clsx';
 
-const buttonVariants = cva('inline-flex items-center justify-center rounded-lg transition-all duration-300', {
+const buttonVariants = cva('inline-flex items-center justify-center rounded-lg transition-all duration-300 truncate', {
     variants: {
         variant: {
             default: 'bg-primary hover:bg-primary-dark text-white',
-            secondary: 'bg-accent1 hover:bg-accent1-dark text-white',
+            secondary: 'bg-accent1 hover:bg-accent1-dark text-gray-900',
             tertiary: 'bg-accent2 hover:bg-accent2-dark text-white',
             ghost: 'border border-stroke bg-black/40 text-gray-300 backdrop-blur-sm hover:bg-accent1-dark/60',
             success: 'bg-semantic-success hover:bg-semantic-success-dark text-white',

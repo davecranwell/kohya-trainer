@@ -15,6 +15,7 @@ import { TooltipProvider } from '~/components/tooltip';
 import { Toaster } from '~/components/toaster';
 
 import './tailwind.css';
+import { HelpProvider } from './util/help.provider';
 
 export const links: LinksFunction = () => [
     { rel: 'preconnect', href: 'https://fonts.googleapis.com' },
@@ -50,9 +51,11 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 <Meta />
                 <Links />
             </head>
-            <body className="min-h-screen overflow-hidden bg-gradient-to-br from-gray-950 via-gray-900 to-slate-900 text-gray-400">
+            <body className="bg-gradient-to-br from-gray-950 via-gray-900 to-slate-900 text-gray-400 sm:min-h-screen sm:overflow-hidden">
                 <TooltipProvider delayDuration={100} skipDelayDuration={500}>
-                    <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+                    <QueryClientProvider client={queryClient}>
+                        <HelpProvider>{children}</HelpProvider>
+                    </QueryClientProvider>
                 </TooltipProvider>
                 <ScrollRestoration nonce={nonce} />
                 <Scripts nonce={nonce} />

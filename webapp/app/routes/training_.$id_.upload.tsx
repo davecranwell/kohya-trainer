@@ -1,29 +1,28 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
-import { Form, useLoaderData, data, Link } from 'react-router';
-import type { LoaderFunctionArgs } from 'react-router';
+import { useState } from 'react';
+import { useLoaderData, data } from 'react-router';
+import type { ActionFunctionArgs, LoaderFunctionArgs } from 'react-router';
 import { toast } from 'sonner';
 import { createId } from '@paralleldrive/cuid2';
-import { List, CellMeasurer, CellMeasurerCache, AutoSizer } from 'react-virtualized';
-import { useHydrated } from 'remix-utils/use-hydrated';
 
 import prisma from '#/prisma/db.server';
 
 import { requireUserWithPermission } from '~/services/permissions.server';
 
-import { sanitiseTagArray, sanitiseTagString, getThumbnailUrl } from '~/util/misc';
+import { sanitiseTagString } from '~/util/misc';
 
 import { FileUploadPreview, ImageWithMetadata } from '~/components/file-upload-preview';
-import { Button } from '~/components/button';
-import { ImagePreview } from '~/components/image-preview';
-import { Label } from '~/components/forms/label';
-import { MultiComboBox } from '~/components/forms/multi-combo-box';
 import { Panel } from '~/components/panel';
+import { ImageTaggingList } from '~/components/image-tagging-list';
 
 const MAX_IMAGES = 200;
 const ACCEPTED_IMAGE_TYPES = ['image/png', 'image/jpeg'];
 const ACCEPTED_TEXT_TYPES = ['text/plain'];
 
 type FileWithId = File & { id: string };
+
+export async function action({ request, params }: ActionFunctionArgs) {
+    return null;
+}
 
 export async function loader({ params, request }: LoaderFunctionArgs) {
     const userId = await requireUserWithPermission(request, 'create:training:own');
@@ -48,28 +47,17 @@ export async function loader({ params, request }: LoaderFunctionArgs) {
         where: { trainingId: params.id },
     });
 
-    const imageGroups = await prisma.imageGroup.findMany({
-        where: { trainingId: params.id },
-    });
-
     return {
         thumbnailBucketUrl: `https://${process.env.AWS_S3_THUMBNAILS_BUCKET_NAME!}.s3.us-east-1.amazonaws.com/`,
         userId,
         images: images.map((image) => ({ ...image, filenameNoExtension: image.name.split('.').slice(0, -1).join('.') })),
         training,
-        imageGroups,
     };
 }
 
 export default function ImageUpload() {
-    const { userId, images, training, thumbnailBucketUrl, imageGroups } = useLoaderData<typeof loader>();
+    const { images, training, thumbnailBucketUrl } = useLoaderData<typeof loader>();
     const [uploadedImages, setUploadedImages] = useState<ImageWithMetadata[]>(images as ImageWithMetadata[]);
-    const [uploadProgress, setUploadProgress] = useState<Record<string, number>>({});
-    const [allTags, setAllTags] = useState<string[]>(sanitiseTagArray(images.map((image) => (image.text || '').split(',')).flat()));
-    const [showUntaggedOnly, setShowUntaggedOnly] = useState(false);
-    const [selectedTag, setSelectedTag] = useState<string>('');
-    const [negateTag, setNegateTag] = useState(false);
-    const isHydrated = useHydrated();
 
     // updated images are those that have been given tags by the upload of a text file
     // new images are those that have been uploaded brand new
@@ -185,286 +173,22 @@ export default function ImageUpload() {
         }
     };
 
-    const updateImageTags = async (imageId: string, tags: string[]): Promise<[string[], boolean]> => {
-        const sanitisedTags = sanitiseTagArray(tags);
-
-        const updateTextResponse = await fetch(`/api/trainingimage/${training.id}`, {
-            method: 'PATCH',
-            body: JSON.stringify({ id: imageId, text: sanitisedTags.join(',') }),
-        });
-
-        if (updateTextResponse.ok) {
-            const updatedImage = uploadedImages.find((image) => image.id === imageId);
-            if (updatedImage) {
-                updatedImage.text = sanitisedTags.join(',');
-            }
-
-            setUploadedImages(uploadedImages);
-        }
-
-        return [sanitisedTags, updateTextResponse.ok];
-    };
-
-    const handleTagChange = async (tags: string[], imageId: string) => {
-        const [sanitisedTags, updatedOk] = await updateImageTags(imageId, tags);
-
-        if (updatedOk) {
-            setAllTags(sanitiseTagArray([...allTags, ...sanitisedTags]));
-        }
-    };
-
-    // TODO: Removing the last instance of a tag does reset the dropdown but doesn't reset the query, fix this
-    const handleTagRemove = async (tags: string[], removedTag: string, imageId: string) => {
-        const [sanitisedTags, updatedOk] = await updateImageTags(imageId, tags);
-
-        if (updatedOk) {
-            if (uploadedImages.filter((image) => image.id !== imageId).every((image) => !image.text?.includes(removedTag))) {
-                setAllTags([...tags.filter((tag) => tag !== removedTag), ...sanitisedTags]);
-            }
-        }
-    };
-
-    const filteredImages = useMemo(
-        () =>
-            uploadedImages.filter((image) => {
-                if (showUntaggedOnly) {
-                    return !image.text || image.text.trim() === '';
-                }
-
-                if (selectedTag) {
-                    const imageTags = (image.text || '').split(',').map((t) => t.trim());
-                    const hasTag = imageTags.includes(selectedTag);
-                    return negateTag ? !hasTag : hasTag;
-                }
-
-                return true;
-            }),
-        [showUntaggedOnly, selectedTag, negateTag, uploadedImages],
-    );
-
-    // Create a cache for cell measurements
-    const cache = new CellMeasurerCache({
-        fixedWidth: true,
-        defaultHeight: 200,
-        minHeight: 100,
-    });
-
-    // Reset cache when filtered images change
-    useEffect(() => {
-        cache.clearAll();
-    }, [filteredImages]);
-
-    // Memoized row renderer
-    const rowRenderer = useCallback(
-        ({ key, index, parent, style }: any) => {
-            const image = filteredImages[index];
-
-            return (
-                <CellMeasurer cache={cache} columnIndex={0} key={key} parent={parent} rowIndex={index}>
-                    {({ registerChild }: { registerChild: (node: HTMLElement) => void }) => (
-                        <div ref={registerChild as any} style={style}>
-                            <li className="mb-4 flex flex-row gap-6 rounded-xl border border-gray-800 bg-gray-900 p-6">
-                                <ImagePreview
-                                    url={`${image.url?.startsWith('blob') ? image.url : getThumbnailUrl(thumbnailBucketUrl, image.url, 200)}`}
-                                    id={image.id}
-                                    width={200}
-                                />
-
-                                <div className="ml-2 flex-1">
-                                    <div>Tags</div>
-                                    <MultiComboBox
-                                        name={`${image.id}-tags`}
-                                        defaultValue={image.text}
-                                        options={allTags}
-                                        onChange={(tags) => {
-                                            handleTagChange(tags, image.id!);
-                                        }}
-                                        onRemove={(allTags, removedTag) => {
-                                            handleTagRemove(allTags, removedTag, image.id!);
-                                        }}
-                                    />
-                                </div>
-                            </li>
-                        </div>
-                    )}
-                </CellMeasurer>
-            );
-        },
-        [filteredImages, thumbnailBucketUrl, allTags, handleTagChange, cache],
-    );
-
     return (
-        <Panel heading="Original images">
-            <div className="flex flex-row gap-8">
-                <div className="flex-1 basis-3/5">
-                    <FileUploadPreview
-                        key={`${training.id}-preview`}
-                        acceptedImageTypes={ACCEPTED_IMAGE_TYPES}
-                        acceptedTextTypes={ACCEPTED_TEXT_TYPES}
-                        previousImages={uploadedImages}
-                        maxImages={MAX_IMAGES}
-                        onDropped={handleNewFile}
-                        className="mb-4">
-                        {uploadedImages.length > 0 && (
-                            <div>
-                                <div className="mt-4 flex items-center gap-4 border-b border-gray-800 pb-4">
-                                    <h2 className="text-2xl font-medium text-white">Filters</h2>
-                                    <div className="flex items-center gap-2">
-                                        <input
-                                            type="checkbox"
-                                            id="untagged-filter"
-                                            checked={showUntaggedOnly}
-                                            onChange={(e) => setShowUntaggedOnly(e.target.checked)}
-                                            className="h-4 w-4 rounded border-gray-300 bg-gray-700 text-blue-600"
-                                        />
-                                        <label htmlFor="untagged-filter" className="text-sm text-gray-200">
-                                            Untagged images
-                                        </label>
-                                    </div>
-
-                                    <div className="flex items-center gap-2">
-                                        <select
-                                            value={selectedTag}
-                                            onChange={(e) => setSelectedTag(e.target.value)}
-                                            className="rounded bg-gray-700 px-2 py-1 text-sm text-gray-200">
-                                            <option value="">Filter by tag...</option>
-                                            {allTags
-                                                .sort()
-                                                .filter((tag) => tag.length)
-                                                .map((tag) => (
-                                                    <option key={tag} value={tag}>
-                                                        {tag}
-                                                    </option>
-                                                ))}
-                                        </select>
-
-                                        {selectedTag && (
-                                            <div className="flex items-center gap-2">
-                                                <input
-                                                    type="checkbox"
-                                                    id="negate-tag"
-                                                    checked={negateTag}
-                                                    onChange={(e) => setNegateTag(e.target.checked)}
-                                                    className="h-4 w-4 rounded border-gray-300 bg-gray-700 text-blue-600"
-                                                />
-                                                <label htmlFor="negate-tag" className="text-sm text-gray-200">
-                                                    Exclude this tag
-                                                </label>
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-
-                                <div className="mt-4 h-[calc(100vh-250px)]">
-                                    {isHydrated && (
-                                        <AutoSizer>
-                                            {({ width, height }) => (
-                                                <List
-                                                    width={width}
-                                                    height={height}
-                                                    deferredMeasurementCache={cache}
-                                                    rowHeight={cache.rowHeight}
-                                                    rowRenderer={rowRenderer}
-                                                    rowCount={filteredImages.length}
-                                                    overscanRowCount={3}
-                                                />
-                                            )}
-                                        </AutoSizer>
-                                    )}
-                                </div>
-                            </div>
-                        )}
-                    </FileUploadPreview>
-                </div>
-
-                <div className="flex-1 basis-2/5">
-                    {imageGroups.length > 0 && (
-                        <div>
-                            <h3 className="text-lg font-bold tracking-tight text-white">Image groups</h3>
-                            <ul className="list-disc space-y-4 pl-4 text-sm leading-6 marker:text-accent1">
-                                {imageGroups.map((group) => (
-                                    <li key={group.id}>
-                                        <Link to={`/training/${training.id}/imagegroup/${group.id}`}>{group.name}</Link>
-                                    </li>
-                                ))}
-                            </ul>
-                        </div>
-                    )}
-
-                    <Form action={`/training/${training.id}/createimagegroup`} method="post">
-                        <Button variant="secondary" size="lg" className="mb-4">
-                            Create new image group
-                        </Button>
-                    </Form>
-
-                    <h3 className="text-lg font-bold tracking-tight text-white">Tagging tips</h3>
-
-                    <ul className="list-disc space-y-4 pl-4 text-sm leading-6 marker:text-accent1">
-                        <li>
-                            Tags should be <strong className="text-accent1">one or two words</strong>, not phrases and should usually only be things
-                            that are <strong className="text-accent1">visible in the image</strong>, except where they identify overall qualities of
-                            the image. Tagging things that can't be seen will confuse the model.
-                        </li>
-                        <li>
-                            Tag things you <strong className="text-accent1">would want to change when generating images from your Lora</strong>. Don't
-                            tag things you want to be fixed. e.g If images are of yourself, and you have brown hair, tagging the hair as "brunette" or
-                            "brown" can indicate this is a changeable property. If brown hair should never change, don't tag it.
-                        </li>
-                        <li>
-                            Avoid <strong className="text-accent1">ambiguous or non-specific tags</strong>. e.g "person", "picture", "image", "light"
-                            which could apply to many things
-                        </li>
-                        <li>
-                            Avoid too many tags about <strong className="text-accent1">background/secondary details</strong>.
-                        </li>
-                        <li>
-                            <strong className="text-accent1">Be consistent in the language you use</strong>. If you tag an object as "rusted" in one
-                            image don't tag it as "corroded" in another
-                        </li>
-                        <li>
-                            Try to ensure your tags include <strong className="text-accent1">common details</strong>, such as:
-                            <ul className="marker:text-grey-800 mt-4 list-disc space-y-4 pl-8">
-                                <li>
-                                    The <strong className="text-accent1">quality and type</strong> of the image e.g{' '}
-                                    <code className="font-mono text-accent2">professional</code>,{' '}
-                                    <code className="font-mono text-accent2">amateur</code>, etc
-                                </li>
-                                <li>
-                                    Details <strong className="text-accent1">about the medium</strong> e.g{' '}
-                                    <code className="font-mono text-accent2">canon</code>, <code className="font-mono text-accent2">f1.8</code>, or
-                                    style of art <code className="font-mono text-accent2">cell-shading</code>,{' '}
-                                    <code className="font-mono text-accent2">chiaroscuro</code>,
-                                </li>
-                                <li>
-                                    <strong className="text-accent1">The setting or background of the image</strong> e.g{' '}
-                                    <code className="font-mono text-accent2">sunset</code>, <code className="font-mono text-accent2">office</code>,{' '}
-                                    <code className="font-mono text-accent2">beach</code>, <code className="font-mono text-accent2">city</code>
-                                </li>
-                                <li>
-                                    Types of <strong className="text-accent1">clothing, or surface details</strong> e.g{' '}
-                                    <code className="font-mono text-accent2">t-shirt</code>, <code className="font-mono text-accent2">hoodie</code>,{' '}
-                                    <code className="font-mono text-accent2">tattoos</code>, <code className="font-mono text-accent2">rusted</code>,{' '}
-                                    <code className="font-mono text-accent2">scratched</code>
-                                </li>
-                                <li>
-                                    <strong className="text-accent1">Lighting styles</strong> e.g{' '}
-                                    <code className="font-mono text-accent2">soft lighting</code>,{' '}
-                                    <code className="font-mono text-accent2">hard lighting</code> (nb: "soft" or "hard" would be too ambiguous)
-                                </li>
-                                <li>
-                                    Any <strong className="text-accent1">relevant actions</strong> e.g{' '}
-                                    <code className="font-mono text-accent2">sitting</code>, <code className="font-mono text-accent2">painting</code>,{' '}
-                                    <code className="font-mono text-accent2">driving</code>, <code className="font-mono text-accent2">waving</code>
-                                </li>
-                            </ul>
-                        </li>
-                        <li>
-                            But remember: if these details are things you would <strong>not</strong> want to be optional or modified during image
-                            generation, consider not tagging them.
-                        </li>
-                    </ul>
-                </div>
-            </div>
+        <Panel heading="Original images" scrollable={false} className="h-full" bodyClassName="h-full content-stretch grow">
+            <FileUploadPreview
+                key={`${training.id}-preview`}
+                acceptedImageTypes={ACCEPTED_IMAGE_TYPES}
+                acceptedTextTypes={ACCEPTED_TEXT_TYPES}
+                previousImages={uploadedImages}
+                maxImages={MAX_IMAGES}
+                onDropped={handleNewFile}>
+                <ImageTaggingList
+                    images={uploadedImages}
+                    training={training}
+                    onImageTagsUpdated={setUploadedImages}
+                    thumbnailBucketUrl={thumbnailBucketUrl}
+                />
+            </FileUploadPreview>
         </Panel>
     );
 }
