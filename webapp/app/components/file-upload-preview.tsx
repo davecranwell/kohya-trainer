@@ -28,6 +28,7 @@ export type ImageWithMetadata = {
     type: string;
     url?: string;
     updatedAt?: Date;
+    isIncludedInGroup?: boolean;
 };
 
 export const FileUploadPreview: React.FC<FileUploadPreviewProps> = ({

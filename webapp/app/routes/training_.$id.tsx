@@ -17,6 +17,8 @@ import { Button } from '~/components/button';
 
 export { action } from '~/routes/training-editor.server';
 
+export const shouldRevalidate = () => false;
+
 export async function loader({ request, params }: LoaderFunctionArgs) {
     const userId = await requireUserWithPermission(request, 'create:training:own');
 
@@ -64,6 +66,7 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
         }
     }
 
+    console.log('here');
     return { training, baseModels: ourBaseModels, imageGroups };
 }
 

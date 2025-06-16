@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useLoaderData, data } from 'react-router';
 import type { ActionFunctionArgs, LoaderFunctionArgs } from 'react-router';
 import { toast } from 'sonner';
@@ -8,11 +8,13 @@ import prisma from '#/prisma/db.server';
 
 import { requireUserWithPermission } from '~/services/permissions.server';
 
-import { sanitiseTagString } from '~/util/misc';
+import { getThumbnailUrl, sanitiseTagString } from '~/util/misc';
 
 import { FileUploadPreview, ImageWithMetadata } from '~/components/file-upload-preview';
 import { Panel } from '~/components/panel';
 import { ImageTaggingList } from '~/components/image-tagging-list';
+import { ImagePreview } from '~/components/image-preview';
+import { MultiComboBox } from '~/components/forms/multi-combo-box';
 
 const MAX_IMAGES = 200;
 const ACCEPTED_IMAGE_TYPES = ['image/png', 'image/jpeg'];
@@ -58,6 +60,11 @@ export async function loader({ params, request }: LoaderFunctionArgs) {
 export default function ImageUpload() {
     const { images, training, thumbnailBucketUrl } = useLoaderData<typeof loader>();
     const [uploadedImages, setUploadedImages] = useState<ImageWithMetadata[]>(images as ImageWithMetadata[]);
+    const listRef = useRef<HTMLDivElement>(null);
+    const [windowWidth, setWindowWidth] = useState(0);
+    const [cols, setCols] = useState(3);
+
+    console.log('test');
 
     // updated images are those that have been given tags by the upload of a text file
     // new images are those that have been uploaded brand new
@@ -173,6 +180,15 @@ export default function ImageUpload() {
         }
     };
 
+    useEffect(() => {
+        const detectedWidth = listRef?.current?.clientWidth;
+
+        if (detectedWidth) {
+            setWindowWidth(detectedWidth || 0);
+            setCols(Math.max(Math.floor(detectedWidth / 500), 1));
+        }
+    }, []);
+
     return (
         <Panel heading="Original images" scrollable={false} className="h-full" bodyClassName="h-full content-stretch grow">
             <FileUploadPreview
@@ -183,12 +199,78 @@ export default function ImageUpload() {
                 maxImages={MAX_IMAGES}
                 onDropped={handleNewFile}>
                 <ImageTaggingList
+                    ref={listRef}
                     images={uploadedImages}
-                    training={training}
-                    onImageTagsUpdated={setUploadedImages}
+                    cols={cols}
+                    imageWidth={Math.min(Math.ceil(windowWidth / cols), 500)}
+                    windowWidth={windowWidth}
+                    onImageTagsUpdated={async (imageId, sanitisedTags) => {
+                        const updateTextResponse = await fetch(`/api/trainingimage/${training.id}`, {
+                            method: 'PATCH',
+                            body: JSON.stringify({ id: imageId, text: sanitisedTags.join(',') }),
+                        });
+
+                        if (updateTextResponse.ok) {
+                            const updatedImage = images.find((image) => image.id === imageId);
+                            if (updatedImage) {
+                                updatedImage.text = sanitisedTags.join(',');
+                            }
+
+                            setUploadedImages(images);
+                        }
+
+                        return updateTextResponse.ok;
+                    }}
                     thumbnailBucketUrl={thumbnailBucketUrl}
+                    RenderImage={({ image, handleTagChange, handleTagRemove, allTags }) => (
+                        <TaggableImage
+                            image={image}
+                            handleTagChange={handleTagChange}
+                            handleTagRemove={handleTagRemove}
+                            allTags={allTags}
+                            thumbnailBucketUrl={thumbnailBucketUrl}
+                        />
+                    )}
                 />
             </FileUploadPreview>
         </Panel>
     );
 }
+
+const TaggableImage = ({
+    image,
+    handleTagChange,
+    handleTagRemove,
+    allTags,
+    thumbnailBucketUrl,
+}: {
+    image: ImageWithMetadata;
+    handleTagChange: (tags: string[], imageId: string) => void;
+    handleTagRemove: (tags: string[], removedTag: string, imageId: string) => void;
+    allTags: string[];
+    thumbnailBucketUrl: string;
+}) => (
+    <div className="relative flex h-[200px] w-[500px] flex-row">
+        {image.url && (
+            <ImagePreview
+                url={`${image.url?.startsWith('blob') ? image.url : getThumbnailUrl(thumbnailBucketUrl, image.url, 200)}`}
+                id={image.id}
+                width={200}
+            />
+        )}
+
+        <div className="ml-2 flex-1">
+            <MultiComboBox
+                name={`${image.id}-tags`}
+                defaultValue={image.text}
+                options={allTags}
+                onChange={(tags) => {
+                    handleTagChange(tags, image.id!);
+                }}
+                onRemove={(allTags, removedTag) => {
+                    handleTagRemove(allTags, removedTag, image.id!);
+                }}
+            />
+        </div>
+    </div>
+);

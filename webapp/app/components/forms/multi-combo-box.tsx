@@ -112,9 +112,9 @@ export const MultiComboBox: React.FC<Props> = memo(({ ...props }) => {
                                 onChange={(event) => {
                                     setQuery(event.target.value);
                                 }}
-                                className="block w-full rounded-md border-0 bg-transparent py-1.5 text-white focus:ring-primary"
+                                className="block w-full rounded-md border-0 bg-transparent p-2 py-1.5 text-white focus:ring-primary"
                             />
-                            <ComboboxButton className="absolute inset-y-0 right-0 z-0 flex w-8 items-center justify-center">
+                            <ComboboxButton className="absolute inset-y-0 right-0 z-0 flex w-10 items-center justify-center">
                                 <ChevronDownIcon className="text-gray-500" />
                             </ComboboxButton>
 

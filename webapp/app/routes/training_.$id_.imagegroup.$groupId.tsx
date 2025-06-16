@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo, useRef, useLayoutEffect } from 'react';
 import { Form, useLoaderData, useFetcher } from 'react-router';
-import type { ActionFunctionArgs, LoaderFunctionArgs } from 'react-router';
+import type { ActionFunctionArgs, FetcherWithComponents, LoaderFunctionArgs } from 'react-router';
 import { data } from 'react-router';
 import { CellMeasurer, CellMeasurerCache, AutoSizer, createMasonryCellPositioner, Masonry } from 'react-virtualized';
 import { useHydrated } from 'remix-utils/use-hydrated';
@@ -18,8 +18,9 @@ import { getThumbnailUrl } from '~/util/misc';
 import { Button } from '~/components/button';
 import { Tooltip, TooltipTrigger, TooltipContent } from '~/components/tooltip';
 import { Panel } from '~/components/panel';
-
-const cellSize = 400;
+import { ImageTaggingList } from '~/components/image-tagging-list';
+import { ImagePreview } from '~/components/image-preview';
+import { ImageWithMetadata } from '~/components/file-upload-preview';
 
 type CropPercentage = {
     x: number;
@@ -80,6 +81,8 @@ export async function action({ params, request }: ActionFunctionArgs) {
     };
 }
 
+export const shouldRevalidate = () => false;
+
 export async function loader({ params, request }: LoaderFunctionArgs) {
     const userId = await requireUserWithPermission(request, 'create:training:own');
 
@@ -138,31 +141,84 @@ export async function loader({ params, request }: LoaderFunctionArgs) {
     };
 }
 
-const cache = new CellMeasurerCache({
-    defaultHeight: cellSize,
-    defaultWidth: cellSize,
-    fixedWidth: true,
-    fixedHeight: true,
-});
-
-const cellPositioner = createMasonryCellPositioner({
-    cellMeasurerCache: cache,
-    columnCount: 2,
-    columnWidth: cellSize,
-    spacer: 10,
-});
-
 export default function ImageUpload() {
     const fetcher = useFetcher();
+    const listRef = useRef<HTMLDivElement>(null);
     const { images, training, thumbnailBucketUrl, group, groupImageHashmap } = useLoaderData<typeof loader>();
-    const isHydrated = useHydrated();
-    const [crop, setCrop] = useState<Record<string, { x: number; y: number }>>(
-        images.reduce((acc, image) => ({ ...acc, [image.id]: { x: 0, y: 0 } }), {}),
+    const [windowWidth, setWindowWidth] = useState(0);
+    const [cols, setCols] = useState(3);
+
+    useEffect(() => {
+        const detectedWidth = listRef?.current?.clientWidth;
+
+        if (detectedWidth) {
+            setWindowWidth(detectedWidth || 0);
+            setCols(Math.max(Math.floor(detectedWidth / 500), 1));
+        }
+    }, []);
+
+    return (
+        <Panel heading={group.name} className="h-full" bodyClassName="h-full content-stretch grow">
+            <fetcher.Form
+                action={`/training/${training.id}/imagegroup/${group.id}`}
+                key={`${training.id}-${group.id}`}
+                id={training.id}
+                method="post"
+                className="relative flex h-full grow flex-col content-stretch">
+                <div className="flex flex-row gap-4">
+                    <Button type="submit" className="mb-4" name="includeall" value="true">
+                        Include all original images in group
+                    </Button>
+                    <Button type="submit" className="mb-4" name="excludeall" value="true">
+                        Exclude all original images from group
+                    </Button>
+                    <Button type="submit" className="mb-4" name="run" value="true">
+                        Run training on this group
+                    </Button>
+
+                    <p>Use ⌘ + scroll (or ctrl + scroll), or two fingers, to zoom images</p>
+                </div>
+                <div className="w-full flex-1 overflow-hidden" ref={listRef}>
+                    {windowWidth > 0 && (
+                        <ImageTaggingList
+                            ref={listRef}
+                            images={images}
+                            windowWidth={windowWidth}
+                            cols={cols}
+                            imageWidth={Math.min(Math.ceil(windowWidth / cols), 500)}
+                            thumbnailBucketUrl={thumbnailBucketUrl}
+                            onImageTagsUpdated={async (imageId, sanitisedTags) => {
+                                return true;
+                            }}
+                            RenderImage={(props) => (
+                                <TaggableImage
+                                    {...props}
+                                    groupImage={groupImageHashmap[props.image.id!]}
+                                    fetcher={fetcher}
+                                    thumbnailBucketUrl={thumbnailBucketUrl}
+                                />
+                            )}
+                        />
+                    )}
+                </div>
+            </fetcher.Form>
+        </Panel>
     );
-    const [zoom, setZoom] = useState<Record<string, number>>(images.reduce((acc, image) => ({ ...acc, [image.id]: 1 }), {}));
-    const [finalCrops, setFinalCrops] = useState<Record<string, { x: number; y: number; width: number; height: number }>>(
-        images.reduce((acc, image) => ({ ...acc, [image.id]: { x: 0, y: 0, width: 0, height: 0 } }), {}),
-    );
+}
+
+const TaggableImage = ({
+    image,
+    thumbnailBucketUrl,
+    fetcher,
+    groupImage,
+}: {
+    image: ImageWithMetadata;
+    thumbnailBucketUrl: string;
+    fetcher: FetcherWithComponents<any>;
+    groupImage: { x: number; y: number; width: number; height: number };
+}) => {
+    const [crop, setCrop] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+    const [zoom, setZoom] = useState<number>(1);
 
     const onWheelRequest = (e: any) => {
         if (e.ctrlKey || e.metaKey) {
@@ -179,113 +235,51 @@ export default function ImageUpload() {
     };
 
     const debouncedSetFinalCrop = useDebouncedCallback((cropPerc: CropPercentage, imageId: string) => {
-        fetcher.submit({ setcrop: JSON.stringify(cropPerc), imageid: imageId }, { action: '', method: 'post' });
+        fetcher.submit({ setcrop: JSON.stringify(cropPerc), imageid: imageId }, { action: fetcher.formAction, method: 'post' });
     }, 500);
 
-    const cellRenderer = useCallback(
-        ({ index, key, parent, style }: any) => {
-            const image = images[index];
-            const isIncludedInGroup = image.isIncludedInGroup;
+    if (!image.id) {
+        return null;
+    }
 
-            const groupImage = groupImageHashmap[image.id] || {};
-
-            return (
-                //className="relative mb-4 h-[400px] w-[400px] overflow-hidden rounded-xl border border-gray-800 bg-gray-900"
-                <CellMeasurer cache={cache} index={index} key={key} parent={parent}>
-                    <div style={style} className="relative h-[400px] w-[400px] overflow-hidden rounded-xl border border-gray-800 bg-gray-900">
-                        <div className="absolute right-1 top-1 z-10">
-                            {isIncludedInGroup ? (
-                                <Tooltip>
-                                    <TooltipTrigger asChild>
-                                        <Button name={`exclude`} value={image.id} variant="ghost" size="icon">
-                                            <Cross1Icon className="h-4 w-4 text-white" />
-                                        </Button>
-                                    </TooltipTrigger>
-                                    <TooltipContent side="left" data-size="small">
-                                        Remove from group
-                                    </TooltipContent>
-                                </Tooltip>
-                            ) : (
-                                <Tooltip>
-                                    <TooltipTrigger asChild>
-                                        <Button name={`include`} value={image.id} variant="ghost" size="icon">
-                                            <CheckIcon className="h-4 w-4 text-white" />
-                                        </Button>
-                                    </TooltipTrigger>
-                                    <TooltipContent side="left" data-size="small">
-                                        Include in group
-                                    </TooltipContent>
-                                </Tooltip>
-                            )}
-                        </div>
-                        <div
-                            data-included={isIncludedInGroup ? 'true' : 'false'}
-                            className="data-[included=false]:opacity-10 data-[included=true]:opacity-100">
-                            <Cropper
-                                key={image.id}
-                                image={getThumbnailUrl(thumbnailBucketUrl, image.url, 600)}
-                                showGrid={false}
-                                zoomSpeed={0.1}
-                                crop={crop[image.id]}
-                                objectFit="vertical-cover"
-                                zoom={zoom[image.id]}
-                                style={{ cropAreaStyle: { color: 'rgba(0, 0, 0, 0.8)', borderRadius: '10px' } }}
-                                aspect={1 / 1}
-                                initialCroppedAreaPercentages={
-                                    groupImage.width
-                                        ? { width: groupImage.width, height: groupImage.height, x: groupImage.x, y: groupImage.y }
-                                        : undefined
-                                }
-                                onCropComplete={(cropPerc) => isIncludedInGroup && debouncedSetFinalCrop(cropPerc, image.id)}
-                                onCropChange={(crop) => setCrop((prev) => ({ ...prev, [image.id]: crop }))}
-                                onZoomChange={(zoom) => setZoom((prev) => ({ ...prev, [image.id]: zoom }))}
-                                onWheelRequest={onWheelRequest}
-                                onTouchRequest={onTouchRequest}
-                            />
-                        </div>
-                    </div>
-                </CellMeasurer>
-            );
-        },
-        [images, crop, zoom, isHydrated],
-    );
+    const isIncludedInGroup = image.isIncludedInGroup;
 
     return (
-        <Panel heading={group.name}>
-            <fetcher.Form key={`${training.id}-${group.id}`} id={training.id} method="post" className="relative">
-                <Button type="submit" className="mb-4" name="includeall" value="true">
-                    Include all original images in group
-                </Button>
-                <Button type="submit" className="mb-4" name="excludeall" value="true">
-                    Exclude all original images from group
-                </Button>
-                <Button type="submit" className="mb-4" name="run" value="true">
-                    Run training on this group
-                </Button>
-
-                <p>Use ⌘ + scroll (or ctrl + scroll), or two fingers, to zoom images</p>
-                <div className="flex flex-row gap-8">
-                    <div className="flex-1 basis-3/5">
-                        <div className="mt-4 h-[calc(100vh-250px)]">
-                            {isHydrated && (
-                                <AutoSizer>
-                                    {({ width, height }) => (
-                                        <Masonry
-                                            cellMeasurerCache={cache}
-                                            cellPositioner={cellPositioner}
-                                            cellRenderer={cellRenderer}
-                                            cellCount={images.length}
-                                            width={width + 100}
-                                            height={height}
-                                            autoHeight={false}
-                                        />
-                                    )}
-                                </AutoSizer>
-                            )}
-                        </div>
-                    </div>
-                </div>
-            </fetcher.Form>
-        </Panel>
+        <div className="relative h-[200px] w-[500px]">
+            <div className="absolute right-1 top-1 z-10">
+                {isIncludedInGroup ? (
+                    <Button name={`exclude`} value={image.id} variant="ghost" size="icon">
+                        <Cross1Icon className="h-4 w-4 text-white" /> Remove from group
+                    </Button>
+                ) : (
+                    <Button name={`include`} value={image.id} variant="ghost" size="icon">
+                        <CheckIcon className="h-4 w-4 text-white" /> Include in group
+                    </Button>
+                )}
+            </div>
+            <div data-included={isIncludedInGroup ? 'true' : 'false'} className="data-[included=false]:opacity-10 data-[included=true]:opacity-100">
+                <Cropper
+                    key={image.id}
+                    image={getThumbnailUrl(thumbnailBucketUrl, image.url!, 600)}
+                    showGrid={false}
+                    zoomSpeed={0.1}
+                    crop={crop}
+                    objectFit="vertical-cover"
+                    zoom={zoom}
+                    style={{ cropAreaStyle: { color: 'rgba(0, 0, 0, 0.8)', borderRadius: '10px' } }}
+                    aspect={1 / 1}
+                    initialCroppedAreaPercentages={
+                        groupImage ? { width: groupImage.width, height: groupImage.height, x: groupImage.x, y: groupImage.y } : undefined
+                    }
+                    onCropComplete={(cropPerc) => {
+                        isIncludedInGroup && debouncedSetFinalCrop(cropPerc, image.id!);
+                    }}
+                    onCropChange={(crop) => setCrop(crop)}
+                    onZoomChange={(zoom) => setZoom(zoom)}
+                    onWheelRequest={onWheelRequest}
+                    onTouchRequest={onTouchRequest}
+                />
+            </div>
+        </div>
     );
-}
+};
