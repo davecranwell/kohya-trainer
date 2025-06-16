@@ -219,6 +219,7 @@ const TaggableImage = ({
 }) => {
     const [crop, setCrop] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
     const [zoom, setZoom] = useState<number>(1);
+    const [hasInteracted, setHasInteracted] = useState(false);
 
     const onWheelRequest = (e: any) => {
         if (e.ctrlKey || e.metaKey) {
@@ -268,10 +269,20 @@ const TaggableImage = ({
                     zoom={zoom}
                     style={{ cropAreaStyle: { color: 'rgba(0, 0, 0, 0.8)', borderRadius: '10px' } }}
                     aspect={1 / 1}
+                    onInteractionStart={() => setHasInteracted(true)} // this is to prevent the initial crop from being set as the page loads and the image dimensions are 0.000000002 different!
                     initialCroppedAreaPercentages={
-                        groupImage ? { width: groupImage.width, height: groupImage.height, x: groupImage.x, y: groupImage.y } : undefined
+                        groupImage
+                            ? {
+                                  width: groupImage.width,
+                                  height: groupImage.height,
+                                  x: groupImage.x,
+                                  y: groupImage.y,
+                              }
+                            : undefined
                     }
                     onCropComplete={(cropPerc) => {
+                        if (!hasInteracted) return;
+                        console.log('crop complete', cropPerc, groupImage);
                         isIncludedInGroup && debouncedSetFinalCrop(cropPerc, image.id!);
                     }}
                     onCropChange={(crop) => setCrop(crop)}
