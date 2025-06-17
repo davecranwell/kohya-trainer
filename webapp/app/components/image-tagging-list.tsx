@@ -102,11 +102,19 @@ export const ImageTaggingList = forwardRef(
                 return (
                     <div className="flex w-1/2 flex-row pb-4 pr-4" key={`${key}-${idx}`} style={style}>
                         {images.map((image) => (
-                            <div className="align-center mr-4 flex flex-row gap-4 rounded-xl border border-gray-800 bg-gray-900 p-4" key={image.id}>
+                            <div
+                                className="align-center mr-4 flex flex-row gap-4 rounded-xl border border-gray-800 bg-gray-900 p-4"
+                                key={`${image.id}-cell`}>
                                 {/* {isScrolling ? (
                                 '...'
                             ) : ( */}
-                                <RenderImage image={image} handleTagChange={handleTagChange} handleTagRemove={handleTagRemove} allTags={allTags} />
+                                <RenderImage
+                                    isScrolling
+                                    image={image}
+                                    handleTagChange={handleTagChange}
+                                    handleTagRemove={handleTagRemove}
+                                    allTags={allTags}
+                                />
                                 {/* )} */}
                             </div>
                         ))}

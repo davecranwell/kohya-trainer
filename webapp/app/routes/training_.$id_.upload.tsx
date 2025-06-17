@@ -64,8 +64,6 @@ export default function ImageUpload() {
     const [windowWidth, setWindowWidth] = useState(0);
     const [cols, setCols] = useState(3);
 
-    console.log('test');
-
     // updated images are those that have been given tags by the upload of a text file
     // new images are those that have been uploaded brand new
     // tags are all the tags that exist cross all images, new or old

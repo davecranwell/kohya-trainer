@@ -18,6 +18,7 @@ import { getThumbnailUrl } from '~/util/misc';
 import { Button } from '~/components/button';
 import { Tooltip, TooltipTrigger, TooltipContent } from '~/components/tooltip';
 import { Panel } from '~/components/panel';
+import { MultiComboBox } from '~/components/forms/multi-combo-box';
 import { ImageTaggingList } from '~/components/image-tagging-list';
 import { ImagePreview } from '~/components/image-preview';
 import { ImageWithMetadata } from '~/components/file-upload-preview';
@@ -28,6 +29,24 @@ type CropPercentage = {
     width: number;
     height: number;
 };
+
+export const shouldRevalidate = ({
+    actionResult,
+    currentParams,
+    currentUrl,
+    defaultShouldRevalidate,
+    formAction,
+    formData,
+    formEncType,
+    formMethod,
+    nextParams,
+    nextUrl,
+}: {
+    actionResult: any;
+    currentParams: any;
+    currentUrl: any;
+    defaultShouldRevalidate: any;
+}) => !formData || (formData.get('setcrop') == undefined && formData.get('include') == undefined && formData.get('exclude') == undefined);
 
 export async function action({ params, request }: ActionFunctionArgs) {
     const userId = await requireUserWithPermission(request, 'create:training:own');
@@ -80,8 +99,6 @@ export async function action({ params, request }: ActionFunctionArgs) {
         success: true,
     };
 }
-
-export const shouldRevalidate = () => false;
 
 export async function loader({ params, request }: LoaderFunctionArgs) {
     const userId = await requireUserWithPermission(request, 'create:training:own');
@@ -159,24 +176,21 @@ export default function ImageUpload() {
 
     return (
         <Panel heading={group.name} className="h-full" bodyClassName="h-full content-stretch grow">
-            <fetcher.Form
-                action={`/training/${training.id}/imagegroup/${group.id}`}
-                key={`${training.id}-${group.id}`}
-                id={training.id}
-                method="post"
-                className="relative flex h-full grow flex-col content-stretch">
+            <div className="relative flex h-full grow flex-col content-stretch">
                 <div className="flex flex-row gap-4">
-                    <Button type="submit" className="mb-4" name="includeall" value="true">
-                        Include all original images in group
-                    </Button>
-                    <Button type="submit" className="mb-4" name="excludeall" value="true">
-                        Exclude all original images from group
-                    </Button>
-                    <Button type="submit" className="mb-4" name="run" value="true">
-                        Run training on this group
-                    </Button>
+                    <fetcher.Form action={`/training/${training.id}/imagegroup/${group.id}`} id={training.id} method="post">
+                        <Button type="submit" className="mb-4" name="includeall" value="true">
+                            Include all original images in group
+                        </Button>
+                        <Button type="submit" className="mb-4" name="excludeall" value="true">
+                            Exclude all original images from group
+                        </Button>
+                        <Button type="submit" className="mb-4" name="run" value="true">
+                            Run training on this group
+                        </Button>
 
-                    <p>Use ⌘ + scroll (or ctrl + scroll), or two fingers, to zoom images</p>
+                        <p>Use ⌘ + scroll (or ctrl + scroll), or two fingers, to zoom images</p>
+                    </fetcher.Form>
                 </div>
                 <div className="w-full flex-1 overflow-hidden" ref={listRef}>
                     {windowWidth > 0 && (
@@ -188,11 +202,26 @@ export default function ImageUpload() {
                             imageWidth={Math.min(Math.ceil(windowWidth / cols), 500)}
                             thumbnailBucketUrl={thumbnailBucketUrl}
                             onImageTagsUpdated={async (imageId, sanitisedTags) => {
-                                return true;
+                                const updateTextResponse = await fetch(`/api/trainingimage/${training.id}`, {
+                                    method: 'PATCH',
+                                    body: JSON.stringify({ id: imageId, text: sanitisedTags.join(',') }),
+                                });
+
+                                if (updateTextResponse.ok) {
+                                    const updatedImage = images.find((image) => image.id === imageId);
+                                    if (updatedImage) {
+                                        updatedImage.text = sanitisedTags.join(',');
+                                    }
+
+                                    //setImages(images);
+                                }
+
+                                return updateTextResponse.ok;
                             }}
                             RenderImage={(props) => (
                                 <TaggableImage
                                     {...props}
+                                    isScrolling
                                     groupImage={groupImageHashmap[props.image.id!]}
                                     fetcher={fetcher}
                                     thumbnailBucketUrl={thumbnailBucketUrl}
@@ -201,7 +230,7 @@ export default function ImageUpload() {
                         />
                     )}
                 </div>
-            </fetcher.Form>
+            </div>
         </Panel>
     );
 }
@@ -211,29 +240,50 @@ const TaggableImage = ({
     thumbnailBucketUrl,
     fetcher,
     groupImage,
+    allTags,
+    handleTagChange,
+    handleTagRemove,
+    isScrolling,
 }: {
     image: ImageWithMetadata;
     thumbnailBucketUrl: string;
     fetcher: FetcherWithComponents<any>;
     groupImage: { x: number; y: number; width: number; height: number };
+    allTags: string[];
+    handleTagChange: (tags: string[], imageId: string) => void;
+    handleTagRemove: (tags: string[], removedTag: string, imageId: string) => void;
+    isScrolling: boolean;
 }) => {
     const [crop, setCrop] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
     const [zoom, setZoom] = useState<number>(1);
     const [hasInteracted, setHasInteracted] = useState(false);
+    const [isIncludedInGroup, setIsIncludedInGroup] = useState(image.isIncludedInGroup);
 
-    const onWheelRequest = (e: any) => {
+    const onWheelRequest = useCallback((e: any) => {
         if (e.ctrlKey || e.metaKey) {
             return true;
         }
         return false;
-    };
+    }, []);
 
-    const onTouchRequest = (e: any) => {
+    const onTouchRequest = useCallback((e: any) => {
         if (e.touches.length > 1) {
             return true;
         }
         return false;
-    };
+    }, []);
+
+    const handleInclude = useCallback((imageId: string) => {
+        fetcher.submit({ include: imageId }, { action: fetcher.formAction, method: 'post' });
+
+        setIsIncludedInGroup(true);
+    }, []);
+
+    const handleExclude = useCallback((imageId: string) => {
+        fetcher.submit({ exclude: imageId }, { action: fetcher.formAction, method: 'post' });
+
+        setIsIncludedInGroup(false);
+    }, []);
 
     const debouncedSetFinalCrop = useDebouncedCallback((cropPerc: CropPercentage, imageId: string) => {
         fetcher.submit({ setcrop: JSON.stringify(cropPerc), imageid: imageId }, { action: fetcher.formAction, method: 'post' });
@@ -243,52 +293,65 @@ const TaggableImage = ({
         return null;
     }
 
-    const isIncludedInGroup = image.isIncludedInGroup;
+    const initialCroppedAreaPercentages =
+        isIncludedInGroup && groupImage?.x != null && groupImage?.y != null && groupImage?.width != null && groupImage?.height != null
+            ? {
+                  width: groupImage.width,
+                  height: groupImage.height,
+                  x: groupImage.x,
+                  y: groupImage.y,
+              }
+            : undefined;
 
     return (
-        <div className="relative h-[200px] w-[500px]">
+        <div className="relative flex h-[200px] w-[500px]">
             <div className="absolute right-1 top-1 z-10">
                 {isIncludedInGroup ? (
-                    <Button name={`exclude`} value={image.id} variant="ghost" size="icon">
+                    <Button name={`exclude`} value={image.id} variant="ghost" size="icon" onClick={() => handleExclude(image.id!)}>
                         <Cross1Icon className="h-4 w-4 text-white" /> Remove from group
                     </Button>
                 ) : (
-                    <Button name={`include`} value={image.id} variant="ghost" size="icon">
+                    <Button name={`include`} value={image.id} variant="ghost" size="icon" onClick={() => handleInclude(image.id!)}>
                         <CheckIcon className="h-4 w-4 text-white" /> Include in group
                     </Button>
                 )}
             </div>
-            <div data-included={isIncludedInGroup ? 'true' : 'false'} className="data-[included=false]:opacity-10 data-[included=true]:opacity-100">
+            <div
+                data-included={isIncludedInGroup ? 'true' : 'false'}
+                className="flex-0 relative h-[200px] w-[200px] data-[included=false]:opacity-10 data-[included=true]:opacity-100">
                 <Cropper
                     key={image.id}
                     image={getThumbnailUrl(thumbnailBucketUrl, image.url!, 600)}
                     showGrid={false}
                     zoomSpeed={0.1}
                     crop={crop}
-                    objectFit="vertical-cover"
+                    objectFit="cover"
                     zoom={zoom}
                     style={{ cropAreaStyle: { color: 'rgba(0, 0, 0, 0.8)', borderRadius: '10px' } }}
                     aspect={1 / 1}
                     onInteractionStart={() => setHasInteracted(true)} // this is to prevent the initial crop from being set as the page loads and the image dimensions are 0.000000002 different!
-                    initialCroppedAreaPercentages={
-                        groupImage
-                            ? {
-                                  width: groupImage.width,
-                                  height: groupImage.height,
-                                  x: groupImage.x,
-                                  y: groupImage.y,
-                              }
-                            : undefined
-                    }
+                    initialCroppedAreaPercentages={initialCroppedAreaPercentages}
                     onCropComplete={(cropPerc) => {
                         if (!hasInteracted) return;
-                        console.log('crop complete', cropPerc, groupImage);
                         isIncludedInGroup && debouncedSetFinalCrop(cropPerc, image.id!);
                     }}
-                    onCropChange={(crop) => setCrop(crop)}
-                    onZoomChange={(zoom) => setZoom(zoom)}
+                    onCropChange={setCrop}
+                    onZoomChange={setZoom}
                     onWheelRequest={onWheelRequest}
                     onTouchRequest={onTouchRequest}
+                />
+            </div>
+            <div className="ml-2 flex-1">
+                <MultiComboBox
+                    name={`${image.id}-tags`}
+                    defaultValue={image.text}
+                    options={allTags}
+                    onChange={(tags) => {
+                        handleTagChange(tags, image.id!);
+                    }}
+                    onRemove={(allTags, removedTag) => {
+                        handleTagRemove(allTags, removedTag, image.id!);
+                    }}
                 />
             </div>
         </div>
