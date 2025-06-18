@@ -38,6 +38,7 @@ export default {
                     light: '#a78bfa', // violet-400
                     DEFAULT: '#8b5cf6', // violet-500
                     dark: '#7c3aed', // violet-600
+                    superdark: '#1a0e2e', // violet-900
                 },
                 accent1: {
                     light: '#67e8f9', // cyan-300

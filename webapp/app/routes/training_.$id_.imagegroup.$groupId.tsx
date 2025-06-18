@@ -200,7 +200,7 @@ export default function ImageUpload() {
                             windowWidth={windowWidth}
                             cols={cols}
                             imageWidth={Math.min(Math.ceil(windowWidth / cols), 500)}
-                            thumbnailBucketUrl={thumbnailBucketUrl}
+                            imageHeight={500}
                             onImageTagsUpdated={async (imageId, sanitisedTags) => {
                                 const updateTextResponse = await fetch(`/api/trainingimage/${training.id}`, {
                                     method: 'PATCH',
@@ -219,7 +219,7 @@ export default function ImageUpload() {
                                 return updateTextResponse.ok;
                             }}
                             RenderImage={(props) => (
-                                <TaggableImage
+                                <Image
                                     {...props}
                                     isScrolling
                                     groupImage={groupImageHashmap[props.image.id!]}
@@ -235,7 +235,7 @@ export default function ImageUpload() {
     );
 }
 
-const TaggableImage = ({
+const Image = ({
     image,
     thumbnailBucketUrl,
     fetcher,
@@ -254,7 +254,7 @@ const TaggableImage = ({
     handleTagRemove: (tags: string[], removedTag: string, imageId: string) => void;
     isScrolling: boolean;
 }) => {
-    const [crop, setCrop] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+    const [crop, setCrop] = useState<{ x: number; y: number }>({ x: -1, y: -1 });
     const [zoom, setZoom] = useState<number>(1);
     const [hasInteracted, setHasInteracted] = useState(false);
     const [isIncludedInGroup, setIsIncludedInGroup] = useState(image.isIncludedInGroup);
@@ -304,28 +304,40 @@ const TaggableImage = ({
             : undefined;
 
     return (
-        <div className="relative flex h-[200px] w-[500px]">
-            <div className="absolute right-1 top-1 z-10">
+        <div className="relative flex w-full flex-col">
+            <div className="absolute left-1 top-1 z-10">
                 {isIncludedInGroup ? (
-                    <Button name={`exclude`} value={image.id} variant="ghost" size="icon" onClick={() => handleExclude(image.id!)}>
-                        <Cross1Icon className="h-4 w-4 text-white" /> Remove from group
+                    <Button
+                        name={`exclude`}
+                        value={image.id}
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleExclude(image.id!)}
+                        title="Remove from set">
+                        <Cross1Icon className="h-4 w-4 text-white" />
                     </Button>
                 ) : (
-                    <Button name={`include`} value={image.id} variant="ghost" size="icon" onClick={() => handleInclude(image.id!)}>
-                        <CheckIcon className="h-4 w-4 text-white" /> Include in group
+                    <Button
+                        name={`include`}
+                        value={image.id}
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleInclude(image.id!)}
+                        title="Include in set">
+                        <CheckIcon className="h-4 w-4 text-white" />
                     </Button>
                 )}
             </div>
             <div
                 data-included={isIncludedInGroup ? 'true' : 'false'}
-                className="flex-0 relative h-[200px] w-[200px] data-[included=false]:opacity-10 data-[included=true]:opacity-100">
+                className="flex-0 relative h-[400px] w-full data-[included=false]:opacity-10 data-[included=true]:opacity-100">
                 <Cropper
                     key={image.id}
                     image={getThumbnailUrl(thumbnailBucketUrl, image.url!, 600)}
                     showGrid={false}
                     zoomSpeed={0.1}
                     crop={crop}
-                    objectFit="cover"
+                    objectFit="horizontal-cover" // causes all sorts of flickering image layout issues
                     zoom={zoom}
                     style={{ cropAreaStyle: { color: 'rgba(0, 0, 0, 0.8)', borderRadius: '10px' } }}
                     aspect={1 / 1}
@@ -341,7 +353,9 @@ const TaggableImage = ({
                     onTouchRequest={onTouchRequest}
                 />
             </div>
-            <div className="ml-2 flex-1">
+            <div
+                data-included={isIncludedInGroup ? 'true' : 'false'}
+                className="mt-4 w-full flex-1 data-[included=false]:opacity-10 data-[included=true]:opacity-100">
                 <MultiComboBox
                     name={`${image.id}-tags`}
                     defaultValue={image.text}

@@ -17,7 +17,7 @@ export function HelpProvider({ children }: { children: React.ReactNode }) {
 
     const handleSetHelp = (newHelp: React.ReactNode) => {
         setHelp(newHelp);
-        toggleHelp();
+        setIsOpen(true);
     };
 
     const toggleHelp = () => setIsOpen(!isOpen);

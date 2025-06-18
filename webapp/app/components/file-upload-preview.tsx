@@ -47,7 +47,7 @@ export const FileUploadPreview: React.FC<FileUploadPreviewProps> = ({
     const [isDraggedOver, setIsDraggedOver] = useState(false);
     const [imageCount, setImageCount] = useState(previousImages.length);
     const [isInvalidDrag, setIsInvalidDrag] = useState(false);
-    const [dragMessage, setDragMessage] = useState('');
+    const [dragMessage, setDragMessage] = useState<string | null>(null);
 
     const getImageFiles = (files: FileList) => {
         return Array.from(files).filter((file) => acceptedImageTypes.includes(file.type));
@@ -84,6 +84,8 @@ export const FileUploadPreview: React.FC<FileUploadPreviewProps> = ({
             setDragMessage(
                 `You've uploaded The maximum number of images allowed. ${maxImages - imageCount > 0 ? `You can only upload ${maxImages - imageCount} more images.` : ''}`,
             );
+        } else {
+            setDragMessage(`That's right, drop your files here!`);
         }
     }, []);
 
@@ -93,7 +95,7 @@ export const FileUploadPreview: React.FC<FileUploadPreviewProps> = ({
 
             setIsDraggedOver(false);
             setIsInvalidDrag(false);
-            setDragMessage('');
+            setDragMessage(null);
 
             const imageFiles = getImageFiles(e.dataTransfer.files);
             if (imageFiles.length >= maxImages || imageCount + imageFiles.length >= maxImages) return;
@@ -120,7 +122,7 @@ export const FileUploadPreview: React.FC<FileUploadPreviewProps> = ({
     );
 
     return (
-        <div {...props} className="flex h-full flex-col justify-stretch overflow-hidden">
+        <>
             <input
                 ref={fileInputRef}
                 type="file"
@@ -138,17 +140,17 @@ export const FileUploadPreview: React.FC<FileUploadPreviewProps> = ({
                 onDragLeave={() => {
                     setIsDraggedOver(false);
                     setIsInvalidDrag(false);
-                    setDragMessage('');
+                    setDragMessage(null);
                 }}
                 onDragEnd={() => {
                     setIsDraggedOver(false);
                     setIsInvalidDrag(false);
-                    setDragMessage('');
+                    setDragMessage(null);
                 }}
                 className={clsx(
-                    `flex flex-1 cursor-pointer flex-col rounded border-2 border-dashed p-8`,
+                    `flex flex-1 cursor-pointer flex-col rounded border-2 border-dashed border-transparent`,
                     isDraggedOver && isInvalidDrag && 'border-semantic-error',
-                    isDraggedOver && !isInvalidDrag && 'border-semantic-success',
+                    isDraggedOver && !isInvalidDrag && 'bg-primary-superdark border-gray-800',
                     !isDraggedOver && 'border-gray-800',
                 )}
                 onClick={(e) => {
@@ -163,22 +165,23 @@ export const FileUploadPreview: React.FC<FileUploadPreviewProps> = ({
                     </label>
                 ) : (
                     <div className="pointer-events-none flex max-w-3xl flex-1 cursor-pointer flex-col items-center justify-center space-y-6 self-center text-center">
-                        <h2 className="text-xl text-white">Upload images to train your Lora</h2>
-                        <p>
-                            Drag and drop
-                            {[...acceptedImageTypesHumanised, ...acceptedTextTypesHumanised]
-                                .map((type) => `*.${type.split(',')}`)
-
-                                .join(', ')}
-                            files here, or click, to select from your computer. Any *.txt files matching the filename of an image (minus the
-                            extension) will be used to tag that image.
-                        </p>
-                        <ImageIcon className="h-[40px] w-[40px] text-gray-700" />
+                        {dragMessage || (
+                            <>
+                                <h2 className="text-xl text-white">Upload images to train your Lora</h2>
+                                <p>
+                                    Drag and drop{' '}
+                                    {[...acceptedImageTypesHumanised, ...acceptedTextTypesHumanised].map((type) => `*.${type.split(',')}`).join(', ')}{' '}
+                                    files here, or click, to select from your computer. Any *.txt files matching the filename (without extension) of
+                                    an image will be used to tag that image.
+                                </p>
+                                <ImageIcon className="h-[40px] w-[40px] text-gray-700" />
+                            </>
+                        )}
                     </div>
                 )}
-                {children && <div className="flex-1 pt-4">{children}</div>}
+                {children}
             </div>
-        </div>
+        </>
     );
 };
 

@@ -15,15 +15,14 @@ export const ImageTaggingList = forwardRef(
         {
             images,
             onImageTagsUpdated,
-            thumbnailBucketUrl,
             RenderImage,
             windowWidth,
             imageWidth,
+            imageHeight,
             cols = 1,
         }: {
             images: any[]; // todo go back to ImageWithMetadata[]
             onImageTagsUpdated: (imageId: string, sanitisedTags: string[]) => Promise<boolean>;
-            thumbnailBucketUrl: string;
             RenderImage: React.ComponentType<{
                 image: ImageWithMetadata;
                 handleTagChange: (tags: string[], imageId: string) => void;
@@ -33,6 +32,7 @@ export const ImageTaggingList = forwardRef(
             }>;
             windowWidth: number;
             imageWidth: number;
+            imageHeight: number;
             cols: number;
         },
         ref: React.Ref<HTMLDivElement>,
@@ -93,41 +93,38 @@ export const ImageTaggingList = forwardRef(
         );
 
         const rowRenderer = useCallback(
-            ({ key, columnIndex, index, isScrolling, rowIndex, parent, style }: any) => {
-                const idx = index * cols; //rowIndex * cols + columnIndex;
+            ({ key, index, isScrolling, style }: any) => {
+                const idx = index * cols;
                 const images = filteredImages.slice(idx, idx + cols);
 
                 if (!images.length) return null;
 
                 return (
-                    <div className="flex w-1/2 flex-row pb-4 pr-4" key={`${key}-${idx}`} style={style}>
+                    <div className="flex w-full flex-row pb-4 pr-4" key={`${key}-${idx}`} style={style}>
                         {images.map((image) => (
                             <div
-                                className="align-center mr-4 flex flex-row gap-4 rounded-xl border border-gray-800 bg-gray-900 p-4"
-                                key={`${image.id}-cell`}>
-                                {/* {isScrolling ? (
-                                '...'
-                            ) : ( */}
+                                className={`align-center flex-0 mr-4 flex flex-row gap-4 rounded-xl border border-gray-800 bg-gray-900 p-4`}
+                                key={`${image.id}-cell`}
+                                style={{ width: `${imageWidth}px` }}>
                                 <RenderImage
-                                    isScrolling
+                                    isScrolling={isScrolling}
                                     image={image}
                                     handleTagChange={handleTagChange}
                                     handleTagRemove={handleTagRemove}
                                     allTags={allTags}
                                 />
-                                {/* )} */}
                             </div>
                         ))}
                     </div>
                 );
             },
-            [allTags, cols, filteredImages],
+            [allTags, cols, filteredImages, imageWidth],
         );
 
         return (
             <div className="flex h-full flex-1 cursor-default flex-col justify-stretch" ref={ref}>
                 <div className="flex flex-none items-center gap-4 border-b border-gray-800 pb-4">
-                    <h3 className="text-xl font-medium text-white">Filters</h3>
+                    <h3 className="text-sm font-medium uppercase">Filters</h3>
                     <div className="flex items-center gap-2">
                         <input
                             type="checkbox"
@@ -265,21 +262,12 @@ export const ImageTaggingList = forwardRef(
                         <AutoSizer>
                             {({ width, height }) => (
                                 <List
-                                    columnCount={1} // do not be tempted to change this to use props.cols, it will break the layout
-                                    columnWidth={imageWidth}
-                                    rowHeight={240}
+                                    rowHeight={imageHeight}
                                     rowRenderer={rowRenderer}
                                     rowCount={Math.ceil(filteredImages.length / cols)}
                                     width={windowWidth}
                                     height={height}
                                     overscanRows={2}
-
-                                    // width={width}
-                                    // height={height}
-                                    // deferredMeasurementCache={cache}
-                                    // rowHeight={cache.rowHeight}
-                                    // rowRenderer={rowRenderer}
-                                    // rowCount={filteredImages.length}
                                 />
                             )}
                         </AutoSizer>

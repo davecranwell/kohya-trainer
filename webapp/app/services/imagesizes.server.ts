@@ -41,9 +41,14 @@ export const removeImageFromGroup = async (imageGroupId: string, imageId: string
 };
 
 export const setImageCrop = async (imageGroupId: string, imageId: string, crop: { x: number; y: number; width: number; height: number }) => {
-    await prisma.imageSize.update({
-        where: { imageId_imageGroupId: { imageId, imageGroupId } },
-        // important that we reset isResized so that images aren't stuck in their first resizing forever
-        data: { x: crop.x, y: crop.y, width: crop.width, height: crop.height, isResized: false },
-    });
+    // this sometimes fails?
+    try {
+        await prisma.imageSize.update({
+            where: { imageId_imageGroupId: { imageId, imageGroupId } },
+            // important that we reset isResized so that images aren't stuck in their first resizing forever
+            data: { x: crop.x, y: crop.y, width: crop.width, height: crop.height, isResized: false },
+        });
+    } catch (error) {
+        console.error(error);
+    }
 };

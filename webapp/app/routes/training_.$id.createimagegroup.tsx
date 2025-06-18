@@ -19,7 +19,7 @@ export async function action({ request, params }: ActionFunctionArgs) {
     const imageGroup = await prisma.imageGroup.create({
         data: {
             trainingId: training.id,
-            name: 'New Image Group ' + new Date().toISOString(),
+            name: 'New image set',
         },
     });
 

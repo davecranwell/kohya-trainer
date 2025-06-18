@@ -119,7 +119,7 @@ export const MultiComboBox: React.FC<Props> = memo(({ ...props }) => {
                             </ComboboxButton>
 
                             <ComboboxOptions
-                                className="dropdown-content absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded-md bg-black py-1 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm"
+                                className="dropdown-content absolute z-20 mt-1 max-h-60 w-full overflow-auto rounded-md bg-black py-1 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm"
                                 onClick={(e: React.MouseEvent) => {
                                     // Prevent re-opening of dropdown when clicking option
                                     e.stopPropagation();

@@ -112,7 +112,7 @@ export default function TrainingRoute() {
 }
 
 function HelpPanel() {
-    const { help, isOpen } = useHelp();
+    const { help, isOpen, toggleHelp } = useHelp();
 
     return (
         <div
@@ -120,7 +120,7 @@ function HelpPanel() {
                 'absolute -right-12 top-0 z-10 min-h-screen w-1/5 border-l border-gray-800 bg-gray-900 shadow-2xl shadow-black transition-transform duration-300',
                 isOpen ? 'translate-x right-0' : 'translate-x-full',
             )}>
-            <Panel heading="Help" className="max-h-screen overflow-y-auto">
+            <Panel heading="Help" className="max-h-screen overflow-y-auto" closeable onClose={() => toggleHelp()}>
                 {help}
             </Panel>
         </div>

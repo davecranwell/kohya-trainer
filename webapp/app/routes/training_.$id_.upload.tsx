@@ -189,53 +189,49 @@ export default function ImageUpload() {
 
     return (
         <Panel heading="Original images" scrollable={false} className="h-full" bodyClassName="h-full content-stretch grow">
-            <FileUploadPreview
-                key={`${training.id}-preview`}
-                acceptedImageTypes={ACCEPTED_IMAGE_TYPES}
-                acceptedTextTypes={ACCEPTED_TEXT_TYPES}
-                previousImages={uploadedImages}
-                maxImages={MAX_IMAGES}
-                onDropped={handleNewFile}>
-                <ImageTaggingList
-                    ref={listRef}
-                    images={uploadedImages}
-                    cols={cols}
-                    imageWidth={Math.min(Math.ceil(windowWidth / cols), 500)}
-                    windowWidth={windowWidth}
-                    onImageTagsUpdated={async (imageId, sanitisedTags) => {
-                        const updateTextResponse = await fetch(`/api/trainingimage/${training.id}`, {
-                            method: 'PATCH',
-                            body: JSON.stringify({ id: imageId, text: sanitisedTags.join(',') }),
-                        });
+            <div className="flex h-full flex-col justify-stretch overflow-hidden">
+                <FileUploadPreview
+                    key={`${training.id}-preview`}
+                    acceptedImageTypes={ACCEPTED_IMAGE_TYPES}
+                    acceptedTextTypes={ACCEPTED_TEXT_TYPES}
+                    previousImages={uploadedImages}
+                    maxImages={MAX_IMAGES}
+                    onDropped={handleNewFile}>
+                    {uploadedImages.length > 0 && (
+                        <ImageTaggingList
+                            ref={listRef}
+                            images={uploadedImages}
+                            cols={cols}
+                            imageWidth={Math.min(Math.ceil(windowWidth / cols), 500)}
+                            imageHeight={240}
+                            windowWidth={windowWidth}
+                            onImageTagsUpdated={async (imageId, sanitisedTags) => {
+                                const updateTextResponse = await fetch(`/api/trainingimage/${training.id}`, {
+                                    method: 'PATCH',
+                                    body: JSON.stringify({ id: imageId, text: sanitisedTags.join(',') }),
+                                });
 
-                        if (updateTextResponse.ok) {
-                            const updatedImage = images.find((image) => image.id === imageId);
-                            if (updatedImage) {
-                                updatedImage.text = sanitisedTags.join(',');
-                            }
+                                if (updateTextResponse.ok) {
+                                    const updatedImage = images.find((image) => image.id === imageId);
+                                    if (updatedImage) {
+                                        updatedImage.text = sanitisedTags.join(',');
+                                    }
 
-                            setUploadedImages(images);
-                        }
+                                    setUploadedImages(images);
+                                }
 
-                        return updateTextResponse.ok;
-                    }}
-                    thumbnailBucketUrl={thumbnailBucketUrl}
-                    RenderImage={({ image, handleTagChange, handleTagRemove, allTags }) => (
-                        <TaggableImage
-                            image={image}
-                            handleTagChange={handleTagChange}
-                            handleTagRemove={handleTagRemove}
-                            allTags={allTags}
-                            thumbnailBucketUrl={thumbnailBucketUrl}
+                                return updateTextResponse.ok;
+                            }}
+                            RenderImage={({ ...props }) => <Image {...props} thumbnailBucketUrl={thumbnailBucketUrl} />}
                         />
                     )}
-                />
-            </FileUploadPreview>
+                </FileUploadPreview>
+            </div>
         </Panel>
     );
 }
 
-const TaggableImage = ({
+const Image = ({
     image,
     handleTagChange,
     handleTagRemove,
@@ -248,7 +244,7 @@ const TaggableImage = ({
     allTags: string[];
     thumbnailBucketUrl: string;
 }) => (
-    <div className="relative flex h-[200px] w-[500px] flex-row">
+    <div className="relative flex">
         {image.url && (
             <ImagePreview
                 url={`${image.url?.startsWith('blob') ? image.url : getThumbnailUrl(thumbnailBucketUrl, image.url, 200)}`}
