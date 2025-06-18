@@ -47,7 +47,7 @@ export function Field({
         <div className={clsx('w-full', className)}>
             <Label htmlFor={id} {...labelProps} />
             <Input id={id} aria-invalid={errorId ? true : undefined} aria-describedby={errorId} {...inputProps} />
-            {help && <p className="mt-3 text-sm text-gray-500">{help}</p>}
+            {help && <div className="mt-3 text-sm text-gray-500">{help}</div>}
             {errorId && (
                 <div className="pt-1">
                     <ErrorList id={errorId} errors={errors} />
@@ -77,7 +77,7 @@ export function TextareaField({
         <div className={className}>
             <Label htmlFor={id} {...labelProps} />
             <Textarea id={id} aria-invalid={errorId ? true : undefined} aria-describedby={errorId} {...textareaProps} />
-            {help && <p className="mt-3 text-sm text-gray-500">{help}</p>}
+            {help && <div className="mt-3 text-sm text-gray-500">{help}</div>}
             <div className="pt-1">{errorId ? <ErrorList id={errorId} errors={errors} /> : null}</div>
         </div>
     );

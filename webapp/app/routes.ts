@@ -19,6 +19,7 @@ export default [
     route('/sign-up', './routes/sign-up.tsx'),
     route('/api/training', './routes/api.training.tsx'),
     route('/api/trainingimage/:id', './routes/api.trainingimage.$id.tsx'),
+    route('/api/:imageGroupId/imagesize/:id', './routes/api.$imageGroupId.imagesize.$id.tsx'),
     route('/api/uploadurls/:id', './routes/api.uploadurls.$id.tsx'),
     // route('/training/:id', 'training.tsx', {
     //     children: [route('/', 'training_.$id.tsx'), route('/upload', 'training_.$id.upload.tsx')],

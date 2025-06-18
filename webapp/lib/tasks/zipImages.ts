@@ -21,6 +21,7 @@ export const zipImages = async ({ runId }: { runId: string }) => {
                     triggerWord: true,
                     config: true,
                     ownerId: true,
+                    imageGroupId: true,
                 },
             },
         },
@@ -34,10 +35,21 @@ export const zipImages = async ({ runId }: { runId: string }) => {
     const { training } = trainingRun;
 
     // upload all the captions from the Images table for this training as .txt files named after their image filenames, to the same location on S3
-    const images = await prisma.trainingImage.findMany({
-        where: { trainingId: training.id },
-        select: { text: true, name: true },
-    });
+
+    const images = trainingRun.imageGroupId
+        ? (
+              await prisma.imageSize.findMany({
+                  where: { imageGroupId: trainingRun.imageGroupId },
+                  select: { text: true, image: { select: { name: true } } },
+              })
+          ).map((image) => ({
+              text: image.text,
+              name: image.image.name,
+          }))
+        : await prisma.trainingImage.findMany({
+              where: { trainingId: training.id },
+              select: { text: true, name: true },
+          });
 
     // upload tags to S3
     for (const image of images) {

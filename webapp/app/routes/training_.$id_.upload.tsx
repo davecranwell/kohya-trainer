@@ -188,7 +188,7 @@ export default function ImageUpload() {
     }, []);
 
     return (
-        <Panel heading="Original images" scrollable={false} className="h-full" bodyClassName="h-full content-stretch grow">
+        <Panel heading="Original images" scrollable={false} classes="h-full" bodyClasses="h-full content-stretch grow">
             <div className="flex h-full flex-col justify-stretch overflow-hidden">
                 <FileUploadPreview
                     key={`${training.id}-preview`}

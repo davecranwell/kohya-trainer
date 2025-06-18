@@ -1,12 +1,10 @@
-import { useState, useEffect, useCallback, useMemo, useRef, useLayoutEffect } from 'react';
-import { Form, useLoaderData, useFetcher } from 'react-router';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { useLoaderData, useFetcher } from 'react-router';
 import type { ActionFunctionArgs, FetcherWithComponents, LoaderFunctionArgs } from 'react-router';
 import { data } from 'react-router';
-import { CellMeasurer, CellMeasurerCache, AutoSizer, createMasonryCellPositioner, Masonry } from 'react-virtualized';
-import { useHydrated } from 'remix-utils/use-hydrated';
-import Cropper, { Area } from 'react-easy-crop';
+import Cropper from 'react-easy-crop';
 import { CheckIcon, Cross1Icon } from '@radix-ui/react-icons';
-import { useDebounce, useDebouncedCallback } from 'use-debounce';
+import { useDebouncedCallback } from 'use-debounce';
 
 import prisma from '#/prisma/db.server';
 
@@ -16,12 +14,11 @@ import { addAllImageToGroup, addImageToGroup, removeAllImagesFromGroup, removeIm
 import { getThumbnailUrl } from '~/util/misc';
 
 import { Button } from '~/components/button';
-import { Tooltip, TooltipTrigger, TooltipContent } from '~/components/tooltip';
 import { Panel } from '~/components/panel';
 import { MultiComboBox } from '~/components/forms/multi-combo-box';
 import { ImageTaggingList } from '~/components/image-tagging-list';
-import { ImagePreview } from '~/components/image-preview';
 import { ImageWithMetadata } from '~/components/file-upload-preview';
+import { ControlGroup } from '~/components/control-group';
 
 type CropPercentage = {
     x: number;
@@ -175,23 +172,21 @@ export default function ImageUpload() {
     }, []);
 
     return (
-        <Panel heading={group.name} className="h-full" bodyClassName="h-full content-stretch grow">
+        <Panel heading={group.name} classes="h-full" bodyClasses="">
             <div className="relative flex h-full grow flex-col content-stretch">
-                <div className="flex flex-row gap-4">
-                    <fetcher.Form action={`/training/${training.id}/imagegroup/${group.id}`} id={training.id} method="post">
-                        <Button type="submit" className="mb-4" name="includeall" value="true">
-                            Include all original images in group
+                <fetcher.Form action={`/training/${training.id}/imagegroup/${group.id}`} id={training.id} method="post">
+                    <ControlGroup heading="Original images">
+                        <Button type="submit" size="sm" variant="ghost" name="includeall" value="true">
+                            Include all
                         </Button>
-                        <Button type="submit" className="mb-4" name="excludeall" value="true">
-                            Exclude all original images from group
+                        <Button type="submit" size="sm" variant="ghost" name="excludeall" value="true">
+                            Exclude all
                         </Button>
-                        <Button type="submit" className="mb-4" name="run" value="true">
+                        <Button type="submit" size="sm" name="run" value="true">
                             Run training on this group
                         </Button>
-
-                        <p>Use ⌘ + scroll (or ctrl + scroll), or two fingers, to zoom images</p>
-                    </fetcher.Form>
-                </div>
+                    </ControlGroup>
+                </fetcher.Form>
                 <div className="w-full flex-1 overflow-hidden" ref={listRef}>
                     {windowWidth > 0 && (
                         <ImageTaggingList
@@ -202,7 +197,7 @@ export default function ImageUpload() {
                             imageWidth={Math.min(Math.ceil(windowWidth / cols), 500)}
                             imageHeight={500}
                             onImageTagsUpdated={async (imageId, sanitisedTags) => {
-                                const updateTextResponse = await fetch(`/api/trainingimage/${training.id}`, {
+                                const updateTextResponse = await fetch(`/api/${group.id}/imagesize/${imageId}`, {
                                     method: 'PATCH',
                                     body: JSON.stringify({ id: imageId, text: sanitisedTags.join(',') }),
                                 });
@@ -339,7 +334,7 @@ const Image = ({
                     crop={crop}
                     objectFit="horizontal-cover" // causes all sorts of flickering image layout issues
                     zoom={zoom}
-                    style={{ cropAreaStyle: { color: 'rgba(0, 0, 0, 0.8)', borderRadius: '10px' } }}
+                    style={{ cropAreaStyle: { color: 'rgba(0, 0, 0, 0.9)', borderRadius: '10px' } }}
                     aspect={1 / 1}
                     onInteractionStart={() => setHasInteracted(true)} // this is to prevent the initial crop from being set as the page loads and the image dimensions are 0.000000002 different!
                     initialCroppedAreaPercentages={initialCroppedAreaPercentages}

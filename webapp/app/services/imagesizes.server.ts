@@ -12,6 +12,7 @@ export const addAllImageToGroup = async (trainingId: string, imageGroupId: strin
             data: images.map((image) => ({
                 imageId: image.id,
                 imageGroupId,
+                text: image.text,
             })),
         });
     }
@@ -24,12 +25,21 @@ export const removeAllImagesFromGroup = async (imageGroupId: string) => {
 };
 
 export const addImageToGroup = async (imageGroupId: string, imageId: string) => {
+    const image = await prisma.trainingImage.findUnique({
+        where: { id: imageId },
+    });
+
+    if (!image) {
+        throw new Error('Image not found');
+    }
+
     await prisma.imageSize.upsert({
         where: { imageId_imageGroupId: { imageId, imageGroupId } },
-        update: {},
+        update: { text: image.text },
         create: {
             imageId,
             imageGroupId,
+            text: image.text,
         },
     });
 };

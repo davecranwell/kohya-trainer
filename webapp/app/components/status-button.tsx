@@ -1,5 +1,4 @@
 import * as React from 'react';
-import { useSpinDelay } from 'spin-delay';
 import { clsx } from 'clsx';
 import { UpdateIcon, CheckIcon, Cross1Icon } from '@radix-ui/react-icons';
 
@@ -11,36 +10,27 @@ export const StatusButton = React.forwardRef<
         status: 'pending' | 'success' | 'error' | 'idle' | 'submitting' | 'loading';
     }
 >(({ status, className, children, ...props }, ref) => {
+    // Normalize status to handle submitting/loading as pending
+    let normalizedStatus = status;
     switch (status) {
         case 'submitting':
         case 'loading':
-            status = 'pending';
+            normalizedStatus = 'pending';
+            break;
     }
 
-    const showSpinner = useSpinDelay(status === 'pending', { delay: 50, minDuration: 1000 });
-    const icon = {
-        pending: showSpinner ? (
-            <div role="status" className="inline-flex h-6 w-6 items-center justify-center">
-                <UpdateIcon className="animate-spin" />
-            </div>
-        ) : null,
-        success: (
-            <div role="status" className="inline-flex h-6 w-6 items-center justify-center">
-                <CheckIcon />
-            </div>
-        ),
-        error: (
-            <div role="status" className="bg-destructive inline-flex h-6 w-6 items-center justify-center rounded-full">
-                <Cross1Icon />
-            </div>
-        ),
-        idle: null,
-    }[status];
+    const icons = {
+        pending: UpdateIcon,
+        success: CheckIcon,
+        error: Cross1Icon,
+    };
+
+    // Only get icon if the status has a corresponding icon
+    const icon = normalizedStatus in icons ? icons[normalizedStatus as keyof typeof icons] : undefined;
 
     return (
-        <Button ref={ref} className={clsx('flex justify-center gap-2', className)} {...props}>
-            {icon}
-            <div>{children}</div>
+        <Button ref={ref} icon={icon} className={className} {...props}>
+            {children}
         </Button>
     );
 });

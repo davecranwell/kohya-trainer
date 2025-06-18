@@ -1,6 +1,7 @@
 import React, { useCallback, useState, useRef } from 'react';
 import clsx from 'clsx';
 import { ImageIcon } from '@radix-ui/react-icons';
+import { IconText } from './icon-text';
 
 export type Preview = {
     url: string;
@@ -158,10 +159,14 @@ export const FileUploadPreview: React.FC<FileUploadPreviewProps> = ({
                 }}>
                 {children ? (
                     <label htmlFor="file-upload-input" className="block flex cursor-pointer items-center justify-center text-sm text-gray-600">
-                        <ImageIcon className="mr-4 h-6 w-6 text-gray-700" />
-                        {dragMessage ||
-                            `Drag and drop ${[...acceptedImageTypesHumanised, ...acceptedTextTypesHumanised].map((type) => `*.${type.split(',')}`).join(', ')} files here, or click, to
-                    select from your computer. Any *.txt files matching the filename of an image (minus the extension) will be used to tag that image.`}
+                        <IconText
+                            icon={ImageIcon}
+                            text={
+                                dragMessage ||
+                                `Drag and drop ${[...acceptedImageTypesHumanised, ...acceptedTextTypesHumanised].map((type) => `*.${type.split(',')}`).join(', ')} files here, or click, to
+                    select from your computer. Any *.txt files matching the filename of an image (minus the extension) will be used to tag that image.`
+                            }
+                        />
                     </label>
                 ) : (
                     <div className="pointer-events-none flex max-w-3xl flex-1 cursor-pointer flex-col items-center justify-center space-y-6 self-center text-center">

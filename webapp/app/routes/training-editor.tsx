@@ -23,6 +23,7 @@ import { type action } from './training-editor.server';
 import { useHelp } from '../util/help.provider';
 
 import civitai from '../assets/civitai.png';
+import { IconText } from '~/components/icon-text';
 
 export const TrainingEditorSchema = z.object({
     id: z.string().optional(),
@@ -98,15 +99,16 @@ export function TrainingEditor({ training, baseModels }: { training?: Partial<Tr
                     <Field
                         labelProps={{ children: 'Training name' }}
                         inputProps={{
-                            autoFocus: true,
+                            autoFocus: training ? false : true,
                             ...nameProps,
                             placeholder: 'e.g "My first Lora"',
+                            onKeyDown: (e) => {
+                                if (e.key === 'Enter') {
+                                    e.preventDefault();
+                                }
+                            },
                         }}
-                        help={
-                            <span className="flex items-center gap-2 text-sm leading-6">
-                                <InfoCircledIcon className="size-4 flex-none" /> An easy way to identify this training later.
-                            </span>
-                        }
+                        help={<IconText icon={InfoCircledIcon} text="An easy way to identify this training later." />}
                         errors={fields.name.errors}
                     />
                 </div>
@@ -119,34 +121,44 @@ export function TrainingEditor({ training, baseModels }: { training?: Partial<Tr
                         }}
                         errors={fields.triggerWord.errors}
                         help={
-                            <span className="flex items-center gap-2 text-sm leading-6">
-                                <InfoCircledIcon className="size-4 flex-none" />
-                                <span>
-                                    The word(s) to activate the Lora when generating an image. 4-10 characters long{' '}
-                                    <span
-                                        className="text-semantic-info"
-                                        onClick={() =>
-                                            setHelp(
-                                                <p className="mb-2 text-sm leading-6">
-                                                    Loras teach a base model a brand new concept, or enhance an existing one. For new concepts use a
-                                                    trigger word that is <em className="text-semantic-warning">unknown</em> to the base model.
-                                                    Dictionary words are already known. Random, or username-style words work well (e.g 'ohxw',
-                                                    'johndoe420') because no dictionary word could confuse their meaning. Case does not matter.
-                                                    <br />
-                                                    <br />
-                                                    <Alert variant="warning">
-                                                        <p className="text-sm leading-6">
-                                                            Combining multiple loras which share the same trigger words could interfere in your image
-                                                            generation. Try to use different trigger words for each Lora.
+                            <IconText
+                                icon={InfoCircledIcon}
+                                text={
+                                    <div>
+                                        {'The word(s) to activate the Lora when generating an image. 4-10 characters long '}
+                                        <Button
+                                            type="button"
+                                            size="text"
+                                            variant="textonly"
+                                            className="text-semantic-info"
+                                            onClick={() =>
+                                                setHelp(
+                                                    <>
+                                                        <p className="mb-2 text-sm leading-6">
+                                                            Loras teach a base model a brand new concept, or enhance an existing one. For new concepts
+                                                            use a trigger word that is <em className="text-semantic-warning">unknown</em> to the base
+                                                            model. Dictionary words are already known. Random, or username-style words work well (e.g
+                                                            'ohxw', 'johndoe420') because no dictionary word could confuse their meaning. Case does
+                                                            not matter.
+                                                            <br />
+                                                            <br />
+                                                            Your trigger word(s) will be automatically included in the tags for each image you upload.
+                                                            <br /> <br />
                                                         </p>
-                                                    </Alert>
-                                                </p>,
-                                            )
-                                        }>
-                                        Find out more about trigger words.
-                                    </span>
-                                </span>
-                            </span>
+                                                        <Alert variant="warning">
+                                                            <p className="text-sm leading-6">
+                                                                Combining multiple loras which share the same trigger words could interfere in your
+                                                                image generation. Try to use different trigger words for each Lora.
+                                                            </p>
+                                                        </Alert>
+                                                    </>,
+                                                )
+                                            }>
+                                            Find out more about trigger words.
+                                        </Button>
+                                    </div>
+                                }
+                            />
                         }
                     />
                 </div>
@@ -186,32 +198,33 @@ export function TrainingEditor({ training, baseModels }: { training?: Partial<Tr
                                 </div>
                             </div>
                         </RadioGroup>
-                        <p className="mt-3 text-sm text-gray-500">
-                            <span
-                                className="text-semantic-info"
+                        <p className="mt-3">
+                            <Button
+                                type="button"
+                                size="text"
+                                variant="textonly"
+                                className="text-sm text-semantic-info"
+                                icon={InfoCircledIcon}
                                 onClick={() =>
                                     setHelp(
                                         <>
                                             <p className="text-sm leading-6">
-                                                Loras are like "mods" for a game - they need an existing game to extend. The base model provides that
-                                                foundation and largely defines the Lora's aethetics, so select a base model that matches the style or
-                                                content of the output you want.
+                                                Loras are like lenses for a camera - they're useless on their own and might be incompatible across
+                                                different models. Like a camera, Base models heavily influence the results, so you should select a
+                                                base model that matches the style or content of the output you want.
                                             </p>
 
                                             <Alert variant="warning">
                                                 <p className="text-sm leading-6">
-                                                    NB: Like game mods, you can't put Loras into a game for which they weren't designed. Your Lora
-                                                    will generate the best images{' '}
+                                                    Your Lora will generate the best images{' '}
                                                     <em className="text-semantic-warning">only when used with the base model you choose here</em>.
-                                                    Using a different base model with this Lora may cause poor results.
                                                 </p>
                                             </Alert>
                                         </>,
                                     )
                                 }>
-                                Learn more about base models
-                            </span>
-                            .
+                                About base models
+                            </Button>
                         </p>
                         {baseModelFields.url.errors && (
                             <div className="pt-1">
@@ -247,7 +260,7 @@ export function TrainingEditor({ training, baseModels }: { training?: Partial<Tr
             <input type="hidden" name="baseModel.type" value={baseModelState.selected?.type || training?.baseModel?.type || ''} />
 
             <div className="mt-6 flex items-center justify-end gap-x-6">
-                <StatusButton form={form.id} size="full" type="submit" disabled={fetcher.state !== 'idle'} status={fetcher.state}>
+                <StatusButton size="full" type="submit" disabled={fetcher.state !== 'idle'} status={fetcher.state}>
                     {training ? 'Save model config' : 'Create training'}
                 </StatusButton>
             </div>

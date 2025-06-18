@@ -157,6 +157,7 @@ model ImageSize {
   y Float?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  text String?
 
   image TrainingImage @relation(fields: [imageId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   imageGroup ImageGroup @relation(fields: [imageGroupId], references: [id])

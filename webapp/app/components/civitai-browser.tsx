@@ -161,7 +161,6 @@ export function CivitaiBrowser({
                                         defaultValue={search}
                                         onChange={(e) => setSearch(e.target.value)}
                                         className="sticky"
-                                        autoFocus
                                     />
                                 )}
 

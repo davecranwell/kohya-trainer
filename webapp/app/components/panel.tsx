@@ -1,35 +1,36 @@
 import { clsx } from 'clsx';
-import { Button } from './button';
 import { Cross1Icon } from '@radix-ui/react-icons';
+
+import { Button } from './button';
 
 export const Panel = ({
     heading,
     children,
-    className,
+    classes,
     scrollable = true,
-    bodyClassName,
+    bodyClasses,
     closeable = false,
     onClose,
 }: {
     heading: string;
     children: React.ReactNode;
-    className?: string;
+    classes?: string;
     scrollable?: boolean;
-    bodyClassName?: string;
+    bodyClasses?: string;
     closeable?: boolean;
     onClose?: () => void;
 }) => {
     return (
-        <div className={clsx('flex flex-col justify-stretch', className)}>
-            <div className="flex flex-row items-center justify-between border-b border-gray-800 p-4">
-                <h2 className="flex-none truncate text-xl text-white">{heading}</h2>
+        <div className={clsx(`flex flex-col justify-stretch ${classes ? classes : ''}`)}>
+            <div className="flex flex-none flex-row items-center justify-between border-b border-gray-800 p-4">
+                <h2 className="e flex-none truncate text-lg">{heading}</h2>
                 {closeable && (
-                    <Button variant="ghost" size="icon" onClick={onClose}>
+                    <Button variant="ghost" size="icon" onClick={onClose} title="Close">
                         <Cross1Icon className="h-4 w-4 text-white" />
                     </Button>
                 )}
             </div>
-            <div className={clsx('flex-1 p-8 sm:max-h-screen', scrollable ? 'sm:overflow-y-auto' : 'overflow-hidden', bodyClassName)}>{children}</div>
+            <div className={clsx('flex-1 p-8 sm:max-h-screen', scrollable ? 'sm:overflow-y-auto' : 'overflow-hidden', bodyClasses)}>{children}</div>
         </div>
     );
 };

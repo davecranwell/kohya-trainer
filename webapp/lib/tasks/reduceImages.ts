@@ -12,7 +12,6 @@ export const reduceImages = async ({ runId }: { runId: string }) => {
     });
 
     if (!trainingRun) {
-        console.log('trainingRun not found', runId);
         throw new Error('Training run not found');
     }
 

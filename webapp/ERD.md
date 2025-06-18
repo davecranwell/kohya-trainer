@@ -89,6 +89,7 @@ erDiagram
     Float y "❓"
     DateTime createdAt 
     DateTime updatedAt 
+    String text "❓"
     }
   
 

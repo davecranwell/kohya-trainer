@@ -9,6 +9,7 @@ import { sanitiseTagArray } from '~/util/misc';
 
 import { Button } from './button';
 import { ImageWithMetadata } from './file-upload-preview';
+import { ControlGroup } from './control-group';
 
 export const ImageTaggingList = forwardRef(
     (
@@ -123,8 +124,7 @@ export const ImageTaggingList = forwardRef(
 
         return (
             <div className="flex h-full flex-1 cursor-default flex-col justify-stretch" ref={ref}>
-                <div className="flex flex-none items-center gap-4 border-b border-gray-800 pb-4">
-                    <h3 className="text-sm font-medium uppercase">Filters</h3>
+                <ControlGroup heading="Tag filters">
                     <div className="flex items-center gap-2">
                         <input
                             type="checkbox"
@@ -171,49 +171,49 @@ export const ImageTaggingList = forwardRef(
                     </div>
                     <Button
                         type="button"
-                        variant="ghost"
-                        size="sm"
-                        className="mt-4"
+                        variant="textonly"
+                        size="text"
+                        icon={InfoCircledIcon}
+                        className="text-sm text-semantic-info"
                         onClick={() => {
                             setHelp(
-                                <ul className="list-disc space-y-4 pl-4 text-sm leading-6 marker:text-accent1">
-                                    <li>
+                                <div className="space-y-4">
+                                    <p>
                                         Tags should be <strong className="text-accent1">one or two words</strong>, not phrases and should usually only
                                         be things that are <strong className="text-accent1">visible in the image</strong>, except where they identify
                                         overall qualities of the image. Tagging things that can't be seen will confuse the model.
-                                    </li>
-                                    <li>
-                                        Tag things you{' '}
-                                        <strong className="text-accent1">would want to change when generating images from your Lora</strong>. Don't
-                                        tag things you want to be fixed. e.g If images are of yourself, and you have brown hair, tagging the hair as
-                                        "brunette" or "brown" can indicate this is a changeable property. If brown hair should never change, don't tag
-                                        it.
-                                    </li>
-                                    <li>
+                                    </p>
+                                    <p>
+                                        Tag things you <strong className="text-accent1">would want to change in your prompt</strong>. Don't tag things
+                                        you want to be fixed. e.g If your subject is an iconic blond cartoon character, tagging their hair as "blond"
+                                        can indicate this is a changeable property. If blonde hair should be fixed,{' '}
+                                        <strong className="text-accent1">don't tag it</strong>.
+                                    </p>
+                                    <p>
                                         Avoid <strong className="text-accent1">ambiguous or non-specific tags</strong>. e.g "person", "picture",
                                         "image", "light" which could apply to many things
-                                    </li>
-                                    <li>
+                                    </p>
+                                    <p>
                                         Avoid too many tags about <strong className="text-accent1">background/secondary details</strong>.
-                                    </li>
-                                    <li>
-                                        <strong className="text-accent1">Be consistent in the language you use</strong>. If you tag an object as
-                                        "rusted" in one image don't tag it as "corroded" in another
-                                    </li>
-                                    <li>
+                                    </p>
+
+                                    <p>
                                         Try to ensure your tags include <strong className="text-accent1">common details</strong>, such as:
                                         <ul className="marker:text-grey-800 mt-4 list-disc space-y-4 pl-8">
                                             <li>
                                                 The <strong className="text-accent1">quality and type</strong> of the image e.g{' '}
                                                 <code className="font-mono text-accent2">professional</code>,{' '}
-                                                <code className="font-mono text-accent2">amateur</code>, etc
+                                                <code className="font-mono text-accent2">amateur</code>,{' '}
+                                                <code className="font-mono text-accent2">illustration</code>,{' '}
+                                                <code className="font-mono text-accent2">photograph</code>, etc
                                             </li>
                                             <li>
                                                 Details <strong className="text-accent1">about the medium</strong> e.g{' '}
                                                 <code className="font-mono text-accent2">canon</code>,{' '}
                                                 <code className="font-mono text-accent2">f1.8</code>, or style of art{' '}
                                                 <code className="font-mono text-accent2">cell-shading</code>,{' '}
-                                                <code className="font-mono text-accent2">chiaroscuro</code>,
+                                                <code className="font-mono text-accent2">chiaroscuro</code>,{' '}
+                                                <code className="font-mono text-accent2">watercolour</code>,
                                             </li>
                                             <li>
                                                 <strong className="text-accent1">The setting or background of the image</strong> e.g{' '}
@@ -244,18 +244,19 @@ export const ImageTaggingList = forwardRef(
                                                 <code className="font-mono text-accent2">waving</code>
                                             </li>
                                         </ul>
-                                    </li>
-                                    <li>
+                                    </p>
+                                    <p>
                                         But remember: if these details are things you would <strong>not</strong> want to be optional or modified
-                                        during image generation, consider not tagging them.
-                                    </li>
-                                </ul>,
+                                        during image generation, consider not tagging them at all. You can use an Image Set to tighten the crops
+                                        around your subject, reducing your need to tag secondary detail that you'd want removed.
+                                    </p>
+                                </div>,
                             );
                             return false;
                         }}>
-                        <InfoCircledIcon className="size-4 flex-none" />
+                        Learn more about tagging
                     </Button>
-                </div>
+                </ControlGroup>
 
                 {isHydrated && (
                     <div className="flex-1">

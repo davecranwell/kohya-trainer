@@ -98,7 +98,7 @@ export default function TrainingPage({ loaderData }: Route.ComponentProps) {
                                             {/* <span className="absolute inset-x-0 -top-px bottom-0" /> */}
                                             {training.name}
                                             <Button variant="ghost" size="icon" className="ml-2 hover:bg-primary">
-                                                <Pencil1Icon />
+                                                <Pencil1Icon className="h-4 w-4 text-white" />
                                             </Button>
                                         </NavLink>
                                     </h2>
@@ -150,7 +150,7 @@ export default function TrainingPage({ loaderData }: Route.ComponentProps) {
                             <div>
                                 <Button variant="ghost" asChild>
                                     <NavLink to={`/training/${training.id}/upload`}>
-                                        <UploadIcon className="mr-2" />
+                                        <UploadIcon className="size-4 flex-none" />
                                         Upload
                                     </NavLink>
                                 </Button>
