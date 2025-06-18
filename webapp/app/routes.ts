@@ -6,7 +6,7 @@ import { type RouteConfig, index, layout, prefix, route } from '@react-router/de
 
 export default [
     index('./routes/_index.tsx'),
-    route('/training', './routes/training.tsx'),
+    route('/training', './routes/training-index.tsx'),
     route('/training/new', './routes/training_.new.tsx'),
     route('/training/:id/', './routes/training_.$id.tsx', [
         index('./routes/training_.$id_.upload.tsx'),

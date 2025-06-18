@@ -7,25 +7,29 @@ export function EmptyState({
     actionText = 'Create',
     ctaText = 'Create a new thing',
     noun = 'things',
+    items = [],
     ...props
 }: {
     actionUrl: string;
     actionText: string;
     ctaText: string;
     noun: string;
+    items: any[];
 }) {
     return (
         <div className="p-12 text-center" {...props}>
-            <h3 className="mt-2 text-sm font-semibold text-gray-900">You have no {noun}</h3>
-            <p className="mt-1 text-sm text-gray-500">{ctaText}</p>
-            <div className="mt-6">
-                <NavLink to={actionUrl}>
-                    <Button>
-                        <PlusIcon aria-hidden="true" className="-ml-0.5 mr-1.5 h-5 w-5" />
-                        {actionText}
-                    </Button>
-                </NavLink>
-            </div>
+            {!items.length && (
+                <div className="mb-6">
+                    <h3 className="mt-2 text-sm font-semibold">You have no {noun}</h3>
+                    <p className="mt-1 text-sm text-gray-500">{ctaText}</p>
+                </div>
+            )}
+
+            <NavLink to={actionUrl}>
+                <Button icon={PlusIcon} size="lg">
+                    {actionText}
+                </Button>
+            </NavLink>
         </div>
     );
 }
