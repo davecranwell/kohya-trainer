@@ -59,6 +59,7 @@ export const FileUploadPreview: React.FC<FileUploadPreviewProps> = ({
     };
 
     const getSupportedFiles = (files: FileList) => {
+        console.log('blah', files);
         return Array.from(files).filter((file) => acceptedImageTypes.includes(file.type) || acceptedTextTypes.includes(file.type));
     };
 
@@ -68,8 +69,12 @@ export const FileUploadPreview: React.FC<FileUploadPreviewProps> = ({
         // filter out the filetypes that are unsupported
         const files = getSupportedFiles(newFiles);
 
+        console.log('wee', files);
+
         // filter out the files that are already in the previousImages array
         const filteredFiles = files.filter((file) => !previousImages.find((image) => image.name === file.name));
+
+        console.log('filteredFiles', filteredFiles);
 
         onDropped(filteredFiles);
     };
@@ -151,14 +156,14 @@ export const FileUploadPreview: React.FC<FileUploadPreviewProps> = ({
                 className={clsx(
                     `flex flex-1 cursor-pointer flex-col rounded border-2 border-dashed border-transparent`,
                     isDraggedOver && isInvalidDrag && 'border-semantic-error',
-                    isDraggedOver && !isInvalidDrag && 'bg-primary-superdark border-gray-800',
+                    isDraggedOver && !isInvalidDrag && 'border-gray-800 bg-primary-superdark',
                     !isDraggedOver && 'border-gray-800',
                 )}
                 onClick={(e) => {
                     e.target === dragDropRef.current && fileInputRef.current?.click();
                 }}>
                 {children ? (
-                    <label htmlFor="file-upload-input" className="block flex cursor-pointer items-center justify-center text-sm text-gray-600">
+                    <label htmlFor="file-upload-input" className="block flex cursor-pointer items-center justify-center pb-2 text-sm text-gray-600">
                         <IconText
                             icon={ImageIcon}
                             text={

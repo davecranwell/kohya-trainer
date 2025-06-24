@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useState, useEffect, useLayoutEffect, forwardRef } from 'react';
 import { useDebounce } from 'use-debounce';
-import { InfoCircledIcon } from '@radix-ui/react-icons';
+import { Cross1Icon, InfoCircledIcon } from '@radix-ui/react-icons';
 import { Grid, List, AutoSizer, CellMeasurer, CellMeasurerCache } from 'react-virtualized';
 import { useHydrated } from 'remix-utils/use-hydrated';
 
@@ -16,6 +16,7 @@ export const ImageTaggingList = forwardRef(
         {
             images,
             onImageTagsUpdated,
+            handleDelete,
             RenderImage,
             windowWidth,
             imageWidth,
@@ -28,11 +29,13 @@ export const ImageTaggingList = forwardRef(
                 image: ImageWithMetadata;
                 handleTagChange: (tags: string[], imageId: string) => void;
                 handleTagRemove: (tags: string[], removedTag: string, imageId: string) => void;
+                handleDelete: (imageId: string) => void;
                 allTags: string[];
                 [key: string]: any; // Allow additional props to be passed through
             }>;
             windowWidth: number;
             imageWidth: number;
+            handleDelete: (imageId: string) => void;
             imageHeight: number;
             cols: number;
         },
@@ -70,7 +73,7 @@ export const ImageTaggingList = forwardRef(
 
             if (updatedOk) {
                 if (images.filter((image) => image.id !== imageId).every((image) => !image.text?.includes(removedTag))) {
-                    setAllTags([...tags.filter((tag) => tag !== removedTag), ...sanitisedTags]);
+                    setAllTags(sanitiseTagArray([...tags.filter((tag) => tag !== removedTag), ...sanitisedTags]));
                 }
             }
         };
@@ -104,7 +107,7 @@ export const ImageTaggingList = forwardRef(
                     <div className="flex w-full flex-row pb-4 pr-4" key={`${key}-${idx}`} style={style}>
                         {images.map((image) => (
                             <div
-                                className={`align-center flex-0 mr-4 flex flex-row gap-4 rounded-xl border border-gray-800 bg-gray-900 p-4`}
+                                className={`align-center flex-0 relative mr-4 flex flex-row gap-4 rounded-xl border border-gray-800 bg-gray-900 p-4`}
                                 key={`${image.id}-cell`}
                                 style={{ width: `${imageWidth}px` }}>
                                 <RenderImage
@@ -113,13 +116,14 @@ export const ImageTaggingList = forwardRef(
                                     handleTagChange={handleTagChange}
                                     handleTagRemove={handleTagRemove}
                                     allTags={allTags}
+                                    handleDelete={handleDelete}
                                 />
                             </div>
                         ))}
                     </div>
                 );
             },
-            [allTags, cols, filteredImages, imageWidth],
+            [allTags, cols, images, filteredImages, imageWidth],
         );
 
         return (

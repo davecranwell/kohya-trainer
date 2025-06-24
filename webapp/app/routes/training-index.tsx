@@ -85,9 +85,9 @@ export default function TrainingPage({ loaderData }: Route.ComponentProps) {
 
     return (
         <div className="align-center justify-top mx-auto flex h-full max-h-screen min-h-screen w-full flex-col items-center overflow-y-auto p-6 sm:pt-[20vh]">
-            <EmptyState actionUrl="/training/new" noun="trainings" actionText="Create a new training" ctaText="" items={trainings} />
+            <EmptyState actionUrl="/training/new" noun="Loras" actionText="Create a new lora" ctaText="Create one now" items={trainings} />
 
-            <ul role="list" className="mx-auto w-full max-w-screen-lg space-y-8">
+            <ul role="list" className="mx-auto w-full max-w-screen-md space-y-8">
                 {trainings.map((training) => (
                     <li
                         key={training.id}
@@ -96,10 +96,15 @@ export default function TrainingPage({ loaderData }: Route.ComponentProps) {
                             <div className="flex-1 space-y-2">
                                 <h2 className="font-semibold leading-6 text-white">{training.name}</h2>
                                 <div>
-                                    <IconText icon={LightningBoltIcon} text={training.triggerWord} className="mr-2 inline text-yellow-500" />
+                                    <IconText icon={LightningBoltIcon} text={training.triggerWord} iconalign="center" className="text-yellow-500" />
                                 </div>
                                 <div>
-                                    <IconText icon={ImageIcon} text={`${training._count.images} images`} className="mr-2 inline text-accent1" />
+                                    <IconText
+                                        icon={ImageIcon}
+                                        text={`${training._count.images} images`}
+                                        iconalign="center"
+                                        className="text-accent1"
+                                    />
                                 </div>
                             </div>
 

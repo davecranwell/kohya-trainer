@@ -130,6 +130,7 @@ export async function loader({ params, request }: LoaderFunctionArgs) {
                         y: true,
                         width: true,
                         height: true,
+                        text: true,
                     },
                 },
             },
@@ -141,7 +142,10 @@ export async function loader({ params, request }: LoaderFunctionArgs) {
     }
 
     const groupImageHashmap: Record<string, { x: number; y: number; width: number; height: number }> = group.images.reduce(
-        (acc, image) => ({ ...acc, [image.imageId]: { x: image.x, y: image.y, width: image.width, height: image.height } }),
+        (acc, groupImage) => ({
+            ...acc,
+            [groupImage.imageId]: { x: groupImage.x, y: groupImage.y, width: groupImage.width, height: groupImage.height, text: groupImage.text },
+        }),
         {},
     );
 
@@ -155,7 +159,7 @@ export async function loader({ params, request }: LoaderFunctionArgs) {
     };
 }
 
-export default function ImageUpload() {
+export default function ImageGroup() {
     const fetcher = useFetcher();
     const listRef = useRef<HTMLDivElement>(null);
     const { images, training, thumbnailBucketUrl, group, groupImageHashmap } = useLoaderData<typeof loader>();
@@ -172,7 +176,15 @@ export default function ImageUpload() {
     }, []);
 
     return (
-        <Panel heading={group.name} classes="h-full" bodyClasses="">
+        <Panel
+            heading={
+                <div className="flex flex-row items-center gap-2">
+                    <span>{group.name}</span>
+                    <Button variant="textonly" size="icon" icon={Cross1Icon} />
+                </div>
+            }
+            classes="h-full"
+            bodyClasses="">
             <div className="relative flex h-full grow flex-col content-stretch">
                 <fetcher.Form action={`/training/${training.id}/imagegroup/${group.id}`} id={training.id} method="post">
                     <ControlGroup heading="Original images">
@@ -195,7 +207,7 @@ export default function ImageUpload() {
                             windowWidth={windowWidth}
                             cols={cols}
                             imageWidth={Math.min(Math.ceil(windowWidth / cols), 500)}
-                            imageHeight={500}
+                            imageHeight={700}
                             onImageTagsUpdated={async (imageId, sanitisedTags) => {
                                 const updateTextResponse = await fetch(`/api/${group.id}/imagesize/${imageId}`, {
                                     method: 'PATCH',
@@ -207,8 +219,6 @@ export default function ImageUpload() {
                                     if (updatedImage) {
                                         updatedImage.text = sanitisedTags.join(',');
                                     }
-
-                                    //setImages(images);
                                 }
 
                                 return updateTextResponse.ok;
@@ -325,15 +335,17 @@ const Image = ({
             </div>
             <div
                 data-included={isIncludedInGroup ? 'true' : 'false'}
-                className="flex-0 relative h-[400px] w-full data-[included=false]:opacity-10 data-[included=true]:opacity-100">
+                className="flex-0 relative h-[500px] w-full data-[included=false]:opacity-10 data-[included=true]:opacity-100">
                 <Cropper
                     key={image.id}
                     image={getThumbnailUrl(thumbnailBucketUrl, image.url!, 600)}
                     showGrid={false}
                     zoomSpeed={0.1}
                     crop={crop}
-                    objectFit="horizontal-cover" // causes all sorts of flickering image layout issues
+                    objectFit="vertical-cover" // causes all sorts of flickering image layout issues
                     zoom={zoom}
+                    maxZoom={10}
+                    minZoom={1}
                     style={{ cropAreaStyle: { color: 'rgba(0, 0, 0, 0.9)', borderRadius: '10px' } }}
                     aspect={1 / 1}
                     onInteractionStart={() => setHasInteracted(true)} // this is to prevent the initial crop from being set as the page loads and the image dimensions are 0.000000002 different!
@@ -350,10 +362,10 @@ const Image = ({
             </div>
             <div
                 data-included={isIncludedInGroup ? 'true' : 'false'}
-                className="mt-4 w-full flex-1 data-[included=false]:opacity-10 data-[included=true]:opacity-100">
+                className="flex-0 mt-4 h-[130px] w-full data-[included=false]:opacity-10 data-[included=true]:opacity-100">
                 <MultiComboBox
                     name={`${image.id}-tags`}
-                    defaultValue={image.text}
+                    defaultValue={groupImage?.text || image.text}
                     options={allTags}
                     onChange={(tags) => {
                         handleTagChange(tags, image.id!);

@@ -131,3 +131,11 @@ Due to old dependencies without ESM in the server, the server is built with the 
 Due to the frustration of esbuild needing scripting for multiple files, the server is built with the --bundle flag as this includes all files imported.
 
 The server is built with a few externals like --external:lightningcss due to errors thrown by esbuild.
+
+## Tagging images
+
+(from root of repo)
+
+```bash
+python sd-scripts/finetune/tag_images_by_wd14_tagger.py --onnx --repo_id "SmilingWolf/wd-vit-tagger-v3" --batch_size 4 --remove_underscore --character_tags_first --character_tag_expand --always_first_tags "triggerword" --undesired_tags "" /mnt/g/SD/your/folder
+```

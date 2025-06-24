@@ -15,6 +15,8 @@ import { Panel } from '~/components/panel';
 import { ImageTaggingList } from '~/components/image-tagging-list';
 import { ImagePreview } from '~/components/image-preview';
 import { MultiComboBox } from '~/components/forms/multi-combo-box';
+import { Button } from '~/components/button';
+import { Cross1Icon } from '@radix-ui/react-icons';
 
 const MAX_IMAGES = 200;
 const ACCEPTED_IMAGE_TYPES = ['image/png', 'image/jpeg'];
@@ -63,6 +65,17 @@ export default function ImageUpload() {
     const listRef = useRef<HTMLDivElement>(null);
     const [windowWidth, setWindowWidth] = useState(0);
     const [cols, setCols] = useState(3);
+
+    const handleDelete = async (imageId: string) => {
+        const deleteResponse = await fetch(`/api/trainingimage/${training.id}`, {
+            method: 'DELETE',
+            body: JSON.stringify({ id: imageId }),
+        });
+
+        if (deleteResponse.ok) {
+            setUploadedImages(uploadedImages.filter((image) => image.id !== imageId));
+        }
+    };
 
     // updated images are those that have been given tags by the upload of a text file
     // new images are those that have been uploaded brand new
@@ -185,11 +198,11 @@ export default function ImageUpload() {
             setWindowWidth(detectedWidth || 0);
             setCols(Math.max(Math.floor(detectedWidth / 500), 1));
         }
-    }, []);
+    }, [listRef.current]);
 
     return (
         <Panel heading="Original images" scrollable={false} classes="h-full" bodyClasses="h-full content-stretch grow">
-            <div className="flex h-full flex-col justify-stretch overflow-hidden">
+            <div className="flex h-full flex-col justify-stretch overflow-hidden" ref={listRef}>
                 <FileUploadPreview
                     key={`${training.id}-preview`}
                     acceptedImageTypes={ACCEPTED_IMAGE_TYPES}
@@ -199,7 +212,7 @@ export default function ImageUpload() {
                     onDropped={handleNewFile}>
                     {uploadedImages.length > 0 && (
                         <ImageTaggingList
-                            ref={listRef}
+                            handleDelete={handleDelete}
                             images={uploadedImages}
                             cols={cols}
                             imageWidth={Math.min(Math.ceil(windowWidth / cols), 500)}
@@ -235,12 +248,14 @@ const Image = ({
     image,
     handleTagChange,
     handleTagRemove,
+    handleDelete,
     allTags,
     thumbnailBucketUrl,
 }: {
     image: ImageWithMetadata;
     handleTagChange: (tags: string[], imageId: string) => void;
     handleTagRemove: (tags: string[], removedTag: string, imageId: string) => void;
+    handleDelete: (imageId: string) => void;
     allTags: string[];
     thumbnailBucketUrl: string;
 }) => (
@@ -252,6 +267,18 @@ const Image = ({
                 width={200}
             />
         )}
+
+        <div className="absolute left-0 top-0 z-50">
+            <Button
+                name={`exclude`}
+                value={image.id}
+                variant="ghost"
+                size="icon"
+                onClick={() => handleDelete(image.id!)}
+                title="Delete from training data">
+                <Cross1Icon className="h-4 w-4 text-white" />
+            </Button>
+        </div>
 
         <div className="ml-2 flex-1">
             <MultiComboBox

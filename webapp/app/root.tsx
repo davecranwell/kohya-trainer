@@ -51,7 +51,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 <Meta />
                 <Links />
             </head>
-            <body className="bg-gradient-to-br from-gray-950 via-gray-900 to-slate-900 text-gray-400 sm:min-h-screen sm:overflow-hidden">
+            <body className="overflow-x-hidden bg-gradient-to-br from-gray-950 via-gray-900 to-slate-900 text-gray-400 sm:min-h-screen sm:overflow-hidden">
                 <TooltipProvider delayDuration={100} skipDelayDuration={500}>
                     <QueryClientProvider client={queryClient}>
                         <HelpProvider>{children}</HelpProvider>

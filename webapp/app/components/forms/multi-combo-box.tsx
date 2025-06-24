@@ -22,8 +22,6 @@ export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> 
 const SelectedItems = memo(
     forwardRef<HTMLUListElement, { selected: Option[]; name: string; onRemove: (option: Option) => void; className?: string }>(
         ({ selected, name, onRemove, className }, ref) => {
-            if (selected.length === 0) return null;
-
             // Event delegation handler
             const handleClick = (e: React.MouseEvent) => {
                 // Look for closest button element from click target
@@ -35,10 +33,13 @@ const SelectedItems = memo(
             };
 
             return (
-                <ul ref={ref} className="mb-2 flex max-h-[100px] flex-wrap overflow-y-auto border-b border-gray-800 py-2" onClick={handleClick}>
+                <ul
+                    ref={ref}
+                    className={`mb-2 flex flex-wrap items-start overflow-y-auto border-b border-gray-800 py-2 ${className}`}
+                    onClick={handleClick}>
                     {selected.map((option: Option, index) => (
                         <li
-                            key={`${name}-${option}-${index}`}
+                            key={`selected-${name}-${option}-${index}`}
                             className="group relative mb-1 mr-1 flex items-center items-stretch whitespace-nowrap rounded rounded-full bg-gray-800 p-1 px-2 text-xs text-white">
                             <span>{option}</span>
                             <span
@@ -95,8 +96,8 @@ export const MultiComboBox: React.FC<Props> = memo(({ ...props }) => {
     const unSelectedItems = useMemo(() => filteredItems?.filter((item) => !selected.includes(item)) || [], [filteredItems, selected]);
 
     return (
-        <div className={`rounded rounded-lg border border-gray-800 bg-black/40 p-2 ${props.className}`} aria-label="tags">
-            <SelectedItems ref={selectedItemsRef} selected={selected} name={props.name} onRemove={handleRemove} />
+        <div className={`flex h-full flex-col rounded rounded-lg border border-gray-800 bg-black/40 p-2 ${props.className}`} aria-label="tags">
+            <SelectedItems ref={selectedItemsRef} selected={selected} name={props.name} onRemove={handleRemove} className="flex-1" />
 
             <Combobox value={selected} onChange={handleChange} multiple>
                 {({ value }) => (
@@ -105,7 +106,7 @@ export const MultiComboBox: React.FC<Props> = memo(({ ...props }) => {
                         https://headlessui.com/react/combobox#using-with-html-forms  */}
 
                         <input type="hidden" name={props.name} value={value} />
-                        <div className="dropdown relative w-full">
+                        <div className="dropdown flex-0 relative w-full">
                             <ComboboxInput
                                 placeholder="Choose or type tags"
                                 value={query}
@@ -136,7 +137,7 @@ export const MultiComboBox: React.FC<Props> = memo(({ ...props }) => {
                                         .filter((option) => option.length > 0)
                                         .map((option, index) => (
                                             <ComboboxOption
-                                                key={`${option}-${index}`}
+                                                key={`unselected-${option}-${index}`}
                                                 value={option}
                                                 className="flex items-center p-1 text-left text-white hover:bg-primary-dark/30 data-[focus]:bg-primary-dark/30">
                                                 {/* <BookmarkFilledIcon className="mr-1 text-primary" /> */}

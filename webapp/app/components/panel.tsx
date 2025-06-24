@@ -12,7 +12,7 @@ export const Panel = ({
     closeable = false,
     onClose,
 }: {
-    heading: string;
+    heading: React.ReactNode | string;
     children: React.ReactNode;
     classes?: string;
     scrollable?: boolean;
