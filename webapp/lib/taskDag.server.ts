@@ -25,8 +25,8 @@ export function registerDag() {
 
             case 'reduceImageSuccess': {
                 if (imageId) {
-                    const isAllDone = await reduceImageSuccess({ imageId, imageGroupId });
-                    if (isAllDone) {
+                    const imagesRemaining = await reduceImageSuccess({ imageId, imageGroupId });
+                    if (!imagesRemaining) {
                         await queueTask({ messageBody: { task: 'zipImages', runId, unique: true } });
                     }
                 }

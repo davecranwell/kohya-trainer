@@ -21,7 +21,6 @@ export const zipImages = async ({ runId }: { runId: string }) => {
                     triggerWord: true,
                     config: true,
                     ownerId: true,
-                    imageGroupId: true,
                 },
             },
         },

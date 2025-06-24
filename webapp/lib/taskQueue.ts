@@ -52,7 +52,7 @@ async function validateMessage(message: Message) {
 
     if (!Body) {
         console.error('No body found in message', MessageId);
-        return;
+        return false;
     }
 
     // Process message logic here
@@ -70,7 +70,7 @@ async function validateMessage(message: Message) {
             QueueUrl: queueUrl,
             ReceiptHandle,
         });
-        return;
+        return false;
     }
 
     if (unique) {
@@ -82,11 +82,12 @@ async function validateMessage(message: Message) {
 
         if (existingStartedTask) {
             console.log('Unique task already run', task);
+            console.log(ReceiptHandle);
             await sqs.deleteMessage({
                 QueueUrl: queueUrl,
                 ReceiptHandle,
             });
-            return;
+            return false;
         }
     }
 
@@ -102,7 +103,7 @@ async function validateMessage(message: Message) {
             data: { status: 'stalled' },
         });
 
-        return;
+        return false;
     }
 
     return true;
