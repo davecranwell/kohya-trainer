@@ -91,8 +91,8 @@ export default function TrainingPage({ loaderData }: Route.ComponentProps) {
                 {trainings.map((training) => (
                     <li
                         key={training.id}
-                        className="relative justify-between gap-x-6 space-y-4 rounded-xl border border-gray-800 bg-black/20 p-6 hover:border-primary hover:bg-black">
-                        <Link to={`/training/${training.id}`} className="flex flex-row">
+                        className="relative justify-between gap-x-6 space-y-4 rounded-xl border border-gray-800 bg-black/20 transition-all hover:border-primary hover:bg-black">
+                        <Link to={`/training/${training.id}`} className="flex flex-row p-6">
                             <div className="flex-1 space-y-2">
                                 <h2 className="font-semibold leading-6 text-white">{training.name}</h2>
                                 <div>

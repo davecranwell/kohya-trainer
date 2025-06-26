@@ -7,7 +7,7 @@ import { commaSeparatedStringToArray } from '~/util/misc';
 
 type Props = {
     name: string;
-    options: Option[];
+    onGetOptions?: () => Option[];
     defaultValue: string | undefined | null;
     onChange: (options: Option[]) => void;
     onRemove: (options: Option[], removedOption: Option) => void;
@@ -35,12 +35,12 @@ const SelectedItems = memo(
             return (
                 <ul
                     ref={ref}
-                    className={`mb-2 flex flex-wrap items-start overflow-y-auto border-b border-gray-800 py-2 ${className}`}
+                    className={`mb-2 flex-wrap items-start justify-start justify-items-start overflow-y-auto border-b border-gray-800 ${className}`}
                     onClick={handleClick}>
                     {selected.map((option: Option, index) => (
                         <li
                             key={`selected-${name}-${option}-${index}`}
-                            className="group relative mb-1 mr-1 flex items-center items-stretch whitespace-nowrap rounded rounded-full bg-gray-800 p-1 px-2 text-xs text-white">
+                            className="group relative mb-1 mr-1 inline-block whitespace-nowrap rounded rounded-full bg-gray-800 p-1 px-2 text-xs text-white">
                             <span>{option}</span>
                             <span
                                 title={`Remove ${option}`}
@@ -56,10 +56,11 @@ const SelectedItems = memo(
     ),
 );
 
-export const MultiComboBox: React.FC<Props> = memo(({ ...props }) => {
+export const MultiComboBox: React.FC<Props> = ({ ...props }) => {
     const [selected, setSelected] = useState<Option[]>(props.defaultValue ? commaSeparatedStringToArray(props.defaultValue) : []);
-    const [query, setQuery] = useState('');
+    const [query, setQuery] = useState<string>('');
     const selectedItemsRef = useRef<HTMLUListElement>(null);
+    const [options, setOptions] = useState<Option[]>([]);
 
     useEffect(() => {
         setSelected(props.defaultValue ? commaSeparatedStringToArray(props.defaultValue) : []);
@@ -86,11 +87,29 @@ export const MultiComboBox: React.FC<Props> = memo(({ ...props }) => {
         [props.onChange],
     );
 
-    // Memoize filtered items
-    const filteredItems = useMemo(
-        () => (query === '' ? props.options : props.options?.filter((item) => item.toLowerCase().includes(query.toLowerCase()))),
-        [query, props.options],
+    const handleQueryChange = useCallback(
+        (event: React.ChangeEvent<HTMLInputElement>) => {
+            if (props.onGetOptions) {
+                setOptions(props.onGetOptions());
+            }
+            setQuery(event.target.value);
+        },
+        [props.onGetOptions],
     );
+
+    const handleGetOptions = useCallback(
+        (event: React.MouseEvent<HTMLButtonElement>) => {
+            if (props.onGetOptions) {
+                setOptions(props.onGetOptions());
+            }
+        },
+        [props.onGetOptions],
+    );
+
+    // Memoize filtered items
+    const filteredItems = useMemo(() => {
+        return query && query.length < 1 ? options : options?.filter((item) => item.toLowerCase().includes(query.toLowerCase()));
+    }, [query, options]);
 
     // Memoize unselected items
     const unSelectedItems = useMemo(() => filteredItems?.filter((item) => !selected.includes(item)) || [], [filteredItems, selected]);
@@ -110,12 +129,12 @@ export const MultiComboBox: React.FC<Props> = memo(({ ...props }) => {
                             <ComboboxInput
                                 placeholder="Choose or type tags"
                                 value={query}
-                                onChange={(event) => {
-                                    setQuery(event.target.value);
-                                }}
+                                onChange={handleQueryChange}
                                 className="block w-full rounded-md border-0 bg-transparent p-2 py-1.5 text-white focus:ring-primary"
                             />
-                            <ComboboxButton className="absolute inset-y-0 right-0 z-0 flex w-10 items-center justify-center">
+                            <ComboboxButton
+                                className="absolute inset-y-0 right-0 z-0 flex w-10 items-center justify-center"
+                                onClick={handleGetOptions}>
                                 <ChevronDownIcon className="text-gray-500" />
                             </ComboboxButton>
 
@@ -125,7 +144,7 @@ export const MultiComboBox: React.FC<Props> = memo(({ ...props }) => {
                                     // Prevent re-opening of dropdown when clicking option
                                     e.stopPropagation();
                                 }}>
-                                {query.length > 0 && !unSelectedItems.includes(query) && (
+                                {query && query.length > 0 && !unSelectedItems.includes(query) && (
                                     <ComboboxOption
                                         value={query}
                                         className="flex items-center p-1 text-left text-white hover:bg-primary-dark/30 data-[focus]:bg-primary-dark/30">
@@ -151,7 +170,7 @@ export const MultiComboBox: React.FC<Props> = memo(({ ...props }) => {
             </Combobox>
         </div>
     );
-});
+};
 
 // Add display name for debugging
 MultiComboBox.displayName = 'MultiComboBox';

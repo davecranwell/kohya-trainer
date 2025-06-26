@@ -1,5 +1,7 @@
 import { data, Link, Outlet, type LoaderFunctionArgs } from 'react-router';
 import { Form, useLoaderData } from 'react-router';
+import { clsx } from 'clsx';
+import { InfoCircledIcon } from '@radix-ui/react-icons';
 
 import prisma from '#/prisma/db.server';
 
@@ -8,13 +10,10 @@ import { requireUserWithPermission } from '~/services/permissions.server';
 import { TrainingEditor } from '~/routes/training-editor';
 import { type BaseModel, type Training } from '~/types/training';
 import { baseModels } from '~/util/difussion-models';
-import { Panel } from '~/components/panel';
+import { useHelp } from '~/util/help.provider';
 
-import { HelpProvider, useHelp } from '~/util/help.provider';
-import { clsx } from 'clsx';
-import { ImagegroupList } from '~/components/imagegroup-list';
+import { Panel } from '~/components/panel';
 import { Button } from '~/components/button';
-import { InfoCircledIcon } from '@radix-ui/react-icons';
 
 export { action } from '~/routes/training-editor.server';
 
@@ -111,18 +110,16 @@ export default function TrainingRoute() {
                         </h2>
                         {imageGroups.length > 0 && (
                             <ul className="-mx-4 list-none text-sm leading-6 marker:text-accent1">
-                                <li key={'originals'} className={'flex flex-row items-center justify-between hover:hover:bg-primary-dark'}>
-                                    <Link to={`/training/${training.id}`} className="px-4 py-2 text-white">
-                                        Original images
+                                <li key={'originals'} className={'hover:hover:bg-primary-dark'}>
+                                    <Link to={`/training/${training.id}`} className="block w-full px-4 py-2 text-white">
+                                        Original images <span className="px-4 py-2 text-gray-400">({training._count.images})</span>
                                     </Link>
-                                    <span className="px-4 py-2">({training._count.images})</span>
                                 </li>
                                 {imageGroups.map((group) => (
-                                    <li key={group.id} className={'flex flex-row items-center justify-between hover:hover:bg-primary-dark'}>
-                                        <Link to={`/training/${training.id}/imagegroup/${group.id}`} className="px-4 py-2 text-white">
-                                            {group.name}
+                                    <li key={group.id} className={'hover:hover:bg-primary-dark'}>
+                                        <Link to={`/training/${training.id}/imagegroup/${group.id}`} className="block w-full px-4 py-2 text-white">
+                                            {group.name} <span className="px-4 py-2 text-gray-400">({group._count.images})</span>
                                         </Link>
-                                        <span className="px-4 py-2">({group._count.images})</span>
                                     </li>
                                 ))}
                             </ul>

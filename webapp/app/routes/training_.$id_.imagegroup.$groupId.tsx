@@ -175,6 +175,25 @@ export default function ImageGroup() {
         }
     }, []);
 
+    const handleTagsUpdated = useCallback(
+        async (imageId: string, sanitisedTags: string[]) => {
+            const updateTextResponse = await fetch(`/api/${group.id}/imagesize/${imageId}`, {
+                method: 'PATCH',
+                body: JSON.stringify({ id: imageId, text: sanitisedTags.join(',') }),
+            });
+
+            // if (updateTextResponse.ok) {
+            //     const updatedImage = images.find((image) => image.id === imageId);
+            //     if (updatedImage) {
+            //         updatedImage.text = sanitisedTags.join(',');
+            //     }
+            // }
+
+            return updateTextResponse.ok;
+        },
+        [images],
+    );
+
     return (
         <Panel
             heading={
@@ -208,25 +227,11 @@ export default function ImageGroup() {
                             cols={cols}
                             imageWidth={Math.min(Math.ceil(windowWidth / cols), 500)}
                             imageHeight={700}
-                            onImageTagsUpdated={async (imageId, sanitisedTags) => {
-                                const updateTextResponse = await fetch(`/api/${group.id}/imagesize/${imageId}`, {
-                                    method: 'PATCH',
-                                    body: JSON.stringify({ id: imageId, text: sanitisedTags.join(',') }),
-                                });
-
-                                if (updateTextResponse.ok) {
-                                    const updatedImage = images.find((image) => image.id === imageId);
-                                    if (updatedImage) {
-                                        updatedImage.text = sanitisedTags.join(',');
-                                    }
-                                }
-
-                                return updateTextResponse.ok;
-                            }}
+                            handleDelete={() => {}} // no-op as deleting images isn't handled on this page
+                            onImageTagsUpdated={handleTagsUpdated}
                             RenderImage={(props) => (
                                 <Image
                                     {...props}
-                                    isScrolling
                                     groupImage={groupImageHashmap[props.image.id!]}
                                     fetcher={fetcher}
                                     thumbnailBucketUrl={thumbnailBucketUrl}
@@ -245,24 +250,26 @@ const Image = ({
     thumbnailBucketUrl,
     fetcher,
     groupImage,
-    allTags,
     handleTagChange,
     handleTagRemove,
-    isScrolling,
+    handleGetTagOptions,
 }: {
     image: ImageWithMetadata;
     thumbnailBucketUrl: string;
     fetcher: FetcherWithComponents<any>;
-    groupImage: { x: number; y: number; width: number; height: number };
-    allTags: string[];
+    groupImage: { x: number; y: number; width: number; height: number; text: string };
     handleTagChange: (tags: string[], imageId: string) => void;
     handleTagRemove: (tags: string[], removedTag: string, imageId: string) => void;
-    isScrolling: boolean;
+    handleGetTagOptions: () => string[];
 }) => {
     const [crop, setCrop] = useState<{ x: number; y: number }>({ x: -1, y: -1 });
     const [zoom, setZoom] = useState<number>(1);
     const [hasInteracted, setHasInteracted] = useState(false);
     const [isIncludedInGroup, setIsIncludedInGroup] = useState(image.isIncludedInGroup);
+
+    if (!image.id) {
+        return null;
+    }
 
     const onWheelRequest = useCallback((e: any) => {
         if (e.ctrlKey || e.metaKey) {
@@ -294,9 +301,16 @@ const Image = ({
         fetcher.submit({ setcrop: JSON.stringify(cropPerc), imageid: imageId }, { action: fetcher.formAction, method: 'post' });
     }, 500);
 
-    if (!image.id) {
-        return null;
-    }
+    const handleChange = (tags: string[]) => {
+        handleTagChange(tags, image.id!);
+    };
+
+    const handleRemove = useCallback(
+        (allTags: string[], removedTag: string) => {
+            handleTagRemove(allTags, removedTag, image.id!);
+        },
+        [handleTagRemove, image.id],
+    );
 
     const initialCroppedAreaPercentages =
         isIncludedInGroup && groupImage?.x != null && groupImage?.y != null && groupImage?.width != null && groupImage?.height != null
@@ -342,7 +356,7 @@ const Image = ({
                     showGrid={false}
                     zoomSpeed={0.1}
                     crop={crop}
-                    objectFit="vertical-cover" // causes all sorts of flickering image layout issues
+                    objectFit="cover" // causes all sorts of flickering image layout issues
                     zoom={zoom}
                     maxZoom={10}
                     minZoom={1}
@@ -366,13 +380,9 @@ const Image = ({
                 <MultiComboBox
                     name={`${image.id}-tags`}
                     defaultValue={groupImage?.text || image.text}
-                    options={allTags}
-                    onChange={(tags) => {
-                        handleTagChange(tags, image.id!);
-                    }}
-                    onRemove={(allTags, removedTag) => {
-                        handleTagRemove(allTags, removedTag, image.id!);
-                    }}
+                    onGetOptions={handleGetTagOptions}
+                    onChange={handleChange}
+                    onRemove={handleRemove}
                 />
             </div>
         </div>

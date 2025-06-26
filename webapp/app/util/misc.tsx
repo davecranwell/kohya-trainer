@@ -60,6 +60,8 @@ export function sanitiseTagString(tagString: string, filterTags?: string[]) {
     return arrayToCommaSeparatedString(makeArrayUnique(commaSeparatedStringToArray(tagString).filter((tag) => !filterTags?.includes(tag))));
 }
 
+// Takes an array of tags, an optional second array to filter on, and returns a new array of tags that are unique and that are not in the filter array
+// The second param is typically used when removing tags.
 export function sanitiseTagArray(tagArray: string[], filterTags?: string[]) {
     return makeArrayUnique(tagArray).filter((tag) => !filterTags?.includes(tag));
 }

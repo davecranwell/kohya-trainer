@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState, useEffect, useLayoutEffect, forwardRef } from 'react';
+import { useCallback, useMemo, useState, useEffect, useLayoutEffect, forwardRef, memo, useRef } from 'react';
 import { useDebounce } from 'use-debounce';
 import { Cross1Icon, InfoCircledIcon } from '@radix-ui/react-icons';
 import { Grid, List, AutoSizer, CellMeasurer, CellMeasurerCache } from 'react-virtualized';
@@ -30,7 +30,7 @@ export const ImageTaggingList = forwardRef(
                 handleTagChange: (tags: string[], imageId: string) => void;
                 handleTagRemove: (tags: string[], removedTag: string, imageId: string) => void;
                 handleDelete: (imageId: string) => void;
-                allTags: string[];
+                handleGetTagOptions: () => string[];
                 [key: string]: any; // Allow additional props to be passed through
             }>;
             windowWidth: number;
@@ -47,36 +47,52 @@ export const ImageTaggingList = forwardRef(
         const [negateTag, setNegateTag] = useState(false);
         const isHydrated = useHydrated();
         const { setHelp } = useHelp();
+        // store current tags in a ref to avoid stale closure issues
+        const tagRef = useRef<string[]>(sanitiseTagArray(images.map((image) => (image.text || '').split(',')).flat()));
 
         if (images.length === 0) {
             return null;
         }
 
-        const updateImageTags = async (imageId: string, tags: string[]): Promise<[string[], boolean]> => {
+        const updateImageTags = useCallback(async (imageId: string, tags: string[]): Promise<[string[], boolean]> => {
             const sanitisedTags = sanitiseTagArray(tags);
             const hasUpdated = await onImageTagsUpdated(imageId, sanitisedTags);
 
             return [sanitisedTags, hasUpdated];
-        };
+        }, []);
 
-        const handleTagChange = async (tags: string[], imageId: string) => {
-            const [sanitisedTags, hasUpdated] = await updateImageTags(imageId, tags);
+        const handleTagChange = useCallback(
+            async (tags: string[], imageId: string) => {
+                const [sanitisedTags, hasUpdated] = await updateImageTags(imageId, tags);
+                if (hasUpdated) {
+                    const newAllTags = sanitiseTagArray([...allTags, ...sanitisedTags]);
+                    setAllTags(newAllTags);
+                    tagRef.current = newAllTags; // Store in ref for immediate access
+                }
+            },
+            [updateImageTags, allTags],
+        );
 
-            if (hasUpdated) {
-                setAllTags(sanitiseTagArray([...allTags, ...sanitisedTags]));
-            }
-        };
+        const handleGetTagOptions = useCallback(() => {
+            // Use ref for immediate access to latest tags, fallback to state
+            const tagsToUse = tagRef.current.length > 0 ? tagRef.current : allTags;
+
+            return tagsToUse;
+        }, [allTags]);
 
         // TODO: Removing the last instance of a tag does reset the dropdown but doesn't reset the query, fix this
-        const handleTagRemove = async (tags: string[], removedTag: string, imageId: string) => {
-            const [sanitisedTags, updatedOk] = await updateImageTags(imageId, tags);
+        const handleTagRemove = useCallback(
+            async (tags: string[], removedTag: string, imageId: string) => {
+                const [sanitisedTags, updatedOk] = await updateImageTags(imageId, tags);
 
-            if (updatedOk) {
-                if (images.filter((image) => image.id !== imageId).every((image) => !image.text?.includes(removedTag))) {
-                    setAllTags(sanitiseTagArray([...tags.filter((tag) => tag !== removedTag), ...sanitisedTags]));
+                if (updatedOk) {
+                    if (images.filter((image) => image.id !== imageId).every((image) => !image.text?.includes(removedTag))) {
+                        setAllTags((prevTags) => sanitiseTagArray([...tags.filter((tag) => tag !== removedTag), ...sanitisedTags]));
+                    }
                 }
-            }
-        };
+            },
+            [images, updateImageTags],
+        );
 
         const filteredImages = useMemo(
             () =>
@@ -86,7 +102,7 @@ export const ImageTaggingList = forwardRef(
                     }
 
                     if (selectedTag) {
-                        const imageTags = (image.text || '').split(',').map((t) => t.trim());
+                        const imageTags = (image.text || '').split(',').map((t: string) => t.trim());
                         const hasTag = imageTags.includes(selectedTag);
                         return negateTag ? !hasTag : hasTag;
                     }
@@ -99,23 +115,25 @@ export const ImageTaggingList = forwardRef(
         const rowRenderer = useCallback(
             ({ key, index, isScrolling, style }: any) => {
                 const idx = index * cols;
-                const images = filteredImages.slice(idx, idx + cols);
+                const items = [];
+                items.push(filteredImages[idx]);
+                if (filteredImages[idx + 1]) items.push(filteredImages[idx + 1]);
+                if (filteredImages[idx + 2]) items.push(filteredImages[idx + 2]);
 
-                if (!images.length) return null;
+                if (!items.length) return null;
 
                 return (
                     <div className="flex w-full flex-row pb-4 pr-4" key={`${key}-${idx}`} style={style}>
-                        {images.map((image) => (
+                        {items.map((image) => (
                             <div
                                 className={`align-center flex-0 relative mr-4 flex flex-row gap-4 rounded-xl border border-gray-800 bg-gray-900 p-4`}
                                 key={`${image.id}-cell`}
                                 style={{ width: `${imageWidth}px` }}>
                                 <RenderImage
-                                    isScrolling={isScrolling}
                                     image={image}
                                     handleTagChange={handleTagChange}
                                     handleTagRemove={handleTagRemove}
-                                    allTags={allTags}
+                                    handleGetTagOptions={handleGetTagOptions}
                                     handleDelete={handleDelete}
                                 />
                             </div>
@@ -123,7 +141,7 @@ export const ImageTaggingList = forwardRef(
                     </div>
                 );
             },
-            [allTags, cols, images, filteredImages, imageWidth],
+            [cols, images, filteredImages, imageWidth],
         );
 
         return (
@@ -203,52 +221,53 @@ export const ImageTaggingList = forwardRef(
 
                                     <p>
                                         Try to ensure your tags include <strong className="text-accent1">common details</strong>, such as:
-                                        <ul className="marker:text-grey-800 mt-4 list-disc space-y-4 pl-8">
-                                            <li>
-                                                The <strong className="text-accent1">quality and type</strong> of the image e.g{' '}
-                                                <code className="font-mono text-accent2">professional</code>,{' '}
-                                                <code className="font-mono text-accent2">amateur</code>,{' '}
-                                                <code className="font-mono text-accent2">illustration</code>,{' '}
-                                                <code className="font-mono text-accent2">photograph</code>, etc
-                                            </li>
-                                            <li>
-                                                Details <strong className="text-accent1">about the medium</strong> e.g{' '}
-                                                <code className="font-mono text-accent2">canon</code>,{' '}
-                                                <code className="font-mono text-accent2">f1.8</code>, or style of art{' '}
-                                                <code className="font-mono text-accent2">cell-shading</code>,{' '}
-                                                <code className="font-mono text-accent2">chiaroscuro</code>,{' '}
-                                                <code className="font-mono text-accent2">watercolour</code>,
-                                            </li>
-                                            <li>
-                                                <strong className="text-accent1">The setting or background of the image</strong> e.g{' '}
-                                                <code className="font-mono text-accent2">sunset</code>,{' '}
-                                                <code className="font-mono text-accent2">office</code>,{' '}
-                                                <code className="font-mono text-accent2">beach</code>,{' '}
-                                                <code className="font-mono text-accent2">city</code>
-                                            </li>
-                                            <li>
-                                                Types of <strong className="text-accent1">clothing, or surface details</strong> e.g{' '}
-                                                <code className="font-mono text-accent2">t-shirt</code>,{' '}
-                                                <code className="font-mono text-accent2">hoodie</code>,{' '}
-                                                <code className="font-mono text-accent2">tattoos</code>,{' '}
-                                                <code className="font-mono text-accent2">rusted</code>,{' '}
-                                                <code className="font-mono text-accent2">scratched</code>
-                                            </li>
-                                            <li>
-                                                <strong className="text-accent1">Lighting styles</strong> e.g{' '}
-                                                <code className="font-mono text-accent2">soft lighting</code>,{' '}
-                                                <code className="font-mono text-accent2">hard lighting</code> (nb: "soft" or "hard" would be too
-                                                ambiguous)
-                                            </li>
-                                            <li>
-                                                Any <strong className="text-accent1">relevant actions</strong> e.g{' '}
-                                                <code className="font-mono text-accent2">sitting</code>,{' '}
-                                                <code className="font-mono text-accent2">painting</code>,{' '}
-                                                <code className="font-mono text-accent2">driving</code>,{' '}
-                                                <code className="font-mono text-accent2">waving</code>
-                                            </li>
-                                        </ul>
                                     </p>
+                                    <ul className="marker:text-grey-800 mt-4 list-disc space-y-4 pl-8">
+                                        <li>
+                                            The <strong className="text-accent1">quality and type</strong> of the image e.g{' '}
+                                            <code className="font-mono text-accent2">professional</code>,{' '}
+                                            <code className="font-mono text-accent2">amateur</code>,{' '}
+                                            <code className="font-mono text-accent2">illustration</code>,{' '}
+                                            <code className="font-mono text-accent2">photograph</code>, etc
+                                        </li>
+                                        <li>
+                                            Details <strong className="text-accent1">about the medium</strong> e.g{' '}
+                                            <code className="font-mono text-accent2">canon</code>,{' '}
+                                            <code className="font-mono text-accent2">f1.8</code>, or style of art{' '}
+                                            <code className="font-mono text-accent2">cell-shading</code>,{' '}
+                                            <code className="font-mono text-accent2">chiaroscuro</code>,{' '}
+                                            <code className="font-mono text-accent2">watercolour</code>,
+                                        </li>
+                                        <li>
+                                            <strong className="text-accent1">The setting or background of the image</strong> e.g{' '}
+                                            <code className="font-mono text-accent2">sunset</code>,{' '}
+                                            <code className="font-mono text-accent2">office</code>,{' '}
+                                            <code className="font-mono text-accent2">beach</code>,{' '}
+                                            <code className="font-mono text-accent2">city</code>
+                                        </li>
+                                        <li>
+                                            Types of <strong className="text-accent1">clothing, or surface details</strong> e.g{' '}
+                                            <code className="font-mono text-accent2">t-shirt</code>,{' '}
+                                            <code className="font-mono text-accent2">hoodie</code>,{' '}
+                                            <code className="font-mono text-accent2">tattoos</code>,{' '}
+                                            <code className="font-mono text-accent2">rusted</code>,{' '}
+                                            <code className="font-mono text-accent2">scratched</code>
+                                        </li>
+                                        <li>
+                                            <strong className="text-accent1">Lighting styles</strong> e.g{' '}
+                                            <code className="font-mono text-accent2">soft lighting</code>,{' '}
+                                            <code className="font-mono text-accent2">hard lighting</code> (nb: "soft" or "hard" would be too
+                                            ambiguous)
+                                        </li>
+                                        <li>
+                                            Any <strong className="text-accent1">relevant actions</strong> e.g{' '}
+                                            <code className="font-mono text-accent2">sitting</code>,{' '}
+                                            <code className="font-mono text-accent2">painting</code>,{' '}
+                                            <code className="font-mono text-accent2">driving</code>,{' '}
+                                            <code className="font-mono text-accent2">waving</code>
+                                        </li>
+                                    </ul>
+
                                     <p>
                                         But remember: if these details are things you would <strong>not</strong> want to be optional or modified
                                         during image generation, consider not tagging them at all. You can use an Image Set to tighten the crops
