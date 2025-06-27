@@ -125,7 +125,7 @@ export default function Ui() {
                     <Button variant="default">Primary Button</Button>
                     <Button variant="secondary">Secondary Button</Button>
                     <Button variant="tertiary">Tertiary Button</Button>
-                    <Button variant="ghost">Ghost Button</Button>
+                    <Button display="ghost">Ghost Button</Button>
                 </div>
             </section>
 

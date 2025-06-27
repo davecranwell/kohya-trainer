@@ -1,9 +1,8 @@
 import { useEffect } from 'react';
-import { data, type LoaderFunctionArgs, Form, NavLink, Outlet, useLoaderData, Link } from 'react-router';
+import { data, Outlet, Link } from 'react-router';
 import { type ActionFunctionArgs } from 'react-router';
-import { ImageIcon, LightningBoltIcon, Pencil1Icon, UploadIcon } from '@radix-ui/react-icons';
-import clsx from 'clsx';
-import type { Route } from './+types/training';
+import { ImageIcon, LightningBoltIcon } from '@radix-ui/react-icons';
+import type { Route } from './+types/training-index';
 
 import { useIsPending } from '~/util/hooks';
 
@@ -11,13 +10,11 @@ import { requireUserWithPermission } from '~/services/permissions.server';
 import { redirectWithToast } from '~/services/toast.server';
 import { beginTraining, checkIncompleteTrainingRun, getAllTrainingsByUser, getTrainingByUser, abortTraining } from '~/services/training.server';
 
-import { StatusIndicator, type StatusType } from '~/components/status-indicator';
 import { EmptyState } from '~/components/empty-state';
-import { StatusButton } from '~/components/status-button';
-import { Button } from '~/components/button';
-import { Progress } from '~/components/progress';
 import { getThumbnailUrl } from '~/util/misc';
 import { IconText } from '~/components/icon-text';
+import { useTrainingStatus } from '~/util/trainingstatus.provider';
+import { StatusPill } from '~/components/status-pill';
 
 const POLL_INTERVAL = 5000;
 
@@ -72,16 +69,16 @@ export async function loader({ request }: Route.LoaderArgs) {
 
 export default function TrainingPage({ loaderData }: Route.ComponentProps) {
     const { userId, trainings, thumbnailBucketUrl } = loaderData;
-    const { isPending, pendingFormAction } = useIsPending();
+    const { trainingStatuses } = useTrainingStatus();
 
-    useEffect(() => {
-        const interval = setInterval(async () => {
-            const trainingRequest = await fetch(`/api/training`);
-            const trainingData = await trainingRequest.json();
-        }, POLL_INTERVAL);
+    // useEffect(() => {
+    //     const interval = setInterval(async () => {
+    //         const trainingRequest = await fetch(`/api/training`);
+    //         const trainingData = await trainingRequest.json();
+    //     }, POLL_INTERVAL);
 
-        return () => clearInterval(interval);
-    }, []);
+    //     return () => clearInterval(interval);
+    // }, []);
 
     return (
         <div className="align-center justify-top mx-auto flex h-full max-h-screen min-h-screen w-full flex-col items-center overflow-y-auto p-6 sm:pt-[20vh]">
@@ -92,8 +89,8 @@ export default function TrainingPage({ loaderData }: Route.ComponentProps) {
                     <li
                         key={training.id}
                         className="relative justify-between gap-x-6 space-y-4 rounded-xl border border-gray-800 bg-black/20 transition-all hover:border-primary hover:bg-black">
-                        <Link to={`/training/${training.id}`} className="flex flex-row p-6">
-                            <div className="flex-1 space-y-2">
+                        <Link to={`/training/${training.id}`} className="flex flex-row justify-between p-6">
+                            <div className="flex-none space-y-2">
                                 <h2 className="font-semibold leading-6 text-white">{training.name}</h2>
                                 <div>
                                     <IconText icon={LightningBoltIcon} text={training.triggerWord} iconalign="center" className="text-yellow-500" />
@@ -106,6 +103,10 @@ export default function TrainingPage({ loaderData }: Route.ComponentProps) {
                                         className="text-accent1"
                                     />
                                 </div>
+                            </div>
+
+                            <div className="flex flex-col items-center justify-center">
+                                {trainingStatuses[training.id]?.runs?.map((run) => <StatusPill status={run.status} key={run.id} />)}
                             </div>
 
                             <div className="flex items-end items-center gap-x-2">

@@ -9,7 +9,7 @@ interface SocialButtonProps {
 
 export const SocialButton: React.FC<SocialButtonProps> = ({ provider, label }) => (
     <Form action={`/auth/${provider}`} method="post">
-        <Button size="full" variant="ghost" className="flex items-center gap-2">
+        <Button size="full" display="ghost" className="flex items-center gap-2">
             <span>{provider === 'discord' && <FaDiscord className="h-6 p-0" />}</span>
             <span>{label}</span>
         </Button>

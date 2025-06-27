@@ -3,7 +3,7 @@ import { useLoaderData, useFetcher } from 'react-router';
 import type { ActionFunctionArgs, FetcherWithComponents, LoaderFunctionArgs } from 'react-router';
 import { data } from 'react-router';
 import Cropper from 'react-easy-crop';
-import { CheckIcon, Cross1Icon } from '@radix-ui/react-icons';
+import { CheckIcon, Cross1Icon, MagicWandIcon } from '@radix-ui/react-icons';
 import { useDebouncedCallback } from 'use-debounce';
 
 import prisma from '#/prisma/db.server';
@@ -12,6 +12,7 @@ import { requireUserWithPermission } from '~/services/permissions.server';
 import { beginTraining, checkIncompleteTrainingRun, getTrainingByUser } from '~/services/training.server';
 import { addAllImageToGroup, addImageToGroup, removeAllImagesFromGroup, removeImageFromGroup, setImageCrop } from '~/services/imagesizes.server';
 import { getThumbnailUrl } from '~/util/misc';
+import { useTrainingStatus } from '~/util/trainingstatus.provider';
 
 import { Button } from '~/components/button';
 import { Panel } from '~/components/panel';
@@ -19,6 +20,8 @@ import { MultiComboBox } from '~/components/forms/multi-combo-box';
 import { ImageTaggingList } from '~/components/image-tagging-list';
 import { ImageWithMetadata } from '~/components/file-upload-preview';
 import { ControlGroup } from '~/components/control-group';
+import { StatusPill } from '~/components/status-pill';
+import TrainingToggle from '~/components/training-toggle';
 
 type CropPercentage = {
     x: number;
@@ -165,6 +168,7 @@ export default function ImageGroup() {
     const { images, training, thumbnailBucketUrl, group, groupImageHashmap } = useLoaderData<typeof loader>();
     const [windowWidth, setWindowWidth] = useState(0);
     const [cols, setCols] = useState(3);
+    const { trainingStatuses } = useTrainingStatus();
 
     useEffect(() => {
         const detectedWidth = listRef?.current?.clientWidth;
@@ -196,10 +200,11 @@ export default function ImageGroup() {
 
     return (
         <Panel
-            heading={
-                <div className="flex flex-row items-center gap-2">
-                    <span>{group.name}</span>
-                    <Button variant="textonly" size="icon" icon={Cross1Icon} />
+            heading={group.name}
+            headingRight={
+                <div className="flex flex-row items-center gap-10">
+                    <StatusPill status={trainingStatuses[training.id]?.runs.filter((run) => run.imageGroupId === group.id)?.[0]?.status} />
+                    <TrainingToggle trainingId={training.id} imageGroupId={group.id} />
                 </div>
             }
             classes="h-full"
@@ -207,14 +212,11 @@ export default function ImageGroup() {
             <div className="relative flex h-full grow flex-col content-stretch">
                 <fetcher.Form action={`/training/${training.id}/imagegroup/${group.id}`} id={training.id} method="post">
                     <ControlGroup heading="Original images">
-                        <Button type="submit" size="sm" variant="ghost" name="includeall" value="true">
+                        <Button type="submit" size="sm" display="ghost" name="includeall" value="true">
                             Include all
                         </Button>
-                        <Button type="submit" size="sm" variant="ghost" name="excludeall" value="true">
+                        <Button type="submit" size="sm" display="ghost" name="excludeall" value="true">
                             Exclude all
-                        </Button>
-                        <Button type="submit" size="sm" name="run" value="true">
-                            Run training on this group
                         </Button>
                     </ControlGroup>
                 </fetcher.Form>
@@ -329,7 +331,7 @@ const Image = ({
                     <Button
                         name={`exclude`}
                         value={image.id}
-                        variant="ghost"
+                        display="ghost"
                         size="icon"
                         onClick={() => handleExclude(image.id!)}
                         title="Remove from set">
@@ -339,7 +341,7 @@ const Image = ({
                     <Button
                         name={`include`}
                         value={image.id}
-                        variant="ghost"
+                        display="ghost"
                         size="icon"
                         onClick={() => handleInclude(image.id!)}
                         title="Include in set">

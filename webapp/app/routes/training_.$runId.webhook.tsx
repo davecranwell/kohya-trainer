@@ -2,15 +2,21 @@ import { type ActionFunctionArgs, LoaderFunctionArgs } from 'react-router';
 
 import prisma from '#/prisma/db.server';
 import { createTrainingStatus, completeTrainingRun, failTrainingRun } from '~/services/training.server';
+import { emitter } from '~/util/emitter.server';
 
-export async function action({ request, params }: ActionFunctionArgs) {
+export const action = async ({ params, request }: ActionFunctionArgs) => {
     const { runId } = params;
 
-    if (!runId) return;
+    if (!runId) {
+        return Response.json({ error: 'Training run not found' }, { status: 404 });
+    }
 
     // get the training session
     const trainingRun = await prisma.trainingRun.findFirst({
         where: { id: runId },
+        include: {
+            training: true,
+        },
     });
 
     if (!trainingRun) {
@@ -19,9 +25,7 @@ export async function action({ request, params }: ActionFunctionArgs) {
 
     const body = await request.json();
 
-    const bodyJson = JSON.parse(body);
-
-    switch (bodyJson.status) {
+    switch (body.status) {
         case 'downloading_checkpoint_started':
         case 'downloading_checkpoint_progress':
         case 'downloading_checkpoint_completed':
@@ -31,11 +35,11 @@ export async function action({ request, params }: ActionFunctionArgs) {
         case 'training_starting':
         case 'training_completed':
         case 'training_progress':
-            await createTrainingStatus(runId, bodyJson.status, JSON.stringify(bodyJson));
+            await createTrainingStatus(runId, body.status, JSON.stringify(body));
 
             break;
         case 'training_failed':
-            await createTrainingStatus(runId, bodyJson.status, JSON.stringify(bodyJson));
+            await createTrainingStatus(runId, body.status, JSON.stringify(body));
             await failTrainingRun(runId);
 
             break;
@@ -43,12 +47,21 @@ export async function action({ request, params }: ActionFunctionArgs) {
             await completeTrainingRun(runId);
             break;
         default:
-            console.error('Invalid status', bodyJson);
+            console.error('Invalid status', body);
             return Response.json({ error: 'Invalid status' }, { status: 400 });
     }
 
+    emitter.emit(
+        trainingRun.training.ownerId,
+        JSON.stringify({
+            trainingId: trainingRun.training.id,
+            trainingRunId: runId,
+            body,
+        }),
+    );
+
     return Response.json({ message: 'Status updated' }, { status: 200 });
-}
+};
 
 export async function loader({ request }: LoaderFunctionArgs) {
     throw new Response('Not found', { status: 404 });

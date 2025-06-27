@@ -11,6 +11,7 @@ export const Panel = ({
     bodyClasses,
     closeable = false,
     onClose,
+    headingRight,
 }: {
     heading: React.ReactNode | string;
     children: React.ReactNode;
@@ -19,16 +20,14 @@ export const Panel = ({
     bodyClasses?: string;
     closeable?: boolean;
     onClose?: () => void;
+    headingRight?: React.ReactNode;
 }) => {
     return (
         <div className={clsx(`flex flex-col justify-stretch ${classes ? classes : ''}`)}>
-            <div className="flex flex-none flex-row items-center justify-between border-b border-gray-800 p-4">
+            <div className="flex min-h-16 flex-none flex-row items-center justify-between border-b border-gray-800 px-4">
                 <h2 className="e flex-none truncate text-lg">{heading}</h2>
-                {closeable && (
-                    <Button variant="ghost" size="icon" onClick={onClose} title="Close">
-                        <Cross1Icon className="h-4 w-4 text-white" />
-                    </Button>
-                )}
+                {closeable && <Button display="ghost" size="icon" icon={Cross1Icon} onClick={onClose} title="Close" />}
+                {headingRight}
             </div>
             <div className={clsx('flex-1 p-8 sm:max-h-screen', scrollable ? 'sm:overflow-y-auto' : 'overflow-hidden', bodyClasses)}>{children}</div>
         </div>

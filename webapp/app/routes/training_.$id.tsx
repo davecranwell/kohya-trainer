@@ -14,29 +14,16 @@ import { useHelp } from '~/util/help.provider';
 
 import { Panel } from '~/components/panel';
 import { Button } from '~/components/button';
+import { getTrainingByUserWithImageCount } from '~/services/training.server';
+import { useTrainingStatus } from '~/util/trainingstatus.provider';
+import { StatusPill } from '~/components/status-pill';
 
 export { action } from '~/routes/training-editor.server';
 
 export async function loader({ request, params }: LoaderFunctionArgs) {
     const userId = await requireUserWithPermission(request, 'create:training:own');
 
-    const training = await prisma.training.findFirst({
-        select: {
-            id: true,
-            name: true,
-            triggerWord: true,
-            baseModel: true,
-            _count: {
-                select: {
-                    images: true,
-                },
-            },
-        },
-        where: {
-            id: params.id,
-            ownerId: userId,
-        },
-    });
+    const training = await getTrainingByUserWithImageCount(params.id!, userId);
 
     if (!training) {
         throw data('Not found', { status: 404 });
@@ -70,6 +57,7 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
 export default function TrainingRoute() {
     const { setHelp } = useHelp();
     const { training, baseModels, imageGroups } = useLoaderData<typeof loader>();
+    const { trainingStatuses } = useTrainingStatus();
 
     return (
         <div className="sm:flex sm:h-full sm:min-h-screen sm:flex-row sm:overflow-hidden">
@@ -81,10 +69,10 @@ export default function TrainingRoute() {
                         <h2 className="flex flex-row items-center justify-between text-xl">
                             <span>Image sets</span>
                             <Button
-                                variant="textonly"
+                                display="textonly"
                                 size="text"
+                                className="text-sm"
                                 icon={InfoCircledIcon}
-                                className="text-sm text-semantic-info"
                                 onClick={() => {
                                     setHelp(
                                         <>
@@ -111,14 +99,26 @@ export default function TrainingRoute() {
                         {imageGroups.length > 0 && (
                             <ul className="-mx-4 list-none text-sm leading-6 marker:text-accent1">
                                 <li key={'originals'} className={'hover:hover:bg-primary-dark'}>
-                                    <Link to={`/training/${training.id}`} className="block w-full px-4 py-2 text-white">
-                                        Original images <span className="px-4 py-2 text-gray-400">({training._count.images})</span>
+                                    <Link to={`/training/${training.id}`} className="flex w-full items-center gap-2 px-4 py-2 text-white">
+                                        Original images <span className="flex-1 text-gray-400">({training._count.images})</span>
                                     </Link>
                                 </li>
                                 {imageGroups.map((group) => (
                                     <li key={group.id} className={'hover:hover:bg-primary-dark'}>
-                                        <Link to={`/training/${training.id}/imagegroup/${group.id}`} className="block w-full px-4 py-2 text-white">
-                                            {group.name} <span className="px-4 py-2 text-gray-400">({group._count.images})</span>
+                                        <Link
+                                            to={`/training/${training.id}/imagegroup/${group.id}`}
+                                            className="flex w-full items-center justify-items-start gap-2 px-4 py-2 text-white">
+                                            <span className="truncate">{group.name}</span>
+                                            <span className="flex-1 text-gray-400">({group._count.images})</span>
+                                            {trainingStatuses[training.id]?.runs.filter((run) => run.imageGroupId === group.id)?.length > 0 && (
+                                                <StatusPill
+                                                    className="justify-self-end"
+                                                    status={
+                                                        trainingStatuses[training.id]?.runs.filter((run) => run.imageGroupId === group.id)?.[0]
+                                                            ?.status
+                                                    }
+                                                />
+                                            )}
                                         </Link>
                                     </li>
                                 ))}

@@ -193,10 +193,10 @@ export const ImageTaggingList = forwardRef(
                     </div>
                     <Button
                         type="button"
-                        variant="textonly"
+                        display="textonly"
                         size="text"
+                        className="text-sm"
                         icon={InfoCircledIcon}
-                        className="text-sm text-semantic-info"
                         onClick={() => {
                             setHelp(
                                 <div className="space-y-4">

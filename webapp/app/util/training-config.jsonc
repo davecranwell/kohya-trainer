@@ -51,9 +51,9 @@
     "lr_scheduler": "cosine", // cosine_with_restarts is another option
 
     // sampling
-    "sample_every_n_epochs": 0, // we'll want to try setting this up, but perhaps not through this crap sampler which doesn't even do adetailer
+    "sample_every_n_epochs": 1, // we'll want to try setting this up, but perhaps not through this crap sampler which doesn't even do adetailer
     "sample_every_n_steps": 0,
-    "sample_prompts": "",
+    "sample_prompts": "masterpiece, best quality, qinn, (1girl) in white shirt, upper body, looking at viewer, simple background --n low quality, worst quality, bad anatomy,bad composition, poor, low effort --w 1024 --h 1024 --d -1 --l 7.5 --s 20",
     "sample_sampler": "euler_a",
 
     // checkpointing

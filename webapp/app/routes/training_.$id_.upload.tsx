@@ -3,7 +3,7 @@ import { useLoaderData, data } from 'react-router';
 import type { ActionFunctionArgs, LoaderFunctionArgs } from 'react-router';
 import { toast } from 'sonner';
 import { createId } from '@paralleldrive/cuid2';
-import { Cross1Icon } from '@radix-ui/react-icons';
+import { Cross1Icon, InfoCircledIcon, MagicWandIcon } from '@radix-ui/react-icons';
 
 import prisma from '#/prisma/db.server';
 
@@ -17,6 +17,9 @@ import { ImageTaggingList } from '~/components/image-tagging-list';
 import { ImagePreview } from '~/components/image-preview';
 import { MultiComboBox } from '~/components/forms/multi-combo-box';
 import { Button } from '~/components/button';
+import { useTrainingStatus } from '~/util/trainingstatus.provider';
+import { StatusPill } from '~/components/status-pill';
+import TrainingToggle from '~/components/training-toggle';
 
 const MAX_IMAGES = 200;
 const ACCEPTED_IMAGE_TYPES = ['image/png', 'image/jpeg'];
@@ -65,6 +68,7 @@ export default function ImageUpload() {
     const listRef = useRef<HTMLDivElement>(null);
     const [windowWidth, setWindowWidth] = useState(0);
     const [cols, setCols] = useState(3);
+    const { trainingStatuses } = useTrainingStatus();
 
     useEffect(() => {
         const detectedWidth = listRef?.current?.clientWidth;
@@ -210,17 +214,16 @@ export default function ImageUpload() {
                 body: JSON.stringify({ id: imageId, text: sanitisedTags.join(',') }),
             });
 
-            if (updateTextResponse.ok) {
-                const updatedImages = images.map((image) => {
-                    if (image.id === imageId) {
-                        image.text = sanitisedTags.join(',');
-                    }
-                    return image;
-                });
-
-                // we don't want to update the uploaded images here because we don't want to re-render the entire list
-                //setUploadedImages(updatedImages);
-            }
+            // if (updateTextResponse.ok) {
+            // const updatedImages = images.map((image) => {
+            //     if (image.id === imageId) {
+            //         image.text = sanitisedTags.join(',');
+            //     }
+            //     return image;
+            // });
+            // we don't want to update the uploaded images here because we don't want to re-render the entire list
+            //setUploadedImages(updatedImages);
+            // }
 
             return updateTextResponse.ok;
         },
@@ -228,7 +231,18 @@ export default function ImageUpload() {
     );
 
     return (
-        <Panel heading="Original images" scrollable={false} classes="h-full" bodyClasses="h-full content-stretch grow">
+        <Panel
+            heading="Original images"
+            scrollable={false}
+            classes="h-full"
+            bodyClasses="h-full content-stretch grow"
+            headingRight={
+                <div className="flex flex-row items-center gap-10">
+                    <StatusPill status={trainingStatuses[training.id]?.runs.filter((run) => run.imageGroupId === null)?.[0]?.status} />
+
+                    <TrainingToggle trainingId={training.id} />
+                </div>
+            }>
             <div className="flex h-full flex-col justify-stretch overflow-hidden" ref={listRef}>
                 <FileUploadPreview
                     key={`${training.id}-preview`}
@@ -298,12 +312,12 @@ const Image = ({
                 <Button
                     name={`exclude`}
                     value={image.id}
-                    variant="ghost"
+                    display="ghost"
                     size="icon"
+                    icon={Cross1Icon}
                     onClick={() => handleDelete(image.id!)}
-                    title="Delete from training data">
-                    <Cross1Icon className="h-4 w-4 text-white" />
-                </Button>
+                    title="Delete from training data"
+                />
             </div>
 
             <div className="ml-2 flex-1">

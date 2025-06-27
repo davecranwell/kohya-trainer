@@ -16,6 +16,7 @@ export default [
             index('./routes/training_.$id_.upload.tsx'),
             route('imagegroup/:groupId', './routes/training_.$id_.imagegroup.$groupId.tsx'),
         ]),
+        route('/training/:runId/webhook', './routes/training_.$runId.webhook.tsx'),
 
         route('/training/:id/createimagegroup', './routes/training_.$id.createimagegroup.tsx'),
 
@@ -23,6 +24,7 @@ export default [
         route('/api/trainingimage/:id', './routes/api.trainingimage.$id.tsx'),
         route('/api/:imageGroupId/imagesize/:id', './routes/api.$imageGroupId.imagesize.$id.tsx'),
         route('/api/uploadurls/:id', './routes/api.uploadurls.$id.tsx'),
+        route('/sse/:userId', './routes/sse.$userId.tsx'),
         // route('/training/:id', 'training.tsx', {
         //     children: [route('/', 'training_.$id.tsx'), route('/upload', 'training_.$id.upload.tsx')],
         // }),

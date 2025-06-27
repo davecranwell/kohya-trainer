@@ -8,6 +8,7 @@
         "build:remix": "NODE_ENV=production react-router build",
         "build:server": "NODE_ENV=production tsx scripts/build-server.ts",
         "dev": "tsx --trace-warnings ./server/index.ts",
+        "dev:live": "concurrently 'ngrok http --url=eft-polite-equally.ngrok-free.app http://localhost:3000' 'ROOT_URL=https://eft-polite-equally.ngrok-free.app npm run dev'",
         "lint": "eslint --ignore-path .gitignore --cache --cache-location ./node_modules/.cache/eslint .",
         "start": "NODE_ENV=production node ./build/index.cjs",
         "typecheck": "react-router typegen && tsc",

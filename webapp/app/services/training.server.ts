@@ -3,6 +3,7 @@ import { enqueueTraining } from '#/lib/taskDag.server';
 import { Training } from '@prisma/client';
 
 const NOT_RUNNING_STATUS = ['stalled', 'onerror', 'completed', 'aborted'];
+const RUNNING_STATUS = ['started'];
 
 export const getTrainingByUser = async (trainingId: string, userId: string) => {
     return await prisma.training.findUnique({
@@ -14,22 +15,83 @@ export const getTrainingByUser = async (trainingId: string, userId: string) => {
     });
 };
 
+export const getTrainingByUserWithImageCount = async (trainingId: string, userId: string) => {
+    return await prisma.training.findFirst({
+        select: {
+            id: true,
+            name: true,
+            triggerWord: true,
+            baseModel: true,
+            _count: {
+                select: {
+                    images: true,
+                },
+            },
+        },
+        where: {
+            id: trainingId,
+            ownerId: userId,
+        },
+    });
+};
+
+type TrainingStatusSummary = {
+    id: string;
+    runs: { id: string; status: string; imageGroupId: string | null }[];
+};
+
+export const getTrainingStatusSummaryHashTable = async (userId: string) => {
+    const trainings = await prisma.training.findMany({
+        select: {
+            id: true,
+            runs: {
+                select: {
+                    id: true,
+                    status: true,
+                    imageGroupId: true,
+                },
+                where: {
+                    status: {
+                        in: RUNNING_STATUS,
+                    },
+                },
+                take: 1,
+            },
+        },
+        where: {
+            ownerId: userId,
+        },
+        orderBy: {
+            updatedAt: 'desc',
+        },
+    });
+
+    return trainings.reduce(
+        (acc, training) => {
+            acc[training.id] = training;
+            return acc;
+        },
+        {} as Record<string, TrainingStatusSummary>,
+    );
+};
+
 export const getAllTrainingsByUser = async (userId: string) => {
     return await prisma.training.findMany({
         select: {
             id: true,
             name: true,
-            updatedAt: true,
             triggerWord: true,
-            baseModel: true,
             runs: {
+                select: {
+                    id: true,
+                    status: true,
+                },
                 where: {
                     status: {
-                        not: {
-                            in: NOT_RUNNING_STATUS,
-                        },
+                        in: RUNNING_STATUS,
                     },
                 },
+                take: 1,
             },
             images: {
                 take: 3,

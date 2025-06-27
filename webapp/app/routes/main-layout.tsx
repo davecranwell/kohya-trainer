@@ -21,7 +21,7 @@ export default function MainLayout() {
                     </Link>
                 </h1>
                 {isLoggedIn && (
-                    <Button variant="textonly" size="text" asChild>
+                    <Button display="textonly" size="text" asChild>
                         <Link to="/logout">Log out</Link>
                     </Button>
                 )}

@@ -129,8 +129,8 @@ export function TrainingEditor({ training, baseModels }: { training?: Partial<Tr
                                         <Button
                                             type="button"
                                             size="text"
-                                            variant="textonly"
-                                            className="text-semantic-info"
+                                            display="textonly"
+                                            className="text-sm"
                                             onClick={() =>
                                                 setHelp(
                                                     <>
@@ -188,7 +188,7 @@ export function TrainingEditor({ training, baseModels }: { training?: Partial<Tr
                             <div className="group flex w-full flex-row items-center gap-2">
                                 <div className="flex flex-1 gap-4 px-4 py-3 text-sm">
                                     <Button
-                                        variant="ghost"
+                                        display="ghost"
                                         onClick={(e) => {
                                             e.preventDefault();
                                             setIsCivitaiBrowserOpen(true);
@@ -202,8 +202,8 @@ export function TrainingEditor({ training, baseModels }: { training?: Partial<Tr
                             <Button
                                 type="button"
                                 size="text"
-                                variant="textonly"
-                                className="text-sm text-semantic-info"
+                                display="textonly"
+                                className="text-sm"
                                 icon={InfoCircledIcon}
                                 onClick={() =>
                                     setHelp(

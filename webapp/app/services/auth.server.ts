@@ -66,9 +66,7 @@ authenticator.use(
 
 export async function isAuthenticated(request: Request) {
     let session = await getSession(request.headers.get('cookie'));
-    let user = session.get('user');
-
-    return !!user;
+    return session.get('user');
 }
 
 export async function requireAuthenticated(request: Request, returnTo?: string) {
