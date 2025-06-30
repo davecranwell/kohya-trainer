@@ -201,7 +201,7 @@ export const zipLambda = new aws.lambda.Function('zipLambda', {
     code: new pulumi.asset.FileArchive('../lambdas/zip'),
     handler: 'index.handler',
     role: zipLambdaRole.arn,
-    timeout: 30,
+    timeout: 60,
     memorySize: 128,
     ephemeralStorage: { size: 1024 }, // Ephemeral storage needs to be at least the size of the total number of files we permit the user to upload
     // TODO make the zip lambda take the max res bucket name as an argument rather than using the task to define it in the payload

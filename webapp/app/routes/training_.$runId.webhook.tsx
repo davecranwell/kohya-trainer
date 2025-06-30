@@ -1,7 +1,13 @@
 import { type ActionFunctionArgs, LoaderFunctionArgs } from 'react-router';
 
 import prisma from '#/prisma/db.server';
-import { createTrainingStatus, completeTrainingRun, failTrainingRun } from '~/services/training.server';
+import {
+    createTrainingStatus,
+    completeTrainingRun,
+    failTrainingRun,
+    getTrainingStatusSummaryHashTableByTrainingId,
+    type TrainingStatusSummary,
+} from '~/services/training.server';
 import { emitter } from '~/util/emitter.server';
 
 export const action = async ({ params, request }: ActionFunctionArgs) => {
@@ -23,7 +29,8 @@ export const action = async ({ params, request }: ActionFunctionArgs) => {
         return Response.json({ error: 'Training run not found' }, { status: 404 });
     }
 
-    const body = await request.json();
+    const bodyRaw = await request.json();
+    const body = JSON.parse(bodyRaw);
 
     switch (body.status) {
         case 'downloading_checkpoint_started':
@@ -51,14 +58,8 @@ export const action = async ({ params, request }: ActionFunctionArgs) => {
             return Response.json({ error: 'Invalid status' }, { status: 400 });
     }
 
-    emitter.emit(
-        trainingRun.training.ownerId,
-        JSON.stringify({
-            trainingId: trainingRun.training.id,
-            trainingRunId: runId,
-            body,
-        }),
-    );
+    const updatedStatus = await getTrainingStatusSummaryHashTableByTrainingId(trainingRun.training.ownerId, trainingRun.training.id);
+    emitter.emit(trainingRun.training.ownerId, JSON.stringify(updatedStatus));
 
     return Response.json({ message: 'Status updated' }, { status: 200 });
 };

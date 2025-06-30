@@ -204,7 +204,7 @@ export default function ImageGroup() {
             headingRight={
                 <div className="flex flex-row items-center gap-10">
                     <StatusPill status={trainingStatuses[training.id]?.runs.filter((run) => run.imageGroupId === group.id)?.[0]?.status} />
-                    <TrainingToggle trainingId={training.id} imageGroupId={group.id} />
+                    <TrainingToggle trainingId={training.id} imageGroupId={group.id} fetcher={fetcher} />
                 </div>
             }
             classes="h-full"

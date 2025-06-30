@@ -2,7 +2,9 @@ import prisma from '#/prisma/db.server';
 import { enqueueTraining } from '#/lib/taskDag.server';
 import { Training } from '@prisma/client';
 
-const NOT_RUNNING_STATUS = ['stalled', 'onerror', 'completed', 'aborted'];
+import { shutdownGpu } from '#/lib/vast.server';
+
+const NOT_RUNNING_STATUS = ['stalled', 'failed', 'completed', 'aborted'];
 const RUNNING_STATUS = ['started'];
 
 export const getTrainingByUser = async (trainingId: string, userId: string) => {
@@ -35,7 +37,7 @@ export const getTrainingByUserWithImageCount = async (trainingId: string, userId
     });
 };
 
-type TrainingStatusSummary = {
+export type TrainingStatusSummary = {
     id: string;
     runs: { id: string; status: string; imageGroupId: string | null }[];
 };
@@ -60,6 +62,42 @@ export const getTrainingStatusSummaryHashTable = async (userId: string) => {
         },
         where: {
             ownerId: userId,
+        },
+        orderBy: {
+            updatedAt: 'desc',
+        },
+    });
+
+    return trainings.reduce(
+        (acc, training) => {
+            acc[training.id] = training;
+            return acc;
+        },
+        {} as Record<string, TrainingStatusSummary>,
+    );
+};
+
+export const getTrainingStatusSummaryHashTableByTrainingId = async (userId: string, trainingId: string) => {
+    const trainings = await prisma.training.findMany({
+        select: {
+            id: true,
+            runs: {
+                select: {
+                    id: true,
+                    status: true,
+                    imageGroupId: true,
+                },
+                where: {
+                    status: {
+                        in: RUNNING_STATUS,
+                    },
+                },
+                take: 1,
+            },
+        },
+        where: {
+            ownerId: userId,
+            id: trainingId,
         },
         orderBy: {
             updatedAt: 'desc',
@@ -130,7 +168,7 @@ export const checkIncompleteTrainingRun = async (trainingId: string) => {
 
 export const beginTraining = async (training: Pick<Training, 'id' | 'config'>, imageGroupId?: string) => {
     // We have to do the jsonc merge here because anywhere else and we have to jump
-    // through a crazy number of hoops to support the import
+    // through a crazy number of hoops to support the jsonc import
     const defaultTrainingConfig = await import('~/util/training-config.jsonc');
     const trainingConfig = JSON.parse(training.config);
 
@@ -150,12 +188,21 @@ export const beginTraining = async (training: Pick<Training, 'id' | 'config'>, i
 export const abortTraining = async (trainingId: string) => {
     const trainingRuns = await prisma.trainingRun.findMany({
         where: { trainingId },
+        include: {
+            gpu: true,
+        },
     });
 
     await prisma.trainingRun.updateMany({
         where: { id: { in: trainingRuns.map((run) => run.id) } },
         data: { status: 'aborted', gpuId: null },
     });
+
+    for (const run of trainingRuns) {
+        if (run.gpu?.instanceId) {
+            await shutdownGpu(run.gpu.instanceId);
+        }
+    }
 };
 
 export const completeTrainingRun = async (trainingId: string) => {

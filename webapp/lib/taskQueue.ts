@@ -148,6 +148,23 @@ async function markFailed(message: Message, newTask: TrainingTask) {
     });
 }
 
+async function createTask(message: Message) {
+    const { Body, MessageId } = message;
+
+    const body = JSON.parse(Body!) as TaskBody | ResizeBody;
+    const { runId, task } = body;
+
+    return await prisma.trainingTask.create({
+        data: {
+            messageId: MessageId!,
+            task,
+            runId,
+            startedAt: new Date(),
+            status: `started`,
+        },
+    });
+}
+
 async function processMessages(messages: Message[], customHandler: (message: any) => Promise<void>) {
     console.log('Messages received:', messages.length);
 
@@ -158,28 +175,19 @@ async function processMessages(messages: Message[], customHandler: (message: any
             continue;
         }
 
-        const { Body, ReceiptHandle, MessageId, Attributes } = message;
+        const { Body, MessageId } = message;
         const body = JSON.parse(Body!) as TaskBody | ResizeBody;
-        const { runId, task, unique } = body;
 
-        console.log('Message body:', Body);
+        console.log(`Message received: ${MessageId}`, body);
 
-        const newTask = await prisma.trainingTask.create({
-            data: {
-                messageId: MessageId!,
-                task,
-                runId,
-                startedAt: new Date(),
-                status: `started`,
-            },
-        });
+        const task = await createTask(message);
 
         try {
             await customHandler(body);
-            await markSuccessful(message, newTask);
+            await markSuccessful(message, task);
+            console.log(`Message successfully processed: ${MessageId}`);
         } catch (error: any) {
-            await markFailed(message, newTask);
-
+            await markFailed(message, task);
             console.error('Error processing message:', error);
         }
     }

@@ -1,18 +1,10 @@
 import { PrismaClient } from '@prisma/client';
-import axios from 'axios';
+
+import { getLiveInstanceIds, shutdownGpu } from '../vast.server';
 
 const prisma = new PrismaClient();
 
 const STALL_PERIOD = 15 * 60 * 1000; // 15 minutes
-
-const getLiveInstances = async () => {
-    const response = await axios.get('https://console.vast.ai/api/v0/instances', {
-        headers: {
-            Authorization: `Bearer ${process.env.VAST_API_KEY}`,
-        },
-    });
-    return response.data.instances;
-};
 
 const getKnownGpus = async () => {
     const gpus = await prisma.gpu.findMany();
@@ -22,10 +14,17 @@ const getKnownGpus = async () => {
 const getFinishedTrainingInstanceIds = async () => {
     const finishedTrainingRuns = await prisma.trainingRun.findMany({
         select: {
-            gpu: true,
+            gpu: {
+                select: {
+                    instanceId: true,
+                },
+            },
         },
         where: {
             status: 'completed',
+            gpu: {
+                isNot: null,
+            },
         },
     });
 
@@ -33,31 +32,22 @@ const getFinishedTrainingInstanceIds = async () => {
 };
 
 const getEffectivelyStalledTrainingInstanceIds = async () => {
-    // find training runs that are not known to be stalled, but haven't received an update
-    const stalledTrainingRuns = await prisma.trainingRun.findMany({
-        select: {
-            gpu: true,
-            statuses: {
-                orderBy: { createdAt: 'desc' },
-                take: 1,
-            },
-        },
-        where: {
-            status: { not: 'stalled' },
-            statuses: {
-                some: {
-                    createdAt: {
-                        lte: new Date(Date.now() - STALL_PERIOD),
-                    },
-                },
-            },
-            gpu: {
-                isNot: null,
-            },
-        },
-    });
+    // find training runs that are not known to be stalled, but haven't received an update in the stall period
+    const stalledTrainingRuns = await prisma.$queryRaw`
+        SELECT r.id, g."instanceId"
+        FROM "TrainingRun" r
+        INNER JOIN "Gpu" g
+            ON g.id = r."gpuId"
+        JOIN (
+            SELECT "runId", MAX("createdAt") AS latest_status_time
+            FROM "TrainingStatus"
+            GROUP BY "runId"
+        ) ts ON ts."runId" = r.id
+        WHERE r.status = 'started'
+        AND ts.latest_status_time < NOW() - INTERVAL '15 minutes';
+    `;
 
-    return stalledTrainingRuns.map((trainingRun) => trainingRun.gpu?.instanceId);
+    return (stalledTrainingRuns as { id: string; instanceId: string }[]).map((run) => run.instanceId);
 };
 
 const getStalledTrainingInstanceIds = async () => {
@@ -83,18 +73,16 @@ export async function shutdownInactiveGpus() {
     const toShutDownIds = [];
 
     // get a list of current instances from vast
-    const liveInstances = await getLiveInstances();
+    const liveInstances = await getLiveInstanceIds();
 
-    liveInstances.length &&
-        console.log(`Live GPU instances: ${liveInstances.length ? liveInstances.map((instance) => instance.id).join(', ') : 'none'}`);
+    liveInstances.length && console.log(`Live GPU instances: ${liveInstances.length ? liveInstances : 'none'}`);
 
     // We want to delete instances whos IDs aren't linked in our gpu table
     const knownGpus = await getKnownGpus();
 
     // get a list of liveInstance IDs that aren't in knownGpus
-    const unknownGpus = liveInstances
-        .filter((liveInstance) => !knownGpus.some((knownGpu) => knownGpu.instanceId.toString() === liveInstance.id.toString()))
-        .map((liveInstance) => liveInstance.id.toString());
+    const unknownGpus = liveInstances.filter((liveInstance) => !knownGpus.some((knownGpu) => knownGpu === liveInstance));
+
     unknownGpus.length && console.log(`Unknown GPU instances: ${unknownGpus.length ? unknownGpus.join(',') : 'none'}`);
     toShutDownIds.push(...unknownGpus);
 
@@ -116,14 +104,14 @@ export async function shutdownInactiveGpus() {
     toShutDownIds.push(...stalledGpuIds);
 
     for (const gpu of toShutDownIds) {
+        if (!gpu) {
+            console.log(`Skipping shutdown of inactive GPU instance: ${gpu} ...`);
+            continue;
+        }
         console.log(`Shutting down inactive GPU instance: ${gpu} ...`);
         try {
-            await axios.delete(`https://console.vast.ai/api/v0/instances/${gpu}/`, {
-                headers: {
-                    Authorization: `Bearer ${process.env.VAST_API_KEY}`,
-                },
-            });
-        } catch (error) {
+            await shutdownGpu(gpu);
+        } catch (error: any) {
             if (error.response.status !== 404) {
                 console.error('Error shutting down inactive GPUs:', error);
             }

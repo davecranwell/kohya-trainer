@@ -3,6 +3,11 @@ import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 
 import prisma from '#/prisma/db.server';
 
+type ZipPayloadResponse = {
+    message: string;
+    zipKey: string;
+};
+
 export const zipImages = async ({ runId }: { runId: string }) => {
     const s3Client = new S3Client({
         region: process.env.AWS_REGION,
@@ -78,14 +83,13 @@ export const zipImages = async ({ runId }: { runId: string }) => {
 
     const { Payload, LogResult, StatusCode } = await client.send(command);
 
-    type ZipPayloadResponse = {
-        message: string;
-        zipKey: string;
-    };
-
     const lambdaResult = Payload && (JSON.parse(Buffer.from(Payload).toString()) as ZipPayloadResponse);
 
-    if (lambdaResult?.zipKey && training?.config) {
+    if (!lambdaResult?.zipKey) {
+        throw new Error('Failed to zip images');
+    }
+
+    if (training?.config) {
         const configJson = JSON.parse(training.config);
         configJson.training_images_url = `https://${process.env.AWS_S3_MAXRES_BUCKET_NAME}.s3.amazonaws.com/${lambdaResult.zipKey}`;
 

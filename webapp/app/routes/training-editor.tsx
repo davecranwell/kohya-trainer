@@ -176,12 +176,12 @@ export function TrainingEditor({ training, baseModels }: { training?: Partial<Tr
                                 <HeadlessField
                                     key={model?.id}
                                     className="group flex w-full flex-row items-center gap-2 transition-all hover:bg-primary-dark/60">
-                                    <HeadlessLabel className="flex flex-1 gap-4 px-4 py-3 text-sm">
+                                    <HeadlessLabel className="flex flex-1 items-start gap-4 px-4 py-3 text-sm">
                                         <Radio
                                             value={model}
-                                            className="block size-5 items-center justify-center rounded-full border border-gray-800 bg-black/40 ring-1 ring-gray-800 data-[checked]:bg-accent1"
+                                            className="flex-0 block size-5 items-center justify-center rounded-full border border-gray-800 bg-black/40 ring-1 ring-gray-800 data-[checked]:bg-accent1"
                                         />
-                                        <span>{model?.name}</span>
+                                        <span className="flex-1 overflow-hidden">{model?.name}</span>
                                     </HeadlessLabel>
                                 </HeadlessField>
                             ))}

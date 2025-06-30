@@ -17,6 +17,13 @@ type TrainingStatusProviderType = {
 
 export const TrainingStatusContext = createContext<TrainingStatusProviderType | null>(null);
 
+/**
+ * This provider is used to provide the training statuses for all known trainingsto the app.
+ * It uses the EventSourceProvider to subscribe to the SSE endpoint and update the training statuses.
+ * When first initialised it should be provided with all trainings through `initialTrainings`.
+ * It then subscribes to the event source which only returns a single training at a time, that it merges
+ * with the initialtrainings
+ */
 export function TrainingStatusProvider({
     children,
     user,
@@ -35,19 +42,12 @@ export function TrainingStatusProvider({
 
     useEffect(() => {
         setTrainingStatuses((prev) => {
-            const newStatuses = { ...prev };
             if (event) {
                 const eventData = JSON.parse(event);
-
-                if (Array.isArray(eventData)) {
-                    eventData.forEach((status) => {
-                        newStatuses[status.trainingId] = status;
-                    });
-                } else if (eventData.trainingId) {
-                    newStatuses[eventData.trainingId] = eventData;
-                }
+                return { ...prev, ...eventData };
             }
-            return newStatuses;
+
+            return prev;
         });
     }, [event]);
 

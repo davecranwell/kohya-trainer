@@ -147,7 +147,7 @@ function HelpPanel() {
     return (
         <div
             className={clsx(
-                'absolute -right-12 top-0 z-10 h-full min-w-[400px] border-l border-gray-800 bg-gray-900 shadow-2xl shadow-black transition-transform duration-300 sm:w-1/5',
+                'absolute -right-12 top-0 z-10 h-full min-w-[400px] border-l border-gray-800 bg-gray-900 shadow-2xl shadow-black transition-transform duration-300 ease-in-out sm:w-1/5',
                 isOpen ? 'translate-x right-0' : 'translate-x-full',
             )}>
             <Panel heading="Help" classes="h-full" closeable onClose={() => toggleHelp()}>

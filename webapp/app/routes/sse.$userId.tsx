@@ -1,9 +1,8 @@
 import { LoaderFunction } from 'react-router';
 import { eventStream } from 'remix-utils/sse/server';
 
-import prisma from '#/prisma/db.server';
-
 import { emitter } from '~/util/emitter.server';
+
 import { requireUserWithPermission } from '~/services/permissions.server';
 import { getTrainingStatusSummaryHashTable } from '~/services/training.server';
 

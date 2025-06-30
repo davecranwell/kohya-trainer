@@ -3,6 +3,8 @@ import https from 'https';
 
 import prisma from '#/prisma/db.server';
 
+import { getInstance } from '../vast.server';
+
 export const awaitGpuReady = async ({ runId }: { runId: string }) => {
     // get all previous status messages for this run with the same status
     const previousStatuses = await prisma.trainingStatus.findMany({
@@ -43,11 +45,7 @@ export const awaitGpuReady = async ({ runId }: { runId: string }) => {
     }
 
     // Get information from the vast API about the instance using axios
-    const vastInstance = await axios.get(`https://console.vast.ai/api/v0/instances/${gpu.instanceId}/`, {
-        headers: {
-            Authorization: `Bearer ${process.env.VAST_API_KEY}`,
-        },
-    });
+    const vastInstance = await getInstance(gpu.instanceId);
 
     // NB unusual pluralisation of instances
     const instance = vastInstance?.data?.instances;

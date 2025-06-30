@@ -35,6 +35,7 @@ export function registerDag() {
 
             case 'zipImages': {
                 const zipKey = await zipImages({ runId });
+                console.log('zipKey', zipKey);
                 if (zipKey) {
                     await queueTask({ messageBody: { task: 'allocateGpu', runId, unique: true } });
                 }

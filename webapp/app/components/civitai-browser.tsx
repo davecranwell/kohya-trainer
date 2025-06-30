@@ -9,8 +9,10 @@ import { Button } from './button';
 import { Container } from './container';
 import { Input } from './forms/input';
 
-const getModels = async (search: string) => {
-    const response = await fetch(`https://civitai.com/api/v1/models?types=Checkpoint&sort=Highest%20Rated&nsfw=false&query=${search}`);
+const getModels = async (baseModels: string[], search: string) => {
+    const response = await fetch(
+        `https://civitai.com/api/v1/models?types=Checkpoint&sort=Highest%20Rated&nsfw=true&baseModels=${baseModels.map((model) => encodeURIComponent(model)).join(',')}&query=${search}`,
+    );
     return response.json();
 };
 
@@ -133,7 +135,7 @@ export function CivitaiBrowser({
     const [debouncedSearch] = useDebounce(search, 1000);
     const { data, isLoading } = useQuery({
         queryKey: ['models', debouncedSearch],
-        queryFn: () => getModels(debouncedSearch),
+        queryFn: () => getModels(supportedModels, debouncedSearch),
         placeholderData: (prev) => prev,
         enabled: isOpen,
     });

@@ -57,15 +57,13 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 <Links />
             </head>
             <body className="overflow-x-hidden bg-gradient-to-br from-gray-950 via-gray-900 to-slate-900 text-gray-400 sm:min-h-screen sm:overflow-hidden">
-                <TooltipProvider delayDuration={100} skipDelayDuration={500}>
-                    <QueryClientProvider client={queryClient}>
-                        <HelpProvider>
-                            <TrainingStatusProvider user={data?.user} initialTrainings={data?.initialTrainings}>
-                                {children}
-                            </TrainingStatusProvider>
-                        </HelpProvider>
-                    </QueryClientProvider>
-                </TooltipProvider>
+                <TrainingStatusProvider user={data?.user} initialTrainings={data?.initialTrainings}>
+                    <TooltipProvider delayDuration={100} skipDelayDuration={500}>
+                        <QueryClientProvider client={queryClient}>
+                            <HelpProvider>{children}</HelpProvider>
+                        </QueryClientProvider>
+                    </TooltipProvider>
+                </TrainingStatusProvider>
                 <ScrollRestoration nonce={nonce} />
                 <Scripts nonce={nonce} />
                 <Toaster
