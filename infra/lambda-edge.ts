@@ -82,7 +82,7 @@ export const resizeLambda = new aws.lambda.Function('resizeLambda', {
         '.': new pulumi.asset.FileArchive('../lambdas/edge-resize'),
     }),
     handler: 'index.handler',
-    runtime: 'nodejs18.x',
+    runtime: 'nodejs22.x',
     role: lambdaEdgeRole.arn,
     timeout: 5,
     memorySize: 128,
