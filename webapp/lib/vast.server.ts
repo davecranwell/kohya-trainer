@@ -35,9 +35,8 @@ export const getOffers = async () => {
         verified: { eq: true },
         rentable: { eq: true },
         num_gpus: { gte: 1, lte: 1 },
-        inet_down: { gte: 500 },
+        inet_down: { gte: 1000 },
         gpu_totalram: { gte: 23987.58004237308, lte: 51418.50343976141 },
-        dlperf: { lte: 51.840222312450926 },
         sort_option: { 0: ['dph_total', 'asc'], 1: ['total_flops', 'asc'] },
         geolocation: {
             in: [
@@ -69,12 +68,12 @@ export const getOffers = async () => {
                 'EE',
             ],
         },
-        gpu_name: { in: ['RTX 3090 Ti', 'RTX 3090', 'RTX 4090', 'RTX 4090D', 'RTX 4080S', 'RTX 4080'] },
+        gpu_name: { in: ['RTX 4090'] }, //'RTX 3090 Ti', 'RTX 3090',  'RTX 4090D', 'RTX 4080S', 'RTX 4080'
         order: [
             ['dph_total', 'asc'],
             ['total_flops', 'asc'],
         ],
-        allocated_storage: 33.82457729796413,
+        allocated_storage: 30,
         cpu_arch: { in: ['amd64'] },
         has_avx: { eq: true },
         direct_port_count: { gte: 9 },
