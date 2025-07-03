@@ -70,10 +70,11 @@ const buttonVariants = cva(
 export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement>, VariantProps<typeof buttonVariants> {
     asChild?: boolean;
     icon?: React.ComponentType<{ className?: string }>;
+    iconClassName?: string;
 }
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-    ({ className, variant, size, asChild = false, icon, children, display, ...props }, ref) => {
+    ({ className, variant, size, asChild = false, icon, iconClassName, children, display, ...props }, ref) => {
         const Comp = asChild ? Slot : 'button';
         const Icon = icon;
 
@@ -89,7 +90,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
 
         return (
             <Comp className={clsx(buttonVariants({ variant, size, className, display }))} ref={ref} {...props}>
-                {Icon && <Icon className="size-4 flex-none" />}
+                {Icon && <Icon className={`size-4 flex-none ${iconClassName}`} />}
                 {children}
             </Comp>
         );

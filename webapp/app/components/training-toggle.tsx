@@ -2,6 +2,7 @@ import { Cross1Icon, MagicWandIcon, TrashIcon } from '@radix-ui/react-icons';
 import { FetcherWithComponents } from 'react-router';
 import { Button } from './button';
 import { useTrainingStatus } from '~/util/trainingstatus.provider';
+import { StatusButton } from './status-button';
 
 const TrainingToggle = ({
     trainingId,
@@ -19,12 +20,14 @@ const TrainingToggle = ({
     const isTrainingThisGroup = trainingStatuses[trainingId]?.runs?.find((run) => run.imageGroupId === imageGroupId);
 
     return !isTraining && !isTrainingThisGroup ? (
-        <Button
+        <StatusButton
             disabled={!training}
             icon={MagicWandIcon}
+            type="button"
+            status={fetcher.state}
             onClick={() => fetcher.submit({ run: true }, { action: fetcher.formAction, method: 'post' })}>
             Train on this image set
-        </Button>
+        </StatusButton>
     ) : (
         <Button
             disabled={!training}
