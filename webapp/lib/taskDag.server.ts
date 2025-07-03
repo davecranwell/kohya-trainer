@@ -66,6 +66,7 @@ export function registerDag() {
             case 'startTraining': {
                 const started = await startTraining({ runId });
                 if (!started) {
+                    console.log('startTraining failed, retrying');
                     await queueTask({ messageBody: { task: 'startTraining', runId, unique: true }, delaySeconds: 20 });
                 }
                 break;
