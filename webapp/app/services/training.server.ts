@@ -205,11 +205,25 @@ export const abortTraining = async (trainingId: string) => {
     }
 };
 
-export const completeTrainingRun = async (trainingId: string) => {
+export const completeTrainingRun = async (runId: string) => {
+    const run = await prisma.trainingRun.findUnique({
+        where: { id: runId },
+        include: {
+            gpu: true,
+        },
+    });
+    if (!run) {
+        throw new Error('Run not found');
+    }
+
     await prisma.trainingRun.update({
-        where: { id: trainingId },
+        where: { id: runId },
         data: { status: 'completed', gpuId: null },
     });
+
+    if (run.gpu?.instanceId) {
+        await shutdownGpu(run.gpu.instanceId);
+    }
 };
 
 export const failTrainingRun = async (runId: string) => {

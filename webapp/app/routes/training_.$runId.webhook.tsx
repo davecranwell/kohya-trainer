@@ -40,8 +40,10 @@ export const action = async ({ params, request }: ActionFunctionArgs) => {
         case 'downloading_images_progress':
         case 'downloading_images_completed':
         case 'training_starting':
-        case 'training_completed':
         case 'training_progress':
+        case 'uploading_started':
+        case 'uploading_progress':
+        case 'uploading_completed':
             await createTrainingStatus(runId, body.status, JSON.stringify(body));
 
             break;
@@ -50,7 +52,8 @@ export const action = async ({ params, request }: ActionFunctionArgs) => {
             await failTrainingRun(runId);
 
             break;
-        case 'completed':
+        case 'training_completed':
+            await createTrainingStatus(runId, body.status, JSON.stringify(body));
             await completeTrainingRun(runId);
             break;
         default:
