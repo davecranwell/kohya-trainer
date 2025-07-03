@@ -51,10 +51,6 @@ export const awaitGpuReady = async ({ runId }: { runId: string }) => {
     const instance = vastInstance?.data?.instances;
 
     if (!instance) {
-        prisma.trainingRun.update({
-            where: { id: runId },
-            data: { status: 'failed' },
-        });
         throw new Error(`GPU instance not found on Vast: ${gpu.instanceId}`);
     }
 
