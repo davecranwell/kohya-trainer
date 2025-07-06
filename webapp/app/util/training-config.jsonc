@@ -18,9 +18,9 @@
 
     // Core params
     "output_name": "", // the name of the files it creates should be same as the name of the training or the first of the trigger word and class e.g "ohxw"
-    "train_batch_size": 2, // might need to tweak this based on memory. 4 seems too high for 3090 24gb
+    "train_batch_size": 6, // might need to tweak this based on memory. 4 seems too high for 3090 24gb
     "network_module": "networks.lora", // the name of the thing we're creating
-    "clip_skip": 2, // depends on the model but most models don't say, perhaps leave as 1 for now. 2 for sdxl, 1 for anime for some reason.
+    "clip_skip": 1, // depends on the model but most models don't say, perhaps leave as 1 for now. 1 for sdxl, 2 for anime for some reason.
     "flip_aug": false,
     "fp8_base": false,
     "full_bf16": false,
@@ -42,14 +42,14 @@
     "max_bucket_reso": 2048,
 
     // network, optimiser and lr scheduler
-    "learning_rate": 0.0004, // should change with different subjects, apparently is not used if text_encoder_lr and unet_lr are set
+    "image_repeats": 5, // this is the number of times to repeat the images in the training set. It's thought to relate to the iterations needed over the regularisation images, but it's not clear.
     "text_encoder_lr": 0.00004, // one of the key things to change, should be 1/10 of the unet_lr for characters
     "unet_lr": 0.0004, // one of the key things to change
     "network_alpha": 16, //should be half of the network_dim
     "network_dim": 32,
-    "optimizer_type": "Adafactor", // might need to change
-    "optimizer_args": ["scale_parameter=False", "relative_step=False", "warmup_init=False"],
-    "lr_scheduler": "cosine", // cosine_with_restarts is another option
+    "optimizer_type": "AdamW8bit", // was Adafactor might need to change
+    "optimizer_args": "", //["scale_parameter=False", "relative_step=False", "warmup_init=False"],
+    "lr_scheduler": "cosine_with_restarts",
 
     // sampling
     "sample_every_n_epochs": 1, // we'll want to try setting this up, but perhaps not through this crap sampler which doesn't even do adetailer

@@ -21,10 +21,10 @@ const TrainingToggle = ({
 
     return !isTraining && !isTrainingThisGroup ? (
         <StatusButton
-            disabled={!training}
+            disabled={!training || fetcher?.state !== 'idle'}
             icon={MagicWandIcon}
             type="button"
-            status={fetcher.state}
+            status={fetcher?.state}
             onClick={() => fetcher.submit({ run: true }, { action: fetcher.formAction, method: 'post' })}>
             Train on this image set
         </StatusButton>

@@ -166,18 +166,38 @@ export const checkIncompleteTrainingRun = async (trainingId: string) => {
     });
 };
 
-export const beginTraining = async (training: Pick<Training, 'id' | 'config'>, imageGroupId?: string) => {
+export const beginTraining = async (trainingId: string, imageGroupId?: string) => {
+    const training = await prisma.training.findUnique({
+        where: { id: trainingId },
+    });
+
+    if (!training) {
+        throw new Error('Training not found');
+    }
+
+    const { triggerWord, baseModel, name } = training;
+
     // We have to do the jsonc merge here because anywhere else and we have to jump
     // through a crazy number of hoops to support the jsonc import
     const defaultTrainingConfig = await import('~/util/training-config.jsonc');
-    const trainingConfig = JSON.parse(training.config);
+
+    const baseModelJson = JSON.parse(baseModel as string);
+
+    const config = {
+        output_name: triggerWord.trim(),
+        trigger_word: triggerWord.trim(),
+        checkpoint_url: baseModelJson?.url.trim(),
+        checkpoint_filename: baseModelJson?.filename.trim(),
+        metadata_description: `Trigger word(s): ${triggerWord.trim()}. Base model: ${baseModelJson?.name} (${baseModelJson?.url}). Trained through: ${process.env.ROOT_URL}`,
+        metadata_title: name.trim(),
+    };
 
     await prisma.training.update({
         where: { id: training.id },
         data: {
             config: JSON.stringify({
                 ...defaultTrainingConfig.default,
-                ...trainingConfig,
+                ...config,
             }),
         },
     });

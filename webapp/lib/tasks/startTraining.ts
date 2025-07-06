@@ -5,6 +5,7 @@ import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 
 import prisma from '#/prisma/db.server';
+import { getInstance } from '../vast.server';
 
 export const startTraining = async ({ runId }: { runId: string }) => {
     // Get the training config from the database
@@ -27,6 +28,12 @@ export const startTraining = async ({ runId }: { runId: string }) => {
         throw new Error('Training run not found');
     }
 
+    const { training, gpu } = trainingRun;
+
+    if (!gpu) {
+        throw new Error('GPU not assigned to training');
+    }
+
     const previousStatuses = await prisma.trainingStatus.findMany({
         where: { runId, status: 'startTraining' },
         orderBy: { createdAt: 'asc' },
@@ -36,7 +43,7 @@ export const startTraining = async ({ runId }: { runId: string }) => {
         const oldestStatus = previousStatuses[0];
         const timeDiff = new Date().getTime() - oldestStatus.createdAt.getTime();
 
-        // If the oldest status is older than 10 minutes, set the run to failed
+        // If the oldest status is older than 5 minutes, set the run to failed
         if (timeDiff > 1000 * 60 * 5) {
             prisma.trainingRun.update({
                 where: { id: runId },
@@ -46,32 +53,20 @@ export const startTraining = async ({ runId }: { runId: string }) => {
         }
     }
 
-    const { training, gpu } = trainingRun;
-
-    if (!gpu) {
-        throw new Error('GPU not assigned to training');
-    }
-
-    // Get information from the vast API about the instance using axios
-    const vastInstance = await axios
-        .get(`https://console.vast.ai/api/v0/instances/${gpu.instanceId}`, {
-            headers: {
-                Authorization: `Bearer ${process.env.VAST_API_KEY}`,
-            },
-        })
-        .catch(function (error) {
-            console.error('Error getting vast instance:', error);
+    // Get information from the vast API about the instance using axios, catch 429 errors thourgh
+    const vastInstance = await getInstance(gpu.instanceId).catch(function (error) {
+        if (error.response.status === 429) {
+            console.log('Rate limit exceeded, retrying');
             return false;
-        });
+        }
+        console.error('Error getting vast instance:', error);
+        return false;
+    });
 
     // NB unusual pluralisation of instances
     const instance = vastInstance?.data?.instances;
 
     if (!instance) {
-        prisma.trainingRun.update({
-            where: { id: runId },
-            data: { status: 'failed' },
-        });
         throw new Error(`GPU instance not found on Vast: ${gpu.instanceId}`);
     }
 

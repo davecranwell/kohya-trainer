@@ -50,7 +50,6 @@ export const shouldRevalidate = ({
 
 export async function action({ params, request }: ActionFunctionArgs) {
     const userId = await requireUserWithPermission(request, 'create:training:own');
-
     const training = await getTrainingByUser(params.id!, userId);
 
     if (!training) {
@@ -71,7 +70,7 @@ export async function action({ params, request }: ActionFunctionArgs) {
             return data({ error: 'Training already started' }, { status: 400 });
         }
 
-        await beginTraining(training, params.groupId);
+        await beginTraining(training.id, params.groupId);
     }
 
     if (includeall) {

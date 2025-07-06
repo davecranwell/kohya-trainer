@@ -16,9 +16,9 @@ async function createGpuInstance() {
     // This query string is discoverable from network tab when creating an instance: https://cloud.vast.ai/create/
     // no return value as it's largely useless and ID of isntance is already in bundle.id
     const newGpuResponse = await provisionInstance(offerId, {
-        // templates are unnecesasry here as the code that JSON config which follows is all a template truly is
-        // template_id: 165993,
-        // template_hash_id: 'a69eb447f9fa3ab0937f8142a858bc96',
+        // templates are unnecessary here as this JSON code is all a template truly is
+        // template_id: ,
+        // template_hash_id: '',
         client_id: 'me',
         image: 'xcession2k/kohya_rest:latest',
         env: {

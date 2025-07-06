@@ -18,46 +18,46 @@ import { StatusPill } from '~/components/status-pill';
 
 const POLL_INTERVAL = 5000;
 
-export async function action({ request, params }: ActionFunctionArgs) {
-    const userId = await requireUserWithPermission(request, 'update:training:own');
+// export async function action({ request, params }: ActionFunctionArgs) {
+//     const userId = await requireUserWithPermission(request, 'update:training:own');
 
-    const formData = await request.formData();
-    const trainingId = formData.get('trainingId');
-    const abort = formData.get('abort');
+//     const formData = await request.formData();
+//     const trainingId = formData.get('trainingId');
+//     const abort = formData.get('abort');
 
-    if (typeof trainingId !== 'string') {
-        return data({ error: 'Invalid training ID' }, { status: 400 });
-    }
+//     if (typeof trainingId !== 'string') {
+//         return data({ error: 'Invalid training ID' }, { status: 400 });
+//     }
 
-    const training = await getTrainingByUser(trainingId, userId);
+//     const training = await getTrainingByUser(trainingId, userId);
 
-    if (!training) {
-        return data({ error: 'Training not found' }, { status: 404 });
-    }
+//     if (!training) {
+//         return data({ error: 'Training not found' }, { status: 404 });
+//     }
 
-    if (abort) {
-        await abortTraining(trainingId);
-        return redirectWithToast(`/training`, { type: 'success', title: 'Training aborted', description: 'Training aborted' });
-    }
+//     if (abort) {
+//         await abortTraining(trainingId);
+//         return redirectWithToast(`/training`, { type: 'success', title: 'Training aborted', description: 'Training aborted' });
+//     }
 
-    if (await checkIncompleteTrainingRun(trainingId)) {
-        return data({ error: 'Training already started' }, { status: 400 });
-    }
+//     if (await checkIncompleteTrainingRun(trainingId)) {
+//         return data({ error: 'Training already started' }, { status: 400 });
+//     }
 
-    try {
-        if (await beginTraining(training)) {
-            return redirectWithToast(
-                `/training`,
-                {
-                    type: 'success',
-                    title: 'Training started',
-                    description: 'Grab a snack and check back in a few minutes.',
-                },
-                { status: 302 },
-            );
-        }
-    } catch (error) {}
-}
+//     try {
+//         if (await beginTraining(training)) {
+//             return redirectWithToast(
+//                 `/training`,
+//                 {
+//                     type: 'success',
+//                     title: 'Training started',
+//                     description: 'Grab a snack and check back in a few minutes.',
+//                 },
+//                 { status: 302 },
+//             );
+//         }
+//     } catch (error) {}
+// }
 
 export async function loader({ request }: Route.LoaderArgs) {
     const userId = await requireUserWithPermission(request, 'read:training:own');

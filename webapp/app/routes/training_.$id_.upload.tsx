@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback, memo } from 'react';
-import { useLoaderData, data } from 'react-router';
+import { useLoaderData, data, useFetcher } from 'react-router';
 import type { ActionFunctionArgs, LoaderFunctionArgs } from 'react-router';
 import { toast } from 'sonner';
 import { createId } from '@paralleldrive/cuid2';
@@ -20,6 +20,7 @@ import { Button } from '~/components/button';
 import { useTrainingStatus } from '~/util/trainingstatus.provider';
 import { StatusPill } from '~/components/status-pill';
 import TrainingToggle from '~/components/training-toggle';
+import { beginTraining, checkIncompleteTrainingRun, getTrainingByUser } from '~/services/training.server';
 
 const MAX_IMAGES = 200;
 const ACCEPTED_IMAGE_TYPES = ['image/png', 'image/jpeg'];
@@ -28,7 +29,23 @@ const ACCEPTED_TEXT_TYPES = ['text/plain'];
 type FileWithId = File & { id: string };
 
 export async function action({ request, params }: ActionFunctionArgs) {
-    return null;
+    const userId = await requireUserWithPermission(request, 'create:training:own');
+    const training = await getTrainingByUser(params.id!, userId);
+
+    if (!training) {
+        throw data('Not found', { status: 404 });
+    }
+
+    const formData = await request.formData();
+    const run = formData.get('run');
+
+    if (run) {
+        if (await checkIncompleteTrainingRun(training.id)) {
+            return data({ error: 'Training already started' }, { status: 400 });
+        }
+
+        await beginTraining(training.id, params.groupId);
+    }
 }
 
 export async function loader({ params, request }: LoaderFunctionArgs) {
@@ -69,6 +86,7 @@ export default function ImageUpload() {
     const [windowWidth, setWindowWidth] = useState(0);
     const [cols, setCols] = useState(3);
     const { trainingStatuses } = useTrainingStatus();
+    const fetcher = useFetcher();
 
     useEffect(() => {
         const detectedWidth = listRef?.current?.clientWidth;
@@ -240,7 +258,7 @@ export default function ImageUpload() {
                 <div className="flex flex-row items-center gap-10">
                     <StatusPill status={trainingStatuses[training.id]?.runs.filter((run) => run.imageGroupId === null)?.[0]?.status} />
 
-                    <TrainingToggle trainingId={training.id} />
+                    <TrainingToggle trainingId={training.id} fetcher={fetcher} />
                 </div>
             }>
             <div className="flex h-full flex-col justify-stretch overflow-hidden" ref={listRef}>

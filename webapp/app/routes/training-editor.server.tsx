@@ -25,15 +25,6 @@ export async function action({ request, params }: ActionFunctionArgs) {
 
     const { id: trainingId, name, triggerWord, baseModel } = submission.value;
 
-    const config = {
-        output_name: triggerWord.trim(),
-        trigger_word: triggerWord.trim(),
-        checkpoint_url: baseModel.url.trim(),
-        checkpoint_filename: baseModel.filename.trim(),
-        metadata_description: `Trigger word(s): ${triggerWord.trim()}. Base model: ${baseModel.name} (${baseModel.url}). Trained through: ${process.env.ROOT_URL}`,
-        metadata_title: name.trim(),
-    };
-
     const updateTraining = await prisma.training.upsert({
         select: { id: true, owner: { select: { email: true } } },
         where: { id: trainingId ?? '__new_training__', ownerId: userId },
@@ -42,13 +33,13 @@ export async function action({ request, params }: ActionFunctionArgs) {
             name: name.trim(),
             triggerWord: triggerWord.trim(),
             baseModel: JSON.stringify(baseModel),
-            config: JSON.stringify(config),
+            config: JSON.stringify({}),
         },
         update: {
             name: name.trim(),
             triggerWord: triggerWord.trim(),
             baseModel: JSON.stringify(baseModel),
-            config: JSON.stringify(config),
+            config: JSON.stringify({}),
         },
     });
 
