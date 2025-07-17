@@ -1,34 +1,30 @@
-import { useEffect, useReducer, useState } from 'react';
+import { useReducer, useState } from 'react';
 
-import { getFormProps, getInputProps, getCollectionProps, getTextareaProps, useForm, useInputControl } from '@conform-to/react';
-import { getZodConstraint, parseWithZod } from '@conform-to/zod';
-import { Form, useActionData, useFetcher, useLoaderData } from 'react-router';
-import { CheckIcon, ExternalLinkIcon, InfoCircledIcon } from '@radix-ui/react-icons';
-import { Field as HeadlessField, Label as HeadlessLabel, Legend, Radio, RadioGroup } from '@headlessui/react';
+import { getFormProps, getInputProps, useForm } from '@conform-to/react';
+import { getZodConstraint } from '@conform-to/zod';
+import { useActionData, useFetcher } from 'react-router';
+import { InfoCircledIcon } from '@radix-ui/react-icons';
+import { Field as HeadlessField, Label as HeadlessLabel, Radio, RadioGroup } from '@headlessui/react';
 import { z } from 'zod';
 
-import { useIsPending } from '~/util/hooks';
 import { type BaseModel, type Training } from '~/types/training';
 
-import { ErrorList, Field, Fieldset } from '~/components/forms';
-import { Label } from '~/components/forms/label';
+import { ErrorList, Field } from '~/components/forms';
 import { Button } from '~/components/button';
 import { StatusButton } from '~/components/status-button';
-import { Container } from '~/components/container';
 import { Alert } from '~/components/alert';
 import { CivitaiBrowser } from '~/components/civitai-browser';
-import { Tooltip, TooltipTrigger, TooltipContent } from '~/components/tooltip';
+import { IconText } from '~/components/icon-text';
 
 import { type action } from './training-editor.server';
 import { useHelp } from '../util/help.provider';
 
 import civitai from '../assets/civitai.png';
-import { IconText } from '~/components/icon-text';
 
 export const TrainingEditorSchema = z.object({
     id: z.string().optional(),
     name: z.string().min(1).max(100).describe('An easy way to identify this training later.'),
-    triggerWord: z.string().min(4).max(10),
+    triggerWord: z.string().min(4).max(20),
     baseModel: z.object({
         id: z.string(),
         name: z.string(),

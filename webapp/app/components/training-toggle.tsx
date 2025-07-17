@@ -1,4 +1,4 @@
-import { Cross1Icon, MagicWandIcon, TrashIcon } from '@radix-ui/react-icons';
+import { MagicWandIcon, TrashIcon } from '@radix-ui/react-icons';
 import { FetcherWithComponents } from 'react-router';
 import { Button } from './button';
 import { useTrainingStatus } from '~/util/trainingstatus.provider';
