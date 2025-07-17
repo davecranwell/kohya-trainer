@@ -9,7 +9,7 @@ import { useDebouncedCallback } from 'use-debounce';
 import prisma from '#/prisma/db.server';
 
 import { requireUserWithPermission } from '~/services/permissions.server';
-import { beginTraining, checkIncompleteTrainingRun, getTrainingByUser } from '~/services/training.server';
+import { abortTraining, beginTraining, checkIncompleteTrainingRun, getTrainingByUser } from '~/services/training.server';
 import { addAllImageToGroup, addImageToGroup, removeAllImagesFromGroup, removeImageFromGroup, setImageCrop } from '~/services/imagesizes.server';
 import { getThumbnailUrl } from '~/util/misc';
 import { useTrainingStatus } from '~/util/trainingstatus.provider';
@@ -60,6 +60,7 @@ export async function action({ params, request }: ActionFunctionArgs) {
     const includeall = formData.get('includeall');
     const excludeall = formData.get('excludeall');
     const run = formData.get('run');
+    const abort = formData.get('abort');
     const include = formData.get('include') as string;
     const exclude = formData.get('exclude') as string;
     const setCrop = formData.get('setcrop') as string;
@@ -71,6 +72,10 @@ export async function action({ params, request }: ActionFunctionArgs) {
         }
 
         await beginTraining(training.id, params.groupId);
+    }
+
+    if (abort) {
+        await abortTraining(training.id);
     }
 
     if (includeall) {
@@ -143,7 +148,7 @@ export async function loader({ params, request }: LoaderFunctionArgs) {
         throw data('Not found', { status: 404 });
     }
 
-    const groupImageHashmap: Record<string, { x: number; y: number; width: number; height: number }> = group.images.reduce(
+    const groupImageHashmap: Record<string, { x: number; y: number; width: number; height: number; text: string }> = group.images.reduce(
         (acc, groupImage) => ({
             ...acc,
             [groupImage.imageId]: { x: groupImage.x, y: groupImage.y, width: groupImage.width, height: groupImage.height, text: groupImage.text },
@@ -197,6 +202,20 @@ export default function ImageGroup() {
         [images],
     );
 
+    // const finalImages = images.map((image) => {
+    //     const groupImage = groupImageHashmap[image.id];
+
+    //     if (!groupImage) {
+    //         return image;
+    //     }
+
+    //     return {
+    //         ...image,
+    //         text: groupImage?.text || image.text,
+    //         isIncludedInGroup: !!groupImage,
+    //     };
+    // });
+
     return (
         <Panel
             heading={group.name}
@@ -222,7 +241,6 @@ export default function ImageGroup() {
                 <div className="w-full flex-1 overflow-hidden" ref={listRef}>
                     {windowWidth > 0 && (
                         <ImageTaggingList
-                            ref={listRef}
                             images={images}
                             windowWidth={windowWidth}
                             cols={cols}
