@@ -190,6 +190,7 @@ export const beginTraining = async (trainingId: string, imageGroupId?: string) =
         checkpoint_filename: baseModelJson?.filename.trim(),
         metadata_description: `Trigger word(s): ${triggerWord.trim()}. Base model: ${baseModelJson?.name} (${baseModelJson?.url}). Trained through: ${process.env.ROOT_URL}`,
         metadata_title: name.trim(),
+        sample_prompts: `masterpiece, best quality, ${triggerWord}, simple background --n low quality, worst quality, bad anatomy, bad composition, poor, low effort --w 1024 --h 1024 --d 1 --l 7 --s 20\nmasterpiece, best quality, ${triggerWord}, close up, simple background --n low quality, worst quality, bad anatomy, bad composition, poor, low effort --w 1024 --h 1024 --d 1 --l 7 --s 20\n`,
     };
 
     await prisma.training.update({
