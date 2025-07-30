@@ -10,10 +10,17 @@ import { Container } from './container';
 import { Input } from './forms/input';
 
 const getModels = async (baseModels: string[], search: string) => {
-    const response = await fetch(
-        `https://civitai.com/api/v1/models?types=Checkpoint&sort=Highest%20Rated&nsfw=true&baseModels=${baseModels.map((model) => encodeURIComponent(model)).join(',')}&query=${search}`,
-    );
-    return response.json();
+    try {
+        const response = await fetch(
+            `https://civitai.com/api/v1/models?types=Checkpoint&sort=Highest%20Rated&nsfw=true&baseModels=${baseModels.map((model) => encodeURIComponent(model)).join(',')}&query=${search}`,
+        );
+
+        const data = await response.json();
+        return data;
+    } catch (error) {
+        // catch preflight errors - regular status code errors are returned in the try block
+        throw new Error(`Failed to retrieve Civitai models. If you are in the UK this may be due to Civitai's block on UK IP addresses`);
+    }
 };
 
 const Model = ({
@@ -123,7 +130,7 @@ export function CivitaiBrowser({
     onSelect,
     isOpen = false,
     setIsOpen,
-    supportedModels = ['SDXL 1.0', 'SD 1.5'],
+    supportedModels = ['SDXL 1.0'],
 }: {
     onSelect: (version: any) => void;
     isOpen: boolean;
@@ -133,7 +140,7 @@ export function CivitaiBrowser({
     const queryClient = useQueryClient();
     const [search, setSearch] = useState('');
     const [debouncedSearch] = useDebounce(search, 1000);
-    const { data, isLoading } = useQuery({
+    const { data, error, isLoading } = useQuery({
         queryKey: ['models', debouncedSearch],
         queryFn: () => getModels(supportedModels, debouncedSearch),
         placeholderData: (prev) => prev,
@@ -165,23 +172,29 @@ export function CivitaiBrowser({
                                         className="sticky"
                                     />
                                 )}
-
-                                {data?.items.length < 1 && (
+                                {error ? (
                                     <div className="flex h-full items-center justify-center">
-                                        <span className="text-gray-500">No models found</span>
+                                        <span className="text-gray-500">{error.message}</span>
                                     </div>
+                                ) : (
+                                    data?.items?.length < 1 && (
+                                        <div className="flex h-full items-center justify-center">
+                                            <span className="text-gray-500">No models found</span>
+                                        </div>
+                                    )
                                 )}
                                 <ul className="mt-4 flex w-full flex-row flex-wrap items-stretch">
-                                    {data?.items.map((model) => (
-                                        <Model
-                                            key={model.id}
-                                            model={model}
-                                            as="li"
-                                            supported={supportedModels}
-                                            className="mb-4 mr-4 w-[250px] flex-1 grow-0"
-                                            onSelect={handleChooseModel}
-                                        />
-                                    ))}
+                                    {!error &&
+                                        data?.items.map((model) => (
+                                            <Model
+                                                key={model.id}
+                                                model={model}
+                                                as="li"
+                                                supported={supportedModels}
+                                                className="mb-4 mr-4 w-[250px] flex-1 grow-0"
+                                                onSelect={handleChooseModel}
+                                            />
+                                        ))}
                                 </ul>
                             </DialogPanel>
                         </div>
