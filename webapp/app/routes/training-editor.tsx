@@ -240,7 +240,7 @@ export function TrainingEditor({ training, baseModels }: { training?: Partial<Tr
 
                                 handleChosenNewBaseModel(newModel);
                             }}
-                            supportedModels={baseModels.map((model) => model.type)}
+                            supportedModels={[...new Set(baseModels.map((model) => model.type))]}
                             isOpen={isCivitaiBrowserOpen}
                             setIsOpen={setIsCivitaiBrowserOpen}
                         />
