@@ -15,6 +15,8 @@ export const reduceImages = async ({ runId }: { runId: string }) => {
         throw new Error('Training run not found');
     }
 
+    const MAX_SIZE = 1024;
+
     // If the image group is set, only process the images in the image group.
     // Also expect cropping, so send through the x, y, width, height.
     if (trainingRun.imageGroupId) {
@@ -53,7 +55,7 @@ export const reduceImages = async ({ runId }: { runId: string }) => {
                     runId,
                     imageUrl: image.image.url,
                     targetUrl,
-                    size: 2048,
+                    size: MAX_SIZE,
                     cropX: image.x ?? undefined,
                     cropY: image.y ?? undefined,
                     cropWidth: image.width ?? undefined,
@@ -82,7 +84,7 @@ export const reduceImages = async ({ runId }: { runId: string }) => {
                     runId,
                     imageUrl: image.url,
                     targetUrl: image.url,
-                    size: 2048,
+                    size: MAX_SIZE,
                 },
             });
         }
