@@ -21,6 +21,7 @@ async function createGpuInstance() {
         // template_hash_id: '',
         client_id: 'me',
         image: 'xcession2k/kohya_rest:latest',
+        label: 'kohya_rest',
         env: {
             HF_TOKEN: '',
             //CIVITAI_TOKEN: training.civitaiToken,

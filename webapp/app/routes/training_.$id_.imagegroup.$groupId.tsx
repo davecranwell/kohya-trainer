@@ -11,7 +11,7 @@ import prisma from '#/prisma/db.server';
 import { requireUserWithPermission } from '~/services/permissions.server';
 import { abortTraining, beginTraining, checkIncompleteTrainingRun, getTrainingByUser } from '~/services/training.server';
 import { addAllImageToGroup, addImageToGroup, removeAllImagesFromGroup, removeImageFromGroup, setImageCrop } from '~/services/imagesizes.server';
-import { getThumbnailUrl } from '~/util/misc';
+import { getOriginalUrl, getThumbnailUrl } from '~/util/misc';
 import { useTrainingStatus } from '~/util/trainingstatus.provider';
 
 import { Button } from '~/components/button';
@@ -30,23 +30,8 @@ type CropPercentage = {
     height: number;
 };
 
-export const shouldRevalidate = ({
-    actionResult,
-    currentParams,
-    currentUrl,
-    defaultShouldRevalidate,
-    formAction,
-    formData,
-    formEncType,
-    formMethod,
-    nextParams,
-    nextUrl,
-}: {
-    actionResult: any;
-    currentParams: any;
-    currentUrl: any;
-    defaultShouldRevalidate: any;
-}) => !formData || (formData.get('setcrop') == undefined && formData.get('include') == undefined && formData.get('exclude') == undefined);
+export const shouldRevalidate = ({ formData }: { formData: FormData }) =>
+    !formData || (formData.get('setcrop') == undefined && formData.get('include') == undefined && formData.get('exclude') == undefined);
 
 export async function action({ params, request }: ActionFunctionArgs) {
     const userId = await requireUserWithPermission(request, 'create:training:own');
@@ -123,6 +108,8 @@ export async function loader({ params, request }: LoaderFunctionArgs) {
                 text: true,
                 url: true,
                 type: true,
+                width: true,
+                height: true,
                 createdAt: true,
             },
             where: { trainingId: params.id },
@@ -158,6 +145,8 @@ export async function loader({ params, request }: LoaderFunctionArgs) {
 
     return {
         thumbnailBucketUrl: `https://${process.env.AWS_S3_THUMBNAILS_BUCKET_NAME!}.s3.us-east-1.amazonaws.com/`,
+        maxResolutionBucketUrl: `https://${process.env.AWS_S3_MAXRES_BUCKET_NAME!}.s3.us-east-1.amazonaws.com/`,
+        uploadBucketUrl: `https://${process.env.AWS_S3_UPLOAD_BUCKET_NAME!}.s3.us-east-1.amazonaws.com/`,
         userId,
         images: images.map((image) => ({ ...image, isIncludedInGroup: !!groupImageHashmap[image.id] })),
         training,
@@ -169,7 +158,8 @@ export async function loader({ params, request }: LoaderFunctionArgs) {
 export default function ImageGroup() {
     const fetcher = useFetcher();
     const listRef = useRef<HTMLDivElement>(null);
-    const { images, training, thumbnailBucketUrl, group, groupImageHashmap } = useLoaderData<typeof loader>();
+    const { images, training, thumbnailBucketUrl, maxResolutionBucketUrl, uploadBucketUrl, group, groupImageHashmap } =
+        useLoaderData<typeof loader>();
     const [windowWidth, setWindowWidth] = useState(0);
     const [cols, setCols] = useState(3);
     const { trainingStatuses } = useTrainingStatus();
@@ -254,6 +244,8 @@ export default function ImageGroup() {
                                     groupImage={groupImageHashmap[props.image.id!]}
                                     fetcher={fetcher}
                                     thumbnailBucketUrl={thumbnailBucketUrl}
+                                    maxResolutionBucketUrl={maxResolutionBucketUrl}
+                                    uploadBucketUrl={uploadBucketUrl}
                                 />
                             )}
                         />
@@ -267,6 +259,8 @@ export default function ImageGroup() {
 const Image = ({
     image,
     thumbnailBucketUrl,
+    maxResolutionBucketUrl,
+    uploadBucketUrl,
     fetcher,
     groupImage,
     handleTagChange,
@@ -275,6 +269,8 @@ const Image = ({
 }: {
     image: ImageWithMetadata;
     thumbnailBucketUrl: string;
+    maxResolutionBucketUrl: string;
+    uploadBucketUrl: string;
     fetcher: FetcherWithComponents<any>;
     groupImage: { x: number; y: number; width: number; height: number; text: string };
     handleTagChange: (tags: string[], imageId: string) => void;
@@ -283,6 +279,7 @@ const Image = ({
 }) => {
     const [crop, setCrop] = useState<{ x: number; y: number }>({ x: -1, y: -1 });
     const [zoom, setZoom] = useState<number>(1);
+    const [groupImg, setGroupImg] = useState(groupImage);
     const [hasInteracted, setHasInteracted] = useState(false);
     const [isIncludedInGroup, setIsIncludedInGroup] = useState(image.isIncludedInGroup);
 
@@ -318,6 +315,7 @@ const Image = ({
 
     const debouncedSetFinalCrop = useDebouncedCallback((cropPerc: CropPercentage, imageId: string) => {
         fetcher.submit({ setcrop: JSON.stringify(cropPerc), imageid: imageId }, { action: fetcher.formAction, method: 'post' });
+        setGroupImg({ ...groupImage, x: cropPerc.x, y: cropPerc.y, width: cropPerc.width, height: cropPerc.height });
     }, 500);
 
     const handleChange = (tags: string[]) => {
@@ -331,18 +329,24 @@ const Image = ({
         [handleTagRemove, image.id],
     );
 
+    const widthFactor = (groupImg?.width || image.width || 100) / 100;
+    const heightFactor = (groupImg?.height || image.height || 100) / 100;
+    const pixelWidth = Math.round(widthFactor * image?.width);
+    const pixelHeight = Math.round(heightFactor * image?.height);
+    const isTooSmall = isIncludedInGroup && (pixelWidth < 1024 || pixelHeight < 1024);
+
     const initialCroppedAreaPercentages =
-        isIncludedInGroup && groupImage?.x != null && groupImage?.y != null && groupImage?.width != null && groupImage?.height != null
+        isIncludedInGroup && groupImg?.x != null && groupImg?.y != null && groupImg?.width != null && groupImg?.height != null
             ? {
-                  width: groupImage.width,
-                  height: groupImage.height,
-                  x: groupImage.x,
-                  y: groupImage.y,
+                  width: groupImg.width,
+                  height: groupImg.height,
+                  x: groupImg.x,
+                  y: groupImg.y,
               }
             : undefined;
 
     return (
-        <div className="relative flex w-full flex-col">
+        <div className={`relative flex w-full flex-col ${isTooSmall ? 'bg-red-500' : ''}`}>
             <div className="absolute left-1 top-1 z-10">
                 {isIncludedInGroup ? (
                     <Button
@@ -371,11 +375,11 @@ const Image = ({
                 className="flex-0 relative h-[500px] w-full data-[included=false]:opacity-10 data-[included=true]:opacity-100">
                 <Cropper
                     key={image.id}
-                    image={getThumbnailUrl(thumbnailBucketUrl, image.url!, 600)}
+                    image={getOriginalUrl(uploadBucketUrl, image.url!)}
                     showGrid={false}
                     zoomSpeed={0.1}
                     crop={crop}
-                    objectFit="cover" // causes all sorts of flickering image layout issues
+                    objectFit={image.width && image.height ? (image.width > image.height ? 'vertical-cover' : 'horizontal-cover') : 'cover'} // causes all sorts of flickering image layout issues
                     zoom={zoom}
                     maxZoom={10}
                     minZoom={1}
@@ -392,6 +396,13 @@ const Image = ({
                     onWheelRequest={onWheelRequest}
                     onTouchRequest={onTouchRequest}
                 />
+                {isIncludedInGroup && image.width && image.height && (
+                    <div className="absolute bottom-0 right-0 z-10">
+                        <p className="text-xs text-white">
+                            {pixelWidth}&times;{pixelHeight}
+                        </p>
+                    </div>
+                )}
             </div>
             <div
                 data-included={isIncludedInGroup ? 'true' : 'false'}

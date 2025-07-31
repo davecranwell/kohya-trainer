@@ -118,6 +118,8 @@ model TrainingImage {
   text        String?
   url         String
   name        String
+  width       Int? 
+  height      Int?
   type        String
   isResized   Boolean @default(false) // only indicates if it has been resized down to the max size or not.
   trainingId String

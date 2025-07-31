@@ -1,3 +1,12 @@
+export const modelTypeMetadata = {
+    'SD 1.5': {
+        minResolution: 512,
+    },
+    'SDXL 1.0': {
+        minResolution: 1024,
+    },
+};
+
 export const baseModels = [
     {
         id: '1',

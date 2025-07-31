@@ -28,6 +28,8 @@ export const action = async ({ params, request }: ActionFunctionArgs) => {
                 name: data.name,
                 trainingId: params.id!,
                 type: data.type,
+                width: data.width,
+                height: data.height,
                 id: data.id,
             },
         });

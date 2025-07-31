@@ -65,6 +65,8 @@ erDiagram
     String text "❓"
     String url 
     String name 
+    Int width "❓"
+    Int height "❓"
     String type 
     Boolean isResized 
     DateTime createdAt 

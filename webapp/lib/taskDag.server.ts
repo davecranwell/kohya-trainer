@@ -54,7 +54,7 @@ export function registerDag() {
             case 'awaitGpuReady': {
                 const isReady = await awaitGpuReady({ runId });
                 if (isReady) {
-                    await queueTask({ messageBody: { task: 'startTraining', runId, unique: true } });
+                    await queueTask({ messageBody: { task: 'startTraining', runId, unique: true }, delaySeconds: 20 });
                 } else {
                     // if not ready, wait 30 seconds and try again
                     await queueTask({ messageBody: { task: 'awaitGpuReady', runId }, delaySeconds: 60 });
@@ -67,7 +67,7 @@ export function registerDag() {
                 const started = await startTraining({ runId });
                 if (!started) {
                     console.log('startTraining failed, retrying');
-                    await queueTask({ messageBody: { task: 'startTraining', runId, unique: true }, delaySeconds: 20 });
+                    await queueTask({ messageBody: { task: 'startTraining', runId }, delaySeconds: 20 });
                 }
                 break;
             }

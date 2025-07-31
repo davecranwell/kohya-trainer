@@ -139,6 +139,7 @@ export default function ImageUpload() {
                     text: '',
                     url: URL.createObjectURL(file),
                     type: file.type,
+
                     filenameNoExtension: file.name.split('.').slice(0, -1).join('.'),
                     updatedAt: new Date(),
                 })),
@@ -156,6 +157,9 @@ export default function ImageUpload() {
             await Promise.all(
                 imageFiles.map(async (file) => {
                     return new Promise(async (resolve, reject) => {
+                        const img = new Image();
+                        img.src = URL.createObjectURL(file);
+
                         const uploadUrl = imagesWithUploadUrls.find(
                             (fileWithUrl: { name: string; type: string; uploadUrl: string }) => fileWithUrl.name === file.name,
                         )?.uploadUrl;
@@ -172,6 +176,8 @@ export default function ImageUpload() {
                                 name: file.name,
                                 type: file.type,
                                 id: file.id,
+                                width: img.width,
+                                height: img.height,
                             }),
                         });
                         if (addImageResponse.ok) {
@@ -279,7 +285,7 @@ export default function ImageUpload() {
                             windowWidth={windowWidth}
                             onImageTagsUpdated={handleTagsUpdated}
                             RenderImage={memo(({ ...props }) => (
-                                <Image {...props} thumbnailBucketUrl={thumbnailBucketUrl} />
+                                <UploadedImage {...props} thumbnailBucketUrl={thumbnailBucketUrl} />
                             ))}
                         />
                     )}
@@ -289,7 +295,7 @@ export default function ImageUpload() {
     );
 }
 
-const Image = ({
+const UploadedImage = ({
     image,
     thumbnailBucketUrl,
     handleTagChange,

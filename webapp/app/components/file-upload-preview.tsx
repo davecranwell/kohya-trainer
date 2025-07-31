@@ -28,6 +28,8 @@ export type ImageWithMetadata = {
     text?: string | null;
     type: string;
     url?: string;
+    width?: number;
+    height?: number;
     updatedAt?: Date;
     isIncludedInGroup?: boolean;
 };
@@ -59,7 +61,6 @@ export const FileUploadPreview: React.FC<FileUploadPreviewProps> = ({
     };
 
     const getSupportedFiles = (files: FileList) => {
-        console.log('blah', files);
         return Array.from(files).filter((file) => acceptedImageTypes.includes(file.type) || acceptedTextTypes.includes(file.type));
     };
 
@@ -69,12 +70,8 @@ export const FileUploadPreview: React.FC<FileUploadPreviewProps> = ({
         // filter out the filetypes that are unsupported
         const files = getSupportedFiles(newFiles);
 
-        console.log('wee', files);
-
         // filter out the files that are already in the previousImages array
         const filteredFiles = files.filter((file) => !previousImages.find((image) => image.name === file.name));
-
-        console.log('filteredFiles', filteredFiles);
 
         onDropped(filteredFiles);
     };

@@ -3,6 +3,7 @@ import { enqueueTraining } from '#/lib/taskDag.server';
 import { Training } from '@prisma/client';
 
 import { shutdownGpu } from '#/lib/vast.server';
+import { modelTypeMetadata } from '~/util/difussion-models';
 
 const NOT_RUNNING_STATUS = ['stalled', 'failed', 'completed', 'aborted'];
 const RUNNING_STATUS = ['started'];
@@ -183,14 +184,17 @@ export const beginTraining = async (trainingId: string, imageGroupId?: string) =
 
     const baseModelJson = JSON.parse(baseModel as string);
 
+    const minResolution = modelTypeMetadata[baseModelJson?.type as keyof typeof modelTypeMetadata]?.minResolution || 1024;
+
     const config = {
         output_name: triggerWord.trim(),
+        resolution: `${minResolution},${minResolution}`,
         trigger_word: triggerWord.trim(),
         checkpoint_url: baseModelJson?.url.trim(),
         checkpoint_filename: baseModelJson?.filename.trim(),
         metadata_description: `Trigger word(s): ${triggerWord.trim()}. Base model: ${baseModelJson?.name} (${baseModelJson?.url}). Trained through: ${process.env.ROOT_URL}`,
         metadata_title: name.trim(),
-        sample_prompts: `masterpiece, best quality, ${triggerWord}, simple background --n low quality, worst quality, bad anatomy, bad composition, poor, low effort --w 1024 --h 1024 --d 1 --l 7 --s 20\nmasterpiece, best quality, ${triggerWord}, close up, simple background --n low quality, worst quality, bad anatomy, bad composition, poor, low effort --w 1024 --h 1024 --d 1 --l 7 --s 20\n`,
+        sample_prompts: `masterpiece, best quality, ${triggerWord}, simple background --n low quality, worst quality, bad anatomy, bad composition, poor, low effort --w ${minResolution} --h ${minResolution} --d 1 --l 7 --s 20\nmasterpiece, best quality, ${triggerWord}, close up, simple background --n low quality, worst quality, bad anatomy, bad composition, poor, low effort --w ${minResolution} --h ${minResolution} --d 1 --l 7 --s 20\n`,
     };
 
     await prisma.training.update({

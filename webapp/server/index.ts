@@ -156,6 +156,8 @@ async function startServer() {
                         'data:',
                         'blob:',
                         `https://${process.env.AWS_S3_THUMBNAILS_BUCKET_NAME!}.s3.us-east-1.amazonaws.com`,
+                        `https://${process.env.AWS_S3_UPLOAD_BUCKET_NAME!}.s3.us-east-1.amazonaws.com`,
+                        `https://${process.env.AWS_S3_MAXRES_BUCKET_NAME!}.s3.us-east-1.amazonaws.com`,
                         'https://image.civitai.com',
                     ],
                     'connect-src': [

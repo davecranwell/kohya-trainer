@@ -6,7 +6,7 @@ export const getLiveInstanceIds = async (): Promise<string[]> => {
             Authorization: `Bearer ${process.env.VAST_API_KEY}`,
         },
     });
-    return response.data.instances.map((instance: any) => instance.id.toString());
+    return response.data.instances.filter((instance: any) => instance.label === 'kohya_rest').map((instance: any) => instance.id.toString());
 };
 
 export const shutdownGpu = async (instanceId: string) => {
@@ -42,7 +42,7 @@ export const getOffers = async () => {
             in: [
                 'SE',
                 'UA',
-                'GB',
+                // 'GB', We can't use GB because of the civitai geofence
                 'PL',
                 'PT',
                 'SI',

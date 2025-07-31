@@ -1,4 +1,5 @@
 import prisma from '#/prisma/db.server';
+import { modelTypeMetadata } from '~/util/difussion-models';
 
 import { queueTask } from '../taskQueue';
 
@@ -7,6 +8,11 @@ export const reduceImages = async ({ runId }: { runId: string }) => {
         select: {
             trainingId: true,
             imageGroupId: true,
+            training: {
+                select: {
+                    baseModel: true,
+                },
+            },
         },
         where: { id: runId },
     });
@@ -15,7 +21,7 @@ export const reduceImages = async ({ runId }: { runId: string }) => {
         throw new Error('Training run not found');
     }
 
-    const MAX_SIZE = 1024;
+    const MAX_SIZE = modelTypeMetadata[trainingRun.training.baseModel as keyof typeof modelTypeMetadata]?.minResolution || 1024;
 
     // If the image group is set, only process the images in the image group.
     // Also expect cropping, so send through the x, y, width, height.

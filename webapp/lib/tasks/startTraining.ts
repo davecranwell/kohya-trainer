@@ -7,7 +7,7 @@ import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import prisma from '#/prisma/db.server';
 import { getInstance } from '../vast.server';
 
-export const startTraining = async ({ runId }: { runId: string }) => {
+export const startTraining = async ({ runId }: { runId: string }): Promise<boolean> => {
     // Get the training config from the database
     const trainingRun = await prisma.trainingRun.findUnique({
         select: {
@@ -53,7 +53,7 @@ export const startTraining = async ({ runId }: { runId: string }) => {
         }
     }
 
-    // Get information from the vast API about the instance using axios, catch 429 errors thourgh
+    // Get information from the vast API about the instance using axios, catch 429 errors
     const vastInstance = await getInstance(gpu.instanceId).catch(function (error) {
         if (error.response.status === 429) {
             console.log('Rate limit exceeded, retrying');
@@ -65,6 +65,7 @@ export const startTraining = async ({ runId }: { runId: string }) => {
 
     // NB unusual pluralisation of instances
     const instance = vastInstance?.data?.instances;
+    console.log({ vastInstance });
 
     if (!instance) {
         throw new Error(`GPU instance not found on Vast: ${gpu.instanceId}`);
@@ -84,7 +85,7 @@ export const startTraining = async ({ runId }: { runId: string }) => {
     const client = new S3Client({ region: process.env.AWS_REGION });
     const command = new PutObjectCommand({
         Bucket: process.env.AWS_S3_UPLOAD_BUCKET_NAME,
-        Key: `${training.ownerId}/${training.id}/models/checkpoint.safetensors`,
+        Key: `${training.ownerId}/${training.id}/models/${runId}/checkpoint.safetensors`,
     });
     const presignedUrl = await getSignedUrl(client, command, { expiresIn: 60 * 60 * 12 }); // upload must occur within 12 hours. Yes this is a long time. TODO: Make this more JIT
 
