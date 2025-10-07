@@ -56,7 +56,7 @@ export const handler = async (event) => {
                 const width = Math.round(originalWidth * (cropWidth / 100));
                 const height = Math.round(originalHeight * (cropHeight / 100));
 
-                processedImage = processedImage.extract({
+                processedImage = processedImage.rotate().extract({
                     left,
                     top,
                     width,
@@ -66,12 +66,13 @@ export const handler = async (event) => {
 
             if (size) {
                 // Resize down only, maintaining aspect ratio, fitting within the specified size
-                processedImage = processedImage.resize(size, size, {
+                processedImage = processedImage.rotate().resize(size, size, {
                     fit: 'inside',
                     withoutEnlargement: true, // Prevents upscaling
                 });
             }
 
+            // rotation without options is essential to apply any exif orientation data
             const newImage = await processedImage.toBuffer();
 
             await s3.send(

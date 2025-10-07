@@ -31,7 +31,8 @@ export const handler = async (event, context) => {
 
     for (const size of sizes) {
         // https://sharp.pixelplumbing.com/api-resize#resize
-        const thumbnail = await image.resize(size.size, size.size, size.options).toBuffer();
+        // rotation without options is essential to apply any exif orientation data
+        const thumbnail = await image.rotate().resize(size.size, size.size, size.options).toBuffer();
         // get only the filename from the key
         const filename = key.split('/').pop();
         // get the rest of the path
