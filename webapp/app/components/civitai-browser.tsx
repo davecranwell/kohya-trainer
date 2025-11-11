@@ -102,6 +102,7 @@ const Model = ({
                                             className="w-[var(--button-width)] rounded-md bg-black py-1 shadow-lg ring-1 ring-black ring-opacity-5 transition duration-100 ease-in focus:outline-none data-[leave]:data-[closed]:opacity-0 sm:text-sm">
                                             {model?.modelVersions
                                                 .filter((version: any) => supported.includes(version.baseModel))
+                                                .filter((version: any) => version.availability.toLowerCase() === 'public')
                                                 .map((version: any) => (
                                                     <ListboxOption
                                                         key={`${model.id}-${version.id}`}
