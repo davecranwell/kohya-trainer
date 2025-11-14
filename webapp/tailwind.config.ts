@@ -17,6 +17,9 @@ export default {
                     'Noto Color Emoji',
                 ],
             },
+            fontSize: {
+                '2xs': '0.625rem',
+            },
             animation: {
                 pulse: 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
                 bounce: 'bounce 1s infinite',
