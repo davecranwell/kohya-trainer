@@ -2,6 +2,7 @@ import prisma from '#/prisma/db.server';
 import { modelTypeMetadata } from '~/util/difussion-models';
 
 import { queueTask } from '../taskQueue';
+import { SizeIcon } from '@radix-ui/react-icons';
 
 export const reduceImages = async ({ runId }: { runId: string }) => {
     const trainingRun = await prisma.trainingRun.findUnique({
@@ -14,17 +15,21 @@ export const reduceImages = async ({ runId }: { runId: string }) => {
                 },
             },
         },
-        where: { id: runId },
+        where: { id: runId, status: 'started' },
     });
 
     if (!trainingRun) {
         throw new Error('Training run not found');
     }
 
+    console.log('reducing images')
+
     const MAX_SIZE = modelTypeMetadata[trainingRun.training.baseModel as keyof typeof modelTypeMetadata]?.minResolution || 1024;
 
     // If the image group is set, only process the images in the image group.
     // Also expect cropping, so send through the x, y, width, height.
+
+    console.log(trainingRun)
     if (trainingRun.imageGroupId) {
         const images = await prisma.imageSize.findMany({
             where: { imageGroupId: trainingRun.imageGroupId, isResized: false },
@@ -42,7 +47,9 @@ export const reduceImages = async ({ runId }: { runId: string }) => {
             },
         });
 
-        if (images?.length < 1) {
+        console.log(images);
+
+        if (!images?.length) {
             // If no images are unprocesed, go straight to zipping
             return true;
         }
@@ -51,6 +58,8 @@ export const reduceImages = async ({ runId }: { runId: string }) => {
             const filename = image.image.url.split('/').pop();
             const restOfPath = image.image.url.split('/').slice(0, -1).join('/');
             const targetUrl = `${restOfPath}/${trainingRun.imageGroupId}/${filename}`;
+
+            console.log('queing task', image.image.url, SizeIcon, image.x, image.y, image.width, image.height)
 
             queueTask({
                 queueUrl: process.env.AWS_SQS_MAXSIZE_QUEUE_URL!,

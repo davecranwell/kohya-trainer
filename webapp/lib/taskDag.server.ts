@@ -8,7 +8,7 @@ import { awaitGpuReady } from './tasks/awaitGpuReady';
 import { startTraining } from './tasks/startTraining';
 import { reduceImageSuccess } from './tasks/reduceImageSuccess';
 
-export function registerDag() {
+export async function registerDag() {
     console.log('Subscribing to task queue');
 
     const handleMessage = async (body: TaskBody | ResizeBody) => {
@@ -16,6 +16,7 @@ export function registerDag() {
 
         switch (task) {
             case 'reduceImages': {
+                console.log('a reduceimages message')
                 const alreadyReduced = await reduceImages({ runId });
                 if (alreadyReduced) {
                     await queueTask({ messageBody: { task: 'zipImages', runId, unique: true } });
@@ -74,6 +75,7 @@ export function registerDag() {
         }
     };
 
+    // Fire and foreget this async task
     taskSubscription(handleMessage, 5000);
 }
 

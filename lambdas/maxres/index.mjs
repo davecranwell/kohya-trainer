@@ -24,10 +24,11 @@ export const handler = async (event) => {
 
     // Process each message from the SQS event
     for (const record of event.Records) {
-        try {
-            const message = JSON.parse(record.body);
-            const { imageId, imageGroupId, imageUrl, targetUrl, cropX, cropY, cropWidth, cropHeight, size, runId } = message;
+    
+        const message = JSON.parse(record.body);
+        const { imageId, imageGroupId, imageUrl, targetUrl, cropX, cropY, cropWidth, cropHeight, size, runId } = message;
 
+        try {
             // Load the image from S3
             const imageObject = await s3.send(
                 new GetObjectCommand({
@@ -53,8 +54,8 @@ export const handler = async (event) => {
                 // Convert percentages to actual pixel values
                 const left = Math.round(originalWidth * (cropX / 100));
                 const top = Math.round(originalHeight * (cropY / 100));
-                const width = Math.round(originalWidth * (cropWidth / 100));
-                const height = Math.round(originalHeight * (cropHeight / 100));
+                const width = Math.min(Math.round(originalWidth * (cropWidth / 100)), originalWidth);
+                const height = Math.min(Math.round(originalHeight * (cropHeight / 100)), originalHeight);
 
                 processedImage = processedImage.rotate().extract({
                     left,
@@ -62,6 +63,7 @@ export const handler = async (event) => {
                     width,
                     height,
                 });
+             
             }
 
             if (size) {
@@ -85,28 +87,11 @@ export const handler = async (event) => {
                 }),
             );
 
-            await sqs.send(
-                new DeleteMessageCommand({
-                    QueueUrl: process.env.QUEUE_URL,
-                    ReceiptHandle: record.receiptHandle,
-                }),
-            );
-
-            // After successful processing, send message to task queue
-            await sqs.send(
-                new SendMessageCommand({
-                    QueueUrl: process.env.TASK_QUEUE_URL,
-                    MessageBody: JSON.stringify({
-                        task: 'reduceImageSuccess',
-                        imageId,
-                        imageGroupId,
-                        runId,
-                    }),
-                }),
-            );
-
+          
             // If we get here, processing was successful and AWS will automatically delete the message
         } catch (error) {
+
+            
             // Log the error with context
             console.error('Error processing message:', {
                 messageId: record.messageId,
@@ -116,8 +101,30 @@ export const handler = async (event) => {
 
             // Re-throw the error so AWS knows this message failed
             // This will prevent the message from being deleted and allow it to be retried
-            throw error;
+            //throw error;
         }
+
+         await sqs.send(
+                new DeleteMessageCommand({
+                    QueueUrl: process.env.QUEUE_URL,
+                    ReceiptHandle: record.receiptHandle,
+                }),
+            );
+
+
+        // After successful processing, send message to task queue
+        await sqs.send(
+            new SendMessageCommand({
+                QueueUrl: process.env.TASK_QUEUE_URL,
+                MessageBody: JSON.stringify({
+                    task: 'reduceImageSuccess',
+                    imageId,
+                    imageGroupId,
+                    runId,
+                }),
+            }),
+        );
+
     }
 
     return {

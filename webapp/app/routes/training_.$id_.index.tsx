@@ -13,6 +13,7 @@ import { getThumbnailUrl, sanitiseTagString } from '~/util/misc';
 
 import { FileUploadPreview, ImageWithMetadata } from '~/components/file-upload-preview';
 import { Panel } from '~/components/panel';
+import { Textarea } from '~/components/forms/textarea';
 import { ImageTaggingList } from '~/components/image-tagging-list';
 import { ImagePreview } from '~/components/image-preview';
 import { MultiComboBox } from '~/components/forms/multi-combo-box';
@@ -64,6 +65,7 @@ export async function loader({ params, request }: LoaderFunctionArgs) {
             id: true,
             name: true,
             text: true,
+            caption: true,
             url: true,
             type: true,
             createdAt: true,
@@ -137,6 +139,7 @@ export default function ImageUpload() {
                     id: file.id,
                     name: file.name,
                     text: '',
+                    caption: '',
                     url: URL.createObjectURL(file),
                     type: file.type,
 
@@ -208,11 +211,13 @@ export default function ImageUpload() {
                                     ...training.name.split(' '),
                                     ...training.triggerWord.split(' '),
                                 ]);
+                                matchingImage.caption = e.target?.result as string;
                                 const updateTextResponse = await fetch(`/api/trainingimage/${training.id}`, {
                                     method: 'PATCH',
                                     body: JSON.stringify({
                                         id: matchingImage?.id,
                                         text: matchingImage?.text,
+                                        caption: matchingImage?.caption,
                                     }),
                                 });
                                 if (updateTextResponse.ok) {
@@ -230,6 +235,15 @@ export default function ImageUpload() {
             console.error('Error updating text', error);
         }
     };
+
+    const handleCaptionUpdated = useCallback(async (imageId: string, caption: string) => {
+        const updateCaptionResponse = await fetch(`/api/trainingimage/${training.id}`, {
+            method: 'PATCH',
+            body: JSON.stringify({ id: imageId, caption }),
+        });
+
+        return updateCaptionResponse.ok;
+    }, []);
 
     const handleTagsUpdated = useCallback(
         async (imageId: string, sanitisedTags: string[]) => {
@@ -256,7 +270,7 @@ export default function ImageUpload() {
 
     return (
         <Panel
-            heading="Original images"
+            heading={`Original images ${uploadedImages.length > 0 ? `(${uploadedImages.length})` : ''}`}
             scrollable={false}
             classes="h-full"
             bodyClasses="h-full content-stretch grow"
@@ -284,6 +298,7 @@ export default function ImageUpload() {
                             imageHeight={240}
                             windowWidth={windowWidth}
                             onImageTagsUpdated={handleTagsUpdated}
+                            onImageCaptionUpdated={handleCaptionUpdated}
                             RenderImage={memo(({ ...props }) => (
                                 <UploadedImage {...props} thumbnailBucketUrl={thumbnailBucketUrl} />
                             ))}
@@ -302,6 +317,8 @@ const UploadedImage = ({
     handleTagRemove,
     handleDelete,
     handleGetTagOptions,
+    handleCaptionChange,
+    textMode = 'tags',
 }: {
     image: ImageWithMetadata;
     thumbnailBucketUrl: string;
@@ -309,9 +326,11 @@ const UploadedImage = ({
     handleTagRemove: (tags: string[], removedTag: string, imageId: string) => void;
     handleDelete: (imageId: string) => void;
     handleGetTagOptions: () => string[];
+    handleCaptionChange: (caption: string, imageId: string) => void;
+    textMode?: 'tags' | 'caption';
 }) => {
     // Memoize the onChange and onRemove functions to prevent unnecessary re-renders
-    const handleChange = (tags: string[]) => {
+    const handleTagChangeCallback = (tags: string[]) => {
         handleTagChange(tags, image.id!);
     };
 
@@ -345,13 +364,25 @@ const UploadedImage = ({
             </div>
 
             <div className="ml-2 flex-1">
-                <MultiComboBox
-                    name={`${image.id}-tags`}
-                    defaultValue={image.text}
-                    onGetOptions={handleGetTagOptions}
-                    onChange={handleChange}
-                    onRemove={handleRemove}
-                />
+                {textMode === 'tags' && (
+                    <MultiComboBox
+                        name={`${image.id}-tags`}
+                        defaultValue={image.text}
+                        onGetOptions={handleGetTagOptions}
+                        onChange={handleTagChangeCallback}
+                        onRemove={handleRemove}
+                    />
+                )}
+                {textMode === 'caption' && (
+                    <Textarea
+                        name={`${image.id}-caption`}
+                        defaultValue={image.caption || ''}
+                        onChange={(e) => handleCaptionChange(e.target.value, image.id!)}
+                        rows={5}
+                        className="text-sm"
+                        placeholder="Enter a caption for the image"
+                    />
+                )}
             </div>
         </div>
     );

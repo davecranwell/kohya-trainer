@@ -35,7 +35,7 @@ export type ResizeBody = Task & {
 async function pollForMessages() {
     const data = await sqs.receiveMessage({
         QueueUrl: queueUrl,
-        WaitTimeSeconds: 20, // Long polling
+        WaitTimeSeconds: 9, // Long polling
         VisibilityTimeout: 60, // 1 minute
         MessageSystemAttributeNames: ['ApproximateReceiveCount'],
     });
@@ -172,6 +172,7 @@ async function processMessages(messages: Message[], customHandler: (message: any
         const valid = await validateMessage(message);
 
         if (!valid) {
+            console.log('message invalid');
             continue;
         }
 
@@ -193,13 +194,13 @@ async function processMessages(messages: Message[], customHandler: (message: any
     }
 }
 
-export function taskSubscription(customHandler: (message: any) => Promise<void>, interval = 10000) {
-    setInterval(async () => {
+export async function taskSubscription(customHandler: (message: any) => Promise<void>, interval = 10000) {
+    while (true) {
         const messages = await pollForMessages();
         if (messages) {
             await processMessages(messages, customHandler);
         }
-    }, interval);
+    }
 }
 
 export async function queueTask({

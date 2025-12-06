@@ -12,6 +12,7 @@ export const Panel = ({
     closeable = false,
     onClose,
     headingRight,
+    headingClasses,
 }: {
     heading: React.ReactNode | string;
     children: React.ReactNode;
@@ -21,10 +22,11 @@ export const Panel = ({
     closeable?: boolean;
     onClose?: () => void;
     headingRight?: React.ReactNode;
+    headingClasses?: string;
 }) => {
     return (
         <div className={clsx(`flex flex-col justify-stretch ${classes ? classes : ''}`)}>
-            <div className="flex min-h-16 flex-none flex-row items-center justify-between border-b border-gray-800 px-4">
+            <div className={clsx(`flex min-h-16 flex-none flex-row items-center justify-between border-b border-gray-800 px-4`, headingClasses)}>
                 <h2 className="e flex-none truncate text-lg">{heading}</h2>
                 {closeable && <Button display="ghost" size="icon" icon={Cross1Icon} onClick={onClose} title="Close" />}
                 {headingRight}

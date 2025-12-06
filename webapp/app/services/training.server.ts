@@ -180,7 +180,7 @@ export const beginTraining = async (trainingId: string, imageGroupId?: string) =
 
     // We have to do the jsonc merge here because anywhere else and we have to jump
     // through a crazy number of hoops to support the jsonc import
-    const defaultTrainingConfig = await import('~/util/training-config.jsonc');
+    const defaultTrainingConfig = await import('~/util/training-config-lora.jsonc');
 
     const baseModelJson = JSON.parse(baseModel as string);
 
@@ -190,11 +190,12 @@ export const beginTraining = async (trainingId: string, imageGroupId?: string) =
         output_name: triggerWord.trim(),
         resolution: `${minResolution},${minResolution}`,
         trigger_word: triggerWord.trim(),
+        subject_type: 'woman', // TODO: parameterise this. subjectType.trim(),
         checkpoint_url: baseModelJson?.url.trim(),
         checkpoint_filename: baseModelJson?.filename.trim(),
         metadata_description: `Trigger word(s): ${triggerWord.trim()}. Base model: ${baseModelJson?.name} (${baseModelJson?.url}). Trained through: ${process.env.ROOT_URL}`,
         metadata_title: name.trim(),
-        sample_prompts: `masterpiece, best quality, ${triggerWord}, simple background --n low quality, worst quality, bad anatomy, bad composition, poor, low effort --w ${minResolution} --h ${minResolution} --d 1 --l 7 --s 20\nmasterpiece, best quality, ${triggerWord}, close up, simple background --n low quality, worst quality, bad anatomy, bad composition, poor, low effort --w ${minResolution} --h ${minResolution} --d 1 --l 7 --s 20\n`,
+        sample_prompts: `masterpiece photorealistic, best quality 25yo ${triggerWord} woman, full body, facing viewer, looking at viewer, simple background --n head out of frame, low quality, worst quality, bad anatomy, bad composition, poor, low effort --w ${minResolution} --h ${minResolution} --d 1 --l 7 --s 20\nmasterpiece photorealistic, best quality 25yo ${triggerWord} woman, headshot, facing viewer, looking at viewer, simple background --n head out of frame, low quality, worst quality, bad anatomy, bad composition, poor, low effort --w ${minResolution} --h ${minResolution} --d 1 --l 7 --s 20\n`,
     };
 
     await prisma.training.update({

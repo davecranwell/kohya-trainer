@@ -84,3 +84,11 @@ export function getOriginalUrl(s3root: string, origionalKey: string) {
 
     return `${s3root}${origionalPath}/${origionalFilename}`;
 }
+
+export function getImageWidthAndHeightAsPercentage(width: number, height: number, arbitraryValue: number) {
+    const largestValue = Math.max(width, height);
+    return {
+        width: (width / largestValue) * 100,
+        height: (height / largestValue) * 100,
+    };
+}

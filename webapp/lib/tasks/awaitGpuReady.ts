@@ -31,7 +31,7 @@ export const awaitGpuReady = async ({ runId }: { runId: string }) => {
         select: {
             gpu: true,
         },
-        where: { id: runId },
+        where: { id: runId, status: 'started' },
     });
 
     if (!trainingRun) {

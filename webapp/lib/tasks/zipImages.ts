@@ -29,7 +29,7 @@ export const zipImages = async ({ runId }: { runId: string }) => {
                 },
             },
         },
-        where: { id: runId },
+        where: { id: runId, status: 'started' },
     });
 
     if (!trainingRun) {

@@ -63,6 +63,7 @@ erDiagram
   "TrainingImage" {
     String id "🗝️"
     String text "❓"
+    String caption "❓"
     String url 
     String name 
     Int width "❓"
@@ -92,6 +93,7 @@ erDiagram
     DateTime createdAt 
     DateTime updatedAt 
     String text "❓"
+    String caption "❓"
     }
   
 

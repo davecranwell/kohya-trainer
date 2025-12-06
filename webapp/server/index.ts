@@ -265,7 +265,7 @@ async function startServer() {
         console.log(`http://localhost:${PORT}`);
 
         if (USE_QUEUE) {
-            registerDag();
+            await registerDag();
         }
 
         if (USE_CRON) {

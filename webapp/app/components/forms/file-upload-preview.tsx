@@ -7,6 +7,7 @@ export type Preview = {
     url: string;
     name: string;
     text: string;
+    caption: string;
 };
 
 interface FileUploadPreviewProps extends React.HTMLAttributes<HTMLDivElement> {
@@ -23,6 +24,7 @@ export type ImageWithMetadata = {
     filenameNoExtension: string;
     name: string;
     text?: string | null;
+    caption?: string | null;
     type: string;
     url?: string;
 };
@@ -61,6 +63,7 @@ export const FileUploadPreview: React.FC<FileUploadPreviewProps> = ({
                 filenameNoExtension: newFile.name.split('.').slice(0, -1).join('.'),
                 name: newFile.name,
                 text: '',
+                caption: '',
                 type: newFile.type,
                 url: URL.createObjectURL(newFile!),
             }));
@@ -79,7 +82,10 @@ export const FileUploadPreview: React.FC<FileUploadPreviewProps> = ({
 
                     reader.onload = function (e: any) {
                         const matchingImage = imageFiles.find((imageFile) => imageFile.filenameNoExtension === textFile.filenameNoExtension);
-                        if (matchingImage) matchingImage.text = e.target?.result as string;
+                        if (matchingImage) {
+                            matchingImage.text = e.target?.result as string;
+                            matchingImage.caption = e.target?.result as string;
+                        }
                     };
                     reader.readAsText(textFile.file!);
                 });

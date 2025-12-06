@@ -26,3 +26,20 @@ img {
 [aria-label='tags'] ul {
     scrollbar-width: thin;
 }
+
+/* .barberpole {
+    background-image: repeating-linear-gradient(-45deg, transparent, transparent 1rem, #2563eb 1rem, #2563eb 2rem);
+    background-size: 200% 200%;
+    animation: barberpole 20s linear infinite;
+}
+
+@keyframes barberpole {
+    100% {
+        background-position: 100% 100%;
+    }
+} */
+
+/* 
+light: '#93c5fd', // blue-300
+DEFAULT: '#3b82f6', // blue-500
+dark: '#2563eb', // blue-600 */

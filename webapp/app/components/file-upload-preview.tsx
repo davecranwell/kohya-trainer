@@ -7,6 +7,7 @@ export type Preview = {
     url: string;
     name: string;
     text: string;
+    caption: string;
 };
 
 interface FileUploadPreviewProps extends React.HTMLAttributes<HTMLDivElement> {
@@ -26,6 +27,7 @@ export type ImageWithMetadata = {
     filenameNoExtension: string;
     name: string;
     text?: string | null;
+    caption?: string | null;
     type: string;
     url?: string;
     width?: number;
@@ -64,6 +66,10 @@ export const FileUploadPreview: React.FC<FileUploadPreviewProps> = ({
         return Array.from(files).filter((file) => acceptedImageTypes.includes(file.type) || acceptedTextTypes.includes(file.type));
     };
 
+    const isDuplicate = (file: File) => {
+        return previousImages.find((image) => image.name === file.name);
+    };
+
     const handleFiles = async (newFiles: FileList) => {
         setIsDraggedOver(false);
 
@@ -71,9 +77,9 @@ export const FileUploadPreview: React.FC<FileUploadPreviewProps> = ({
         const files = getSupportedFiles(newFiles);
 
         // filter out the files that are already in the previousImages array
-        const filteredFiles = files.filter((file) => !previousImages.find((image) => image.name === file.name));
+        // const filteredFiles = files.filter((file) => !previousImages.find((image) => image.name === file.name));
 
-        onDropped(filteredFiles);
+        onDropped(files);
     };
 
     const handleDragOver = useCallback((e: React.DragEvent<HTMLDivElement>) => {
@@ -101,7 +107,9 @@ export const FileUploadPreview: React.FC<FileUploadPreviewProps> = ({
             setDragMessage(null);
 
             const imageFiles = getImageFiles(e.dataTransfer.files);
-            if (imageFiles.length >= maxImages || imageCount + imageFiles.length >= maxImages) return;
+            const duplicateFiles = imageFiles.filter((file) => isDuplicate(file));
+
+            if (imageFiles.length >= maxImages || imageCount + (imageFiles.length - duplicateFiles.length) >= maxImages) return;
 
             await handleFiles(e.dataTransfer.files);
         },

@@ -2,272 +2,272 @@
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
 generator client {
-  provider = "prisma-client-js"
-  previewFeatures = ["postgresqlExtensions"]
-  // output   = "app/generated/prisma/client"
+    provider        = "prisma-client-js"
+    previewFeatures = ["postgresqlExtensions"]
+    // output   = "app/generated/prisma/client"
 }
 
 generator erd {
-  provider = "prisma-erd-generator"
-  output = "../ERD.md"
-  mmdcPath = "../webapp/node_modules/.bin"
+    provider = "prisma-erd-generator"
+    output   = "../ERD.md"
+    mmdcPath = "../webapp/node_modules/.bin"
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
-  extensions = [pgcrypto]
+    provider   = "postgresql"
+    url        = env("DATABASE_URL")
+    extensions = [pgcrypto]
 }
 
 model User {
-  id       String  @id @default(cuid())
-  email    String  @unique
-  name     String?
+    id    String  @id @default(cuid())
+    email String  @unique
+    name  String?
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  password    Password?
-  trainings   Training[]
-  roles       Role[]
-  sessions    Session[]
-  connections Connection[]
+    createdAt   DateTime     @default(now())
+    updatedAt   DateTime     @updatedAt
+    password    Password?
+    trainings   Training[]
+    roles       Role[]
+    sessions    Session[]
+    connections Connection[]
 }
 
 model Invite {
-  id String @id @default(dbgenerated("gen_random_uuid()"))
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt @default(now())
-  expiresAt DateTime?
+    id        String    @id @default(dbgenerated("gen_random_uuid()"))
+    createdAt DateTime  @default(now())
+    updatedAt DateTime  @default(now()) @updatedAt
+    expiresAt DateTime?
 }
 
 model Training {
-  id           String   @id @default(cuid())
-  name         String
-  config       String
-  triggerWord  String   @default("oxhw")
-  baseModel    Json?
- 
+    id          String @id @default(cuid())
+    name        String
+    config      String
+    triggerWord String @default("oxhw")
+    baseModel   Json?
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
 
-  owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  ownerId String
+    owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+    ownerId String
 
-  images TrainingImage[]
-  runs TrainingRun[]
-  imageGroups ImageGroup[]
+    images      TrainingImage[]
+    runs        TrainingRun[]
+    imageGroups ImageGroup[]
 
-  // non-unique foreign key
-  @@index([ownerId])
-  // This helps our order by in the user search a LOT
-  @@index([ownerId, updatedAt])
+    // non-unique foreign key
+    @@index([ownerId])
+    // This helps our order by in the user search a LOT
+    @@index([ownerId, updatedAt])
 }
 
 // Instances of running a training
 model TrainingRun {
-  id String @id @default(cuid())
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  status String
-  gpuId String? @unique
-  trainingId String
-  imageGroupId String?
+    id           String   @id @default(cuid())
+    createdAt    DateTime @default(now())
+    updatedAt    DateTime @updatedAt
+    status       String
+    gpuId        String?  @unique
+    trainingId   String
+    imageGroupId String?
 
-  gpu   Gpu? @relation(fields: [gpuId], references: [id])
-  training Training @relation(fields: [trainingId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  imageGroup ImageGroup? @relation(fields: [imageGroupId], references: [id])
-  statuses TrainingStatus[]
+    gpu        Gpu?             @relation(fields: [gpuId], references: [id])
+    training   Training         @relation(fields: [trainingId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+    imageGroup ImageGroup?      @relation(fields: [imageGroupId], references: [id])
+    statuses   TrainingStatus[]
 
-  // non-unique foreign key
-  @@index([trainingId])
+    // non-unique foreign key
+    @@index([trainingId])
 }
 
 model TrainingTask {
-  id          String  @id @default(cuid())
-  task        String
-  status      String
-  messageId   String
-  startedAt   DateTime?
-  completedAt DateTime?
-  dataJson    Json?
-  runId       String
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+    id          String    @id @default(cuid())
+    task        String
+    status      String
+    messageId   String
+    startedAt   DateTime?
+    completedAt DateTime?
+    dataJson    Json?
+    runId       String
+    createdAt   DateTime  @default(now())
+    updatedAt   DateTime  @updatedAt
 
-  @@index([messageId])
-  @@index([runId])
+    @@index([messageId])
+    @@index([runId])
 }
 
 // Statuses of each part of a TrainingRun
 model TrainingStatus {
-  id          String  @id @default(cuid())
-  status      String
-  dataJson    Json?
-  runId       String
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+    id        String   @id @default(cuid())
+    status    String
+    dataJson  Json?
+    runId     String
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
 
-  @@index([runId])
+    run TrainingRun @relation(fields: [runId], references: [id], onDelete: Cascade, onUpdate: Cascade)
 
-  run TrainingRun @relation(fields: [runId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+    @@index([runId])
 }
 
 model TrainingImage {
-  id          String  @id @default(cuid())
-  text        String?
-  url         String
-  name        String
-  width       Int? 
-  height      Int?
-  type        String
-  isResized   Boolean @default(false) // only indicates if it has been resized down to the max size or not.
-  trainingId String
+    id         String  @id @default(cuid())
+    text       String?
+    caption    String?
+    url        String
+    name       String
+    width      Int?
+    height     Int?
+    type       String
+    isResized  Boolean @default(false) // only indicates if it has been resized down to the max size or not.
+    trainingId String
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
 
-  training   Training   @relation(fields: [trainingId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  sizes ImageSize[]
+    training Training    @relation(fields: [trainingId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+    sizes    ImageSize[]
 
-  @@index([trainingId])
+    @@index([trainingId])
 }
 
 // A subset of the training images, grouped by a purpose, size, focal point etc.
 model ImageGroup {
-  id String @id @default(cuid())
-  name String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  trainingId String
+    id         String   @id @default(cuid())
+    name       String
+    createdAt  DateTime @default(now())
+    updatedAt  DateTime @updatedAt
+    trainingId String
 
-  images ImageSize[]
-  trainingRun TrainingRun[]
+    images      ImageSize[]
+    trainingRun TrainingRun[]
 
-  training Training @relation(fields: [trainingId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+    training Training @relation(fields: [trainingId], references: [id], onDelete: Cascade, onUpdate: Cascade)
 }
 
 // A kind of training image with optional cropping. The cropping means a different url for the image is used
 model ImageSize {
-  imageId String
-  imageGroupId String
-  isResized Boolean @default(false)
-  url String?
-  width Float?
-  height Float?
-  x Float?
-  y Float?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  text String?
+    imageId      String
+    imageGroupId String
+    isResized    Boolean  @default(false)
+    url          String?
+    width        Float?
+    height       Float?
+    x            Float?
+    y            Float?
+    createdAt    DateTime @default(now())
+    updatedAt    DateTime @updatedAt
+    text         String?
+    caption      String?
 
-  image TrainingImage @relation(fields: [imageId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  imageGroup ImageGroup @relation(fields: [imageGroupId], references: [id])
+    image      TrainingImage @relation(fields: [imageId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+    imageGroup ImageGroup    @relation(fields: [imageGroupId], references: [id], onDelete: Cascade, onUpdate: Cascade)
 
-  @@unique([imageId, imageGroupId])
+    @@unique([imageId, imageGroupId])
 }
 
-
 model Password {
-  hash String
+    hash String
 
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  userId String @unique
+    user   User   @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+    userId String @unique
 }
 
 model Session {
-  id             String   @id @default(cuid())
-  expirationDate DateTime
+    id             String   @id @default(cuid())
+    expirationDate DateTime
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
 
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  userId String
+    user   User   @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+    userId String
 
-  // non-unique foreign key
-  @@index([userId])
+    // non-unique foreign key
+    @@index([userId])
 }
 
 model Permission {
-  id          String @id @default(cuid())
-  action      String // e.g. create, read, update, delete
-  entity      String // e.g. note, user, etc.
-  access      String // e.g. own or any
-  description String @default("")
+    id          String @id @default(cuid())
+    action      String // e.g. create, read, update, delete
+    entity      String // e.g. note, user, etc.
+    access      String // e.g. own or any
+    description String @default("")
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
 
-  roles Role[]
+    roles Role[]
 
-  @@unique([action, entity, access])
+    @@unique([action, entity, access])
 }
 
 model Role {
-  id          String @id @default(cuid())
-  name        String @unique
-  description String @default("")
+    id          String @id @default(cuid())
+    name        String @unique
+    description String @default("")
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
 
-  users       User[]
-  permissions Permission[]
+    users       User[]
+    permissions Permission[]
 }
 
 model Verification {
-  id        String   @id @default(cuid())
-  createdAt DateTime @default(now())
+    id        String   @id @default(cuid())
+    createdAt DateTime @default(now())
 
-  /// The type of verification, e.g. "email" or "phone"
-  type String
+    /// The type of verification, e.g. "email" or "phone"
+    type String
 
-  /// The thing we're trying to verify, e.g. a user's email or phone number
-  target String
+    /// The thing we're trying to verify, e.g. a user's email or phone number
+    target String
 
-  /// The secret key used to generate the otp
-  secret String
+    /// The secret key used to generate the otp
+    secret String
 
-  /// The algorithm used to generate the otp
-  algorithm String
+    /// The algorithm used to generate the otp
+    algorithm String
 
-  /// The number of digits in the otp
-  digits Int
+    /// The number of digits in the otp
+    digits Int
 
-  /// The number of seconds the otp is valid for
-  period Int
+    /// The number of seconds the otp is valid for
+    period Int
 
-  /// The valid characters for the otp
-  charSet String
+    /// The valid characters for the otp
+    charSet String
 
-  /// When it's safe to delete this verification
-  expiresAt DateTime?
+    /// When it's safe to delete this verification
+    expiresAt DateTime?
 
-  @@unique([target, type])
+    @@unique([target, type])
 }
 
 model Connection {
-  id           String @id @default(cuid())
-  providerName String
-  providerId   String
+    id           String @id @default(cuid())
+    providerName String
+    providerId   String
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
 
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  userId String
+    user   User   @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+    userId String
 
-  @@unique([providerName, providerId])
+    @@unique([providerName, providerId])
 }
 
 model Gpu {
-  id            String   @id @default(cuid())
-  instanceId    String   @unique
-  status        String   // running, stopped NB: this status currently unused
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-  trainingRunId    String?
+    id            String   @id @default(cuid())
+    instanceId    String   @unique
+    status        String // running, stopped NB: this status currently unused
+    createdAt     DateTime @default(now())
+    updatedAt     DateTime @updatedAt
+    trainingRunId String?
 
-  trainingRun      TrainingRun?
+    trainingRun TrainingRun?
 }

@@ -41,6 +41,7 @@ export const ImagePreview: React.FC<ImagePreviewProps> = ({ id, url, width = 200
                         height="auto"
                         alt=""
                         className={`z-20 m-auto block max-h-[200px] max-w-[200px] rounded object-contain text-center`}
+                        style={{ imageOrientation: 'from-image' }}
                         onError={() => setImageError(true)}
                     />
                     {imageError && (

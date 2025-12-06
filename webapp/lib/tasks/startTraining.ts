@@ -21,7 +21,7 @@ export const startTraining = async ({ runId }: { runId: string }): Promise<boole
                 },
             },
         },
-        where: { id: runId },
+        where: { id: runId, status: 'started' },
     });
 
     if (!trainingRun) {
@@ -54,7 +54,7 @@ export const startTraining = async ({ runId }: { runId: string }): Promise<boole
     }
 
     // Get information from the vast API about the instance using axios, catch 429 errors
-    const vastInstance = await getInstance(gpu.instanceId).catch(function (error) {
+    const getVastInstance = await getInstance(gpu.instanceId).catch(function (error) {
         if (error.response.status === 429) {
             console.log('Rate limit exceeded, retrying');
             return false;
@@ -64,8 +64,7 @@ export const startTraining = async ({ runId }: { runId: string }): Promise<boole
     });
 
     // NB unusual pluralisation of instances
-    const instance = vastInstance?.data?.instances;
-    console.log({ vastInstance });
+    const instance = getVastInstance?.data?.instances;
 
     if (!instance) {
         throw new Error(`GPU instance not found on Vast: ${gpu.instanceId}`);

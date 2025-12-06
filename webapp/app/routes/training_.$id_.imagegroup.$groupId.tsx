@@ -11,7 +11,7 @@ import prisma from '#/prisma/db.server';
 import { requireUserWithPermission } from '~/services/permissions.server';
 import { abortTraining, beginTraining, checkIncompleteTrainingRun, getTrainingByUser } from '~/services/training.server';
 import { addAllImageToGroup, addImageToGroup, removeAllImagesFromGroup, removeImageFromGroup, setImageCrop } from '~/services/imagesizes.server';
-import { getOriginalUrl, getThumbnailUrl } from '~/util/misc';
+import { getImageWidthAndHeightAsPercentage, getOriginalUrl, getThumbnailUrl } from '~/util/misc';
 import { useTrainingStatus } from '~/util/trainingstatus.provider';
 
 import { Button } from '~/components/button';
@@ -68,7 +68,7 @@ export async function action({ params, request }: ActionFunctionArgs) {
     }
 
     if (excludeall) {
-        await removeAllImagesFromGroup(params.groupId as string);
+        await removeAllImagesFromGroup(params.groupId as string, userId, training.id);
     }
 
     if (include) {
@@ -76,7 +76,7 @@ export async function action({ params, request }: ActionFunctionArgs) {
     }
 
     if (exclude) {
-        await removeImageFromGroup(params.groupId as string, exclude);
+        await removeImageFromGroup(params.groupId as string, exclude, userId, training.id);
     }
 
     if (setCrop && imageId) {
@@ -106,6 +106,7 @@ export async function loader({ params, request }: LoaderFunctionArgs) {
                 id: true,
                 name: true,
                 text: true,
+                caption: true,
                 url: true,
                 type: true,
                 width: true,
@@ -125,6 +126,7 @@ export async function loader({ params, request }: LoaderFunctionArgs) {
                         width: true,
                         height: true,
                         text: true,
+                        caption: true,
                     },
                 },
             },
@@ -135,17 +137,25 @@ export async function loader({ params, request }: LoaderFunctionArgs) {
         throw data('Not found', { status: 404 });
     }
 
-    const groupImageHashmap: Record<string, { x: number; y: number; width: number; height: number; text: string }> = group.images.reduce(
-        (acc, groupImage) => ({
-            ...acc,
-            [groupImage.imageId]: { x: groupImage.x, y: groupImage.y, width: groupImage.width, height: groupImage.height, text: groupImage.text },
-        }),
-        {},
-    );
+    const groupImageHashmap: Record<string, { x: number; y: number; width: number; height: number; text: string; caption: string }> =
+        group.images.reduce(
+            (acc, groupImage) => ({
+                ...acc,
+                [groupImage.imageId]: {
+                    x: groupImage.x,
+                    y: groupImage.y,
+                    width: groupImage.width,
+                    height: groupImage.height,
+                    text: groupImage.text,
+                    caption: groupImage.caption,
+                },
+            }),
+            {},
+        );
 
     return {
-        thumbnailBucketUrl: `https://${process.env.AWS_S3_THUMBNAILS_BUCKET_NAME!}.s3.us-east-1.amazonaws.com/`,
-        maxResolutionBucketUrl: `https://${process.env.AWS_S3_MAXRES_BUCKET_NAME!}.s3.us-east-1.amazonaws.com/`,
+        // thumbnailBucketUrl: `https://${process.env.AWS_S3_THUMBNAILS_BUCKET_NAME!}.s3.us-east-1.amazonaws.com/`,
+        // maxResolutionBucketUrl: `https://${process.env.AWS_S3_MAXRES_BUCKET_NAME!}.s3.us-east-1.amazonaws.com/`,
         uploadBucketUrl: `https://${process.env.AWS_S3_UPLOAD_BUCKET_NAME!}.s3.us-east-1.amazonaws.com/`,
         userId,
         images: images.map((image) => ({ ...image, isIncludedInGroup: !!groupImageHashmap[image.id] })),
@@ -158,8 +168,15 @@ export async function loader({ params, request }: LoaderFunctionArgs) {
 export default function ImageGroup() {
     const fetcher = useFetcher();
     const listRef = useRef<HTMLDivElement>(null);
-    const { images, training, thumbnailBucketUrl, maxResolutionBucketUrl, uploadBucketUrl, group, groupImageHashmap } =
-        useLoaderData<typeof loader>();
+    const {
+        images,
+        training,
+        // thumbnailBucketUrl
+        //  maxResolutionBucketUrl
+        uploadBucketUrl,
+        group,
+        groupImageHashmap,
+    } = useLoaderData<typeof loader>();
     const [windowWidth, setWindowWidth] = useState(0);
     const [cols, setCols] = useState(3);
     const { trainingStatuses } = useTrainingStatus();
@@ -171,6 +188,15 @@ export default function ImageGroup() {
             setWindowWidth(detectedWidth || 0);
             setCols(Math.max(Math.floor(detectedWidth / 500), 1));
         }
+    }, []);
+
+    const handleCaptionUpdated = useCallback(async (imageId: string, caption: string) => {
+        const updateCaptionResponse = await fetch(`/api/${group.id}/imagesize/${imageId}`, {
+            method: 'PATCH',
+            body: JSON.stringify({ id: imageId, caption }),
+        });
+
+        return updateCaptionResponse.ok;
     }, []);
 
     const handleTagsUpdated = useCallback(
@@ -208,7 +234,7 @@ export default function ImageGroup() {
 
     return (
         <Panel
-            heading={group.name}
+            heading={`${group.name} ${images.filter((image) => image.isIncludedInGroup).length > 0 ? `(${images.filter((image) => image.isIncludedInGroup).length})` : ''}`}
             headingRight={
                 <div className="flex flex-row items-center gap-10">
                     <StatusPill status={trainingStatuses[training.id]?.runs.filter((run) => run.imageGroupId === group.id)?.[0]?.status} />
@@ -216,7 +242,8 @@ export default function ImageGroup() {
                 </div>
             }
             classes="h-full"
-            bodyClasses="">
+            bodyClasses=""
+            headingClasses="barberpole">
             <div className="relative flex h-full grow flex-col content-stretch">
                 <fetcher.Form action={`/training/${training.id}/imagegroup/${group.id}`} id={training.id} method="post">
                     <ControlGroup heading="Original images">
@@ -238,13 +265,14 @@ export default function ImageGroup() {
                             imageHeight={700}
                             handleDelete={() => {}} // no-op as deleting images isn't handled on this page
                             onImageTagsUpdated={handleTagsUpdated}
+                            onImageCaptionUpdated={handleCaptionUpdated}
                             RenderImage={(props) => (
                                 <Image
                                     {...props}
                                     groupImage={groupImageHashmap[props.image.id!]}
                                     fetcher={fetcher}
-                                    thumbnailBucketUrl={thumbnailBucketUrl}
-                                    maxResolutionBucketUrl={maxResolutionBucketUrl}
+                                    // thumbnailBucketUrl={thumbnailBucketUrl}
+                                    // maxResolutionBucketUrl={maxResolutionBucketUrl}
                                     uploadBucketUrl={uploadBucketUrl}
                                 />
                             )}
@@ -258,8 +286,8 @@ export default function ImageGroup() {
 
 const Image = ({
     image,
-    thumbnailBucketUrl,
-    maxResolutionBucketUrl,
+    // thumbnailBucketUrl,
+    // maxResolutionBucketUrl,
     uploadBucketUrl,
     fetcher,
     groupImage,
@@ -268,8 +296,8 @@ const Image = ({
     handleGetTagOptions,
 }: {
     image: ImageWithMetadata;
-    thumbnailBucketUrl: string;
-    maxResolutionBucketUrl: string;
+    // thumbnailBucketUrl: string;
+    // maxResolutionBucketUrl: string;
     uploadBucketUrl: string;
     fetcher: FetcherWithComponents<any>;
     groupImage: { x: number; y: number; width: number; height: number; text: string };
@@ -316,7 +344,7 @@ const Image = ({
     const debouncedSetFinalCrop = useDebouncedCallback((cropPerc: CropPercentage, imageId: string) => {
         fetcher.submit({ setcrop: JSON.stringify(cropPerc), imageid: imageId }, { action: fetcher.formAction, method: 'post' });
         setGroupImg({ ...groupImage, x: cropPerc.x, y: cropPerc.y, width: cropPerc.width, height: cropPerc.height });
-    }, 500);
+    }, 250);
 
     const handleChange = (tags: string[]) => {
         handleTagChange(tags, image.id!);
@@ -334,6 +362,7 @@ const Image = ({
     const pixelWidth = Math.round(widthFactor * image?.width);
     const pixelHeight = Math.round(heightFactor * image?.height);
     const isTooSmall = isIncludedInGroup && (pixelWidth < 1024 || pixelHeight < 1024);
+    const minmapSizeOriginal = getImageWidthAndHeightAsPercentage(image.width || 100, image.height || 100, 75);
 
     const initialCroppedAreaPercentages =
         isIncludedInGroup && groupImg?.x != null && groupImg?.y != null && groupImg?.width != null && groupImg?.height != null
@@ -344,6 +373,8 @@ const Image = ({
                   y: groupImg.y,
               }
             : undefined;
+
+    console.log({ initialCroppedAreaPercentages });
 
     return (
         <div className={`relative flex w-full flex-col ${isTooSmall ? 'bg-red-500' : ''}`}>
@@ -397,10 +428,26 @@ const Image = ({
                     onTouchRequest={onTouchRequest}
                 />
                 {isIncludedInGroup && image.width && image.height && (
-                    <div className="absolute bottom-0 right-0 z-10">
-                        <p className="text-xs text-white">
-                            {pixelWidth}&times;{pixelHeight}
-                        </p>
+                    <div className="absolute bottom-2 right-2 z-10 h-[100px] w-[100px] overflow-hidden rounded bg-black/50 p-2 text-center">
+                        <div className="mx-auto h-[50px] w-[50px]">
+                            <div
+                                className="relative mx-auto h-[75px] w-[75px] overflow-hidden border border-white/30"
+                                style={{ width: `${minmapSizeOriginal.width}%`, height: `${minmapSizeOriginal.height}%` }}>
+                                <div
+                                    className={`absolute box-border border border-white`}
+                                    style={{
+                                        width: `${initialCroppedAreaPercentages?.width}%`,
+                                        height: `${initialCroppedAreaPercentages?.height}%`,
+                                        top: `${initialCroppedAreaPercentages?.y}%`,
+                                        left: `${initialCroppedAreaPercentages?.x}%`,
+                                    }}></div>
+                            </div>
+                        </div>
+                        <div className="mt-2">
+                            <p className="text-2xs text-white">
+                                {pixelWidth}&times;{pixelHeight}
+                            </p>
+                        </div>
                     </div>
                 )}
             </div>

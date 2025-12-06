@@ -9,12 +9,14 @@ import { sanitiseTagArray } from '~/util/misc';
 import { Button } from './button';
 import { ImageWithMetadata } from './file-upload-preview';
 import { ControlGroup } from './control-group';
+import { RadioGroup, Radio } from '@headlessui/react';
 
 export const ImageTaggingList = forwardRef(
     (
         {
             images,
             onImageTagsUpdated,
+            onImageCaptionUpdated,
             handleDelete,
             RenderImage,
             windowWidth,
@@ -24,10 +26,12 @@ export const ImageTaggingList = forwardRef(
         }: {
             images: any[]; // todo go back to ImageWithMetadata[]
             onImageTagsUpdated: (imageId: string, sanitisedTags: string[]) => Promise<boolean>;
+            onImageCaptionUpdated: (imageId: string, caption: string) => Promise<boolean>;
             RenderImage: React.ComponentType<{
                 image: ImageWithMetadata;
                 handleTagChange: (tags: string[], imageId: string) => void;
                 handleTagRemove: (tags: string[], removedTag: string, imageId: string) => void;
+                handleCaptionChange: (caption: string, imageId: string) => void;
                 handleDelete: (imageId: string) => void;
                 handleGetTagOptions: () => string[];
                 [key: string]: any; // Allow additional props to be passed through
@@ -44,6 +48,7 @@ export const ImageTaggingList = forwardRef(
         const [showUntaggedOnly, setShowUntaggedOnly] = useState(false);
         const [selectedTag, setSelectedTag] = useState<string>('');
         const [negateTag, setNegateTag] = useState(false);
+        const [textMode, setTextMode] = useState<'tags' | 'caption'>('tags');
         const isHydrated = useHydrated();
         const { setHelp } = useHelp();
         // store current tags in a ref to avoid stale closure issues
@@ -60,6 +65,11 @@ export const ImageTaggingList = forwardRef(
             return [sanitisedTags, hasUpdated];
         }, []);
 
+        const updateImageCaption = useCallback(async (imageId: string, caption: string): Promise<boolean> => {
+            const hasUpdated = await onImageCaptionUpdated(imageId, caption);
+            return hasUpdated;
+        }, []);
+
         const handleTagChange = useCallback(
             async (tags: string[], imageId: string) => {
                 const [sanitisedTags, hasUpdated] = await updateImageTags(imageId, tags);
@@ -71,6 +81,10 @@ export const ImageTaggingList = forwardRef(
             },
             [updateImageTags, allTags],
         );
+
+        const handleCaptionChange = useCallback(async (caption: string, imageId: string) => {
+            await updateImageCaption(imageId, caption);
+        }, []);
 
         const handleGetTagOptions = useCallback(() => {
             // Use ref for immediate access to latest tags, fallback to state
@@ -130,8 +144,10 @@ export const ImageTaggingList = forwardRef(
                                 style={{ width: `${imageWidth}px` }}>
                                 <RenderImage
                                     image={image}
+                                    textMode={textMode}
                                     handleTagChange={handleTagChange}
                                     handleTagRemove={handleTagRemove}
+                                    handleCaptionChange={handleCaptionChange}
                                     handleGetTagOptions={handleGetTagOptions}
                                     handleDelete={handleDelete}
                                 />
@@ -140,11 +156,21 @@ export const ImageTaggingList = forwardRef(
                     </div>
                 );
             },
-            [cols, images, filteredImages, imageWidth],
+            [cols, images, filteredImages, imageWidth, textMode],
         );
 
         return (
             <div className="flex h-full flex-1 cursor-default flex-col justify-stretch" ref={ref}>
+                <ControlGroup heading="Text mode">
+                    <RadioGroup value={textMode} onChange={(value: 'tags' | 'caption') => setTextMode(value)}>
+                        <Radio value="tags" className="text-sm text-gray-200 data-[checked]:bg-primary">
+                            <span className="text-sm text-gray-200">Tags</span>
+                        </Radio>
+                        <Radio value="caption" className="text-sm text-gray-200 data-[checked]:bg-primary">
+                            <span className="text-sm text-gray-200">Caption</span>
+                        </Radio>
+                    </RadioGroup>
+                </ControlGroup>
                 <ControlGroup heading="Tag filters">
                     <div className="flex items-center gap-2">
                         <input
@@ -201,13 +227,13 @@ export const ImageTaggingList = forwardRef(
                                 <div className="space-y-4">
                                     <p>
                                         Tags should be <strong className="text-accent1">one or two words</strong>, not phrases and should usually only
-                                        be things that are <strong className="text-accent1">visible in the image</strong>, except where they identify
-                                        overall qualities of the image. Tagging things that can't be seen will confuse the model.
+                                        be things that are <strong className="text-accent1">visible in the scene</strong>, except where they identify
+                                        attributes of the photographic process. Tagging things that can't be seen will confuse the model.
                                     </p>
                                     <p>
-                                        Tag things you <strong className="text-accent1">would want to change in your prompt</strong>. Don't tag things
-                                        you want to be fixed. e.g If your subject is an iconic blond cartoon character, tagging their hair as "blond"
-                                        can indicate this is a changeable property. If blonde hair should be fixed,{' '}
+                                        Tag things you would want to be <strong className="text-accent1">changeable</strong> in your image generation.
+                                        Don't tag things you want to be fixed. e.g If your subject is an iconic blond cartoon character, tagging their
+                                        hair as "blond" can indicate this is a changeable property. If blonde hair should be fixed then
                                         <strong className="text-accent1">don't tag it</strong>.
                                     </p>
                                     <p>
@@ -238,7 +264,7 @@ export const ImageTaggingList = forwardRef(
                                             <code className="font-mono text-accent2">watercolour</code>,
                                         </li>
                                         <li>
-                                            <strong className="text-accent1">The setting or background of the image</strong> e.g{' '}
+                                            <strong className="text-accent1">The scene or background of the image</strong> e.g{' '}
                                             <code className="font-mono text-accent2">sunset</code>,{' '}
                                             <code className="font-mono text-accent2">office</code>,{' '}
                                             <code className="font-mono text-accent2">beach</code>,{' '}
@@ -268,9 +294,14 @@ export const ImageTaggingList = forwardRef(
                                     </ul>
 
                                     <p>
-                                        But remember: if these details are things you would <strong>not</strong> want to be optional or modified
-                                        during image generation, consider not tagging them at all. You can use an Image Set to tighten the crops
-                                        around your subject, reducing your need to tag secondary detail that you'd want removed.
+                                        But remember: if any of these details are things you would <strong>not</strong> want to be optional or
+                                        modified during image generation, consider not tagging them at all. You can use an Image Set to tighten the
+                                        crops around your subject, reducing your need to tag secondary detail that you'd want removed.
+                                    </p>
+                                    <p>
+                                        Note however that on the whole image generation models attempt to generate the images you've trained them on.
+                                        So large numbers of images cropped too tightly may heavily bias the images generated towards the same
+                                        composition and cropping.
                                     </p>
                                 </div>,
                             );

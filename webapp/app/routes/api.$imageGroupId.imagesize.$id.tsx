@@ -35,7 +35,11 @@ export const action = async ({ params, request }: ActionFunctionArgs) => {
     if (request.method === 'PATCH') {
         const updatedImage = await prisma.imageSize.update({
             where: { imageId_imageGroupId: { imageId, imageGroupId } },
-            data: { text: sanitiseTagString(data.text, imageSize.image.training.triggerWord.split(' ')) },
+            data: {
+                ...(data.text ? { text: sanitiseTagString(data.text, imageSize.image.training.triggerWord.split(' ')) } : {}),
+                ...(data.caption ? { caption: data.caption } : {}),
+                isResized: false,
+            },
         });
 
         return Response.json(updatedImage);

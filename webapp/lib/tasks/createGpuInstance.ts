@@ -27,10 +27,10 @@ async function createGpuInstance() {
             //CIVITAI_TOKEN: training.civitaiToken,
             WEB_ENABLE_AUTH: 'true',
             WEB_ENABLE_HTTPS: 'true',
-            WEB_USER: 'admin', //process.env.VAST_WEB_USER,
-            WEB_PASSWORD: 'admin', //process.env.VAST_WEB_PASSWORD,
+            WEB_USER: process.env.VAST_WEB_USER,
+            WEB_PASSWORD: process.env.VAST_WEB_PASSWORD,
             KOHYA_ARGS: '',
-            TENSORBOARD_ARGS: '--logdir /opt/kohya_ss/logs',
+            TENSORBOARD_ARGS: '--logdir /workspace/kohya_ss/runs',
             AUTO_UPDATE: 'false',
             //PROVISIONING_SCRIPT: `${process.env.ROOT_URL}/training/${training.id}/script`, //'https://raw.githubusercontent.com/davecranwell/kohya_ss/main/config/provisioning/default.sh',
             DATA_DIRECTORY: '/workspace/',
@@ -69,7 +69,7 @@ async function createGpuInstance() {
 export async function assignGpuToTraining({ runId }: { runId: string }) {
     try {
         const trainingRun = await prisma.trainingRun.findUnique({
-            where: { id: runId },
+            where: { id: runId, status: 'started' },
         });
 
         if (!trainingRun) {

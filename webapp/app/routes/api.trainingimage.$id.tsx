@@ -24,6 +24,7 @@ export const action = async ({ params, request }: ActionFunctionArgs) => {
         const newImage = await prisma.trainingImage.create({
             data: {
                 text: '',
+                caption: '',
                 url: `${userId}/${trainingId}/images/${data.name}`,
                 name: data.name,
                 trainingId: params.id!,
@@ -40,7 +41,10 @@ export const action = async ({ params, request }: ActionFunctionArgs) => {
     if (request.method === 'PATCH') {
         const updatedImage = await prisma.trainingImage.update({
             where: { id: data.id },
-            data: { text: sanitiseTagString(data.text, training.triggerWord.split(' ')) },
+            data: {
+                text: sanitiseTagString(data.text, training.triggerWord.split(' ')),
+                caption: data.caption,
+            },
         });
 
         return Response.json(updatedImage);
