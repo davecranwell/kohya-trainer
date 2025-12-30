@@ -197,19 +197,19 @@ thumbnailsBucket.id.apply(
 
 // Lambda for zipping all the max size files into a single zip file
 export const zipLambda = new aws.lambda.Function('zipLambda', {
-    runtime: 'nodejs22.x',
+    runtime: 'nodejs24.x',
     code: new pulumi.asset.FileArchive('../lambdas/zip'),
     handler: 'index.handler',
     role: zipLambdaRole.arn,
-    timeout: 60,
-    memorySize: 128,
+    timeout: 60 * 5,
+    memorySize: 512,
     ephemeralStorage: { size: 1024 }, // Ephemeral storage needs to be at least the size of the total number of files we permit the user to upload
     // TODO make the zip lambda take the max res bucket name as an argument rather than using the task to define it in the payload
 });
 
 // Lambda for resizing images to their max allowed resolution
 export const maxSizeLambda = new aws.lambda.Function('maxSizeLambda', {
-    runtime: 'nodejs22.x',
+    runtime: 'nodejs24.x',
     code: new pulumi.asset.FileArchive('../lambdas/maxres'),
     handler: 'index.handler',
     role: maxSizeLambdaRole.arn,
@@ -228,7 +228,7 @@ export const maxSizeLambda = new aws.lambda.Function('maxSizeLambda', {
 
 // Lambda for creating thumbnails
 export const thumbnailLambda = new aws.lambda.Function('thumbnailLambda', {
-    runtime: 'nodejs22.x',
+    runtime: 'nodejs24.x',
     code: new pulumi.asset.FileArchive('../lambdas/thumbnail'),
     handler: 'index.handler',
     role: thumbnailLambdaRole.arn,
