@@ -1,13 +1,12 @@
 import { useCallback, useMemo, useState, forwardRef, useRef } from 'react';
 import { InfoCircledIcon } from '@radix-ui/react-icons';
-import { List, AutoSizer } from 'react-virtualized';
-import { useHydrated } from 'remix-utils/use-hydrated';
 
 import { useHelp } from '~/util/help.provider';
 import { sanitiseTagArray } from '~/util/misc';
 
 import { Button } from './button';
-import { ImageWithMetadata } from './file-upload-preview';
+import { ImageList } from './image-list';
+import { ImageWithMetadata } from './file-upload-dropzone';
 import { ControlGroup } from './control-group';
 import { RadioGroup, Radio } from '@headlessui/react';
 
@@ -16,31 +15,27 @@ export const ImageTaggingList = forwardRef(
         {
             images,
             onImageTagsUpdated,
-            onImageCaptionUpdated,
-            handleDelete,
-            RenderImage,
+            ImageComponent,
             windowWidth,
             imageWidth,
             imageHeight,
             cols = 1,
+            textMode,
         }: {
             images: any[]; // todo go back to ImageWithMetadata[]
             onImageTagsUpdated: (imageId: string, sanitisedTags: string[]) => Promise<boolean>;
-            onImageCaptionUpdated: (imageId: string, caption: string) => Promise<boolean>;
-            RenderImage: React.ComponentType<{
+            ImageComponent: React.ComponentType<{
                 image: ImageWithMetadata;
                 handleTagChange: (tags: string[], imageId: string) => void;
                 handleTagRemove: (tags: string[], removedTag: string, imageId: string) => void;
-                handleCaptionChange: (caption: string, imageId: string) => void;
-                handleDelete: (imageId: string) => void;
                 handleGetTagOptions: () => string[];
                 [key: string]: any; // Allow additional props to be passed through
             }>;
             windowWidth: number;
             imageWidth: number;
-            handleDelete: (imageId: string) => void;
             imageHeight: number;
             cols: number;
+            textMode: 'tags' | 'caption';
         },
         ref: React.Ref<HTMLDivElement>,
     ) => {
@@ -48,8 +43,8 @@ export const ImageTaggingList = forwardRef(
         const [showUntaggedOnly, setShowUntaggedOnly] = useState(false);
         const [selectedTag, setSelectedTag] = useState<string>('');
         const [negateTag, setNegateTag] = useState(false);
-        const [textMode, setTextMode] = useState<'tags' | 'caption'>('tags');
-        const isHydrated = useHydrated();
+        const [textModeState, setTextModeState] = useState<typeof textMode>(textMode);
+
         const { setHelp } = useHelp();
         // store current tags in a ref to avoid stale closure issues
         const tagRef = useRef<string[]>(sanitiseTagArray(images.map((image) => (image.text || '').split(',')).flat()));
@@ -65,11 +60,6 @@ export const ImageTaggingList = forwardRef(
             return [sanitisedTags, hasUpdated];
         }, []);
 
-        const updateImageCaption = useCallback(async (imageId: string, caption: string): Promise<boolean> => {
-            const hasUpdated = await onImageCaptionUpdated(imageId, caption);
-            return hasUpdated;
-        }, []);
-
         const handleTagChange = useCallback(
             async (tags: string[], imageId: string) => {
                 const [sanitisedTags, hasUpdated] = await updateImageTags(imageId, tags);
@@ -81,10 +71,6 @@ export const ImageTaggingList = forwardRef(
             },
             [updateImageTags, allTags],
         );
-
-        const handleCaptionChange = useCallback(async (caption: string, imageId: string) => {
-            await updateImageCaption(imageId, caption);
-        }, []);
 
         const handleGetTagOptions = useCallback(() => {
             // Use ref for immediate access to latest tags, fallback to state
@@ -125,44 +111,10 @@ export const ImageTaggingList = forwardRef(
             [showUntaggedOnly, selectedTag, negateTag, images],
         );
 
-        const rowRenderer = useCallback(
-            ({ key, index, isScrolling, style }: any) => {
-                const idx = index * cols;
-                const items = [];
-                items.push(filteredImages[idx]);
-                if (filteredImages[idx + 1]) items.push(filteredImages[idx + 1]);
-                if (filteredImages[idx + 2]) items.push(filteredImages[idx + 2]);
-
-                if (!items.length) return null;
-
-                return (
-                    <div className="flex w-full flex-row pb-4 pr-4" key={`${key}-${idx}`} style={style}>
-                        {items.map((image) => (
-                            <div
-                                className={`align-center flex-0 relative mr-4 flex flex-row gap-4 rounded-xl border border-gray-800 bg-gray-900 p-4`}
-                                key={`${image.id}-cell`}
-                                style={{ width: `${imageWidth}px` }}>
-                                <RenderImage
-                                    image={image}
-                                    textMode={textMode}
-                                    handleTagChange={handleTagChange}
-                                    handleTagRemove={handleTagRemove}
-                                    handleCaptionChange={handleCaptionChange}
-                                    handleGetTagOptions={handleGetTagOptions}
-                                    handleDelete={handleDelete}
-                                />
-                            </div>
-                        ))}
-                    </div>
-                );
-            },
-            [cols, images, filteredImages, imageWidth, textMode],
-        );
-
         return (
             <div className="flex h-full flex-1 cursor-default flex-col justify-stretch" ref={ref}>
                 <ControlGroup heading="Text mode">
-                    <RadioGroup value={textMode} onChange={(value: 'tags' | 'caption') => setTextMode(value)}>
+                    <RadioGroup value={textModeState} onChange={(value: 'tags' | 'caption') => setTextModeState(value)}>
                         <Radio value="tags" className="text-sm text-gray-200 data-[checked]:bg-primary">
                             <span className="text-sm text-gray-200">Tags</span>
                         </Radio>
@@ -311,22 +263,21 @@ export const ImageTaggingList = forwardRef(
                     </Button>
                 </ControlGroup>
 
-                {isHydrated && (
-                    <div className="flex-1">
-                        <AutoSizer>
-                            {({ width, height }) => (
-                                <List
-                                    rowHeight={imageHeight}
-                                    rowRenderer={rowRenderer}
-                                    rowCount={Math.ceil(filteredImages.length / cols)}
-                                    width={windowWidth}
-                                    height={height}
-                                    overscanRows={2}
-                                />
-                            )}
-                        </AutoSizer>
-                    </div>
-                )}
+                <ImageList
+                    images={filteredImages}
+                    cols={cols}
+                    imageWidth={imageWidth}
+                    imageHeight={imageHeight}
+                    textMode={textModeState}
+                    ImageComponent={(props) => (
+                        <ImageComponent
+                            {...props}
+                            handleTagChange={handleTagChange}
+                            handleTagRemove={handleTagRemove}
+                            handleGetTagOptions={handleGetTagOptions}
+                        />
+                    )}
+                />
             </div>
         );
     },

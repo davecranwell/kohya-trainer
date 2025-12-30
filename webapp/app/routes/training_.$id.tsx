@@ -1,7 +1,11 @@
-import { data, Link, Outlet, type LoaderFunctionArgs } from 'react-router';
+import { useEffect, useState } from 'react';
+import { data, Link, Outlet, useFetcher, type LoaderFunctionArgs } from 'react-router';
 import { Form, useLoaderData } from 'react-router';
 import { clsx } from 'clsx';
-import { InfoCircledIcon } from '@radix-ui/react-icons';
+import { InfoCircledIcon, Pencil1Icon, TrashIcon, CopyIcon } from '@radix-ui/react-icons';
+import { Dialog, DialogBackdrop, DialogPanel, Input, Listbox, ListboxButton, ListboxOption, ListboxOptions } from '@headlessui/react';
+import { getZodConstraint, parseWithZod } from '@conform-to/zod';
+import { z } from 'zod';
 
 import prisma from '#/prisma/db.server';
 
@@ -12,11 +16,16 @@ import { type BaseModel, type Training } from '~/types/training';
 import { baseModels } from '~/util/difussion-models';
 import { useHelp } from '~/util/help.provider';
 
+import { ErrorList, Field } from '~/components/forms';
+import { Container } from '~/components/container';
 import { Panel } from '~/components/panel';
 import { Button } from '~/components/button';
 import { getTrainingByUserWithImageCount } from '~/services/training.server';
 import { useTrainingStatus } from '~/util/trainingstatus.provider';
 import { StatusPill } from '~/components/status-pill';
+import { useCallback } from 'react';
+import { ImageGroup } from '@prisma/client';
+import { getFormProps, getInputProps, useForm } from '@conform-to/react';
 
 export { action } from '~/routes/training-editor.server';
 
@@ -38,9 +47,10 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
             },
         },
         where: { trainingId: params.id },
+        orderBy: { createdAt: 'desc' },
     });
 
-    const ourBaseModels = baseModels.filter((model) => model.type === process.env.MODELS);
+    const ourBaseModels = baseModels.filter((m) => process.env.MODELS?.split(',').includes(m.type));
 
     if (training.baseModel) {
         const currentBaseModel = JSON.parse(training.baseModel as string);
@@ -58,6 +68,8 @@ export default function TrainingRoute() {
     const { setHelp } = useHelp();
     const { training, baseModels, imageGroups } = useLoaderData<typeof loader>();
     const { trainingStatuses } = useTrainingStatus();
+    const [isOpen, setIsOpen] = useState(false);
+    const [editingGroup, setEditingGroup] = useState<ImageGroup | null>(null);
 
     return (
         <div className="sm:flex sm:h-full sm:min-h-screen sm:flex-row sm:overflow-hidden">
@@ -98,28 +110,63 @@ export default function TrainingRoute() {
                         </h2>
                         {imageGroups.length > 0 && (
                             <ul className="-mx-4 list-none text-sm leading-6 marker:text-accent1">
-                                <li key={'originals'} className={'hover:hover:bg-primary-dark'}>
-                                    <Link to={`/training/${training.id}`} className="flex w-full items-center gap-2 px-4 py-2 text-white">
-                                        Original images <span className="flex-1 text-gray-400">({training._count.images})</span>
+                                <li key={'originals'} className="flex w-full text-white hover:hover:bg-black/40">
+                                    <Link to={`/training/${training.id}`} className="flex items-center gap-2 px-4 py-2">
+                                        <span className="truncate">Original images</span>
+                                        <span className="flex-1 text-gray-400">({training._count.images})</span>
                                     </Link>
                                 </li>
                                 {imageGroups.map((group) => (
-                                    <li key={group.id} className={'hover:hover:bg-primary-dark'}>
+                                    <li key={group.id} className="flex w-full max-w-full items-center text-white hover:hover:bg-black/40">
                                         <Link
                                             to={`/training/${training.id}/imagegroup/${group.id}`}
-                                            className="flex w-full items-center justify-items-start gap-2 px-4 py-2 text-white">
+                                            className="flex flex-1 items-center gap-2 truncate px-4 py-2">
                                             <span className="truncate">{group.name}</span>
                                             <span className="flex-1 text-gray-400">({group._count.images})</span>
-                                            {trainingStatuses[training.id]?.runs.filter((run) => run.imageGroupId === group.id)?.length > 0 && (
-                                                <StatusPill
-                                                    className="justify-self-end"
-                                                    status={
-                                                        trainingStatuses[training.id]?.runs.filter((run) => run.imageGroupId === group.id)?.[0]
-                                                            ?.status
-                                                    }
-                                                />
-                                            )}
                                         </Link>
+                                        <span className="justify-self-end">
+                                            <span className="flex flex-row items-center gap-2">
+                                                {trainingStatuses[training.id]?.runs.filter((run) => run.imageGroupId === group.id)?.length > 0 && (
+                                                    <StatusPill
+                                                        className="justify-self-end"
+                                                        status={
+                                                            trainingStatuses[training.id]?.runs.filter((run) => run.imageGroupId === group.id)?.[0]
+                                                                ?.status
+                                                        }
+                                                    />
+                                                )}
+                                            </span>
+                                            <span>
+                                                <Button
+                                                    display="icononly"
+                                                    size="icon"
+                                                    icon={Pencil1Icon}
+                                                    title="Edit image set"
+                                                    onClick={() => {
+                                                        setEditingGroup(group);
+                                                        setIsOpen(true);
+                                                    }}
+                                                />
+                                            </span>
+                                            <span>
+                                                <Form action={`/api/imagegroup/${group.id}/duplicate`} method="POST" className="inline">
+                                                    <Button display="icononly" size="icon" icon={CopyIcon} title="Copy image set" />
+                                                </Form>
+                                            </span>
+                                            <span>
+                                                <Form action={`/api/imagegroup/${group.id}/delete`} method="DELETE" className="inline">
+                                                    <Button
+                                                        display="icononly"
+                                                        size="icon"
+                                                        icon={TrashIcon}
+                                                        title="Delete image set"
+                                                        onClick={() => {
+                                                            setIsOpen(true);
+                                                        }}
+                                                    />
+                                                </Form>
+                                            </span>
+                                        </span>
                                     </li>
                                 ))}
                             </ul>
@@ -137,6 +184,7 @@ export default function TrainingRoute() {
                 <Outlet />
             </div>
             <HelpPanel />
+            <ImageGroupEditorModal isOpen={isOpen} setIsOpen={setIsOpen} group={editingGroup} />
         </div>
     );
 }
@@ -156,3 +204,65 @@ function HelpPanel() {
         </div>
     );
 }
+
+const ImageGroupEditorModal = ({
+    isOpen = false,
+    setIsOpen,
+    group,
+}: {
+    isOpen: boolean;
+    setIsOpen: (isOpen: boolean) => void;
+    group: ImageGroup | null;
+}) => {
+    const fetcher = useFetcher();
+    const schema = z.object({ name: z.string().min(1).max(100, 'Name must be less than 100 characters') });
+
+    const [form, fields] = useForm({
+        id: `image-group-editor-${group?.id}`,
+        lastResult: fetcher.data?.result,
+        defaultValue: { name: group?.name },
+        shouldValidate: 'onBlur',
+        shouldRevalidate: 'onInput',
+        onValidate({ formData }) {
+            return parseWithZod(formData, { schema });
+        },
+    });
+
+    useEffect(() => {
+        if (fetcher.data?.success) {
+            setIsOpen(false);
+        }
+    }, [fetcher.data]);
+
+    const { key: nameKey, ...nameProps } = getInputProps(fields.name, { type: 'text' });
+
+    return (
+        <Dialog open={isOpen} onClose={() => setIsOpen(false)} className="relative z-50">
+            <DialogBackdrop onClick={() => setIsOpen(false)} className="fixed inset-0 bg-black/50" />
+            <div className="fixed inset-0 flex w-screen items-center justify-center">
+                <Container className="flex min-h-[15vh] max-w-md self-center overflow-y-auto bg-gradient-to-br from-gray-950 via-gray-900 to-slate-900 shadow-2xl shadow-cyan-500/10">
+                    <div className="flex min-h-full w-full">
+                        <DialogPanel className="w-full">
+                            <div>
+                                <fetcher.Form method="post" action={`/api/${group?.id}/edit`} {...getFormProps(form)} className="space-y-6">
+                                    <Field
+                                        key={fields.name.key}
+                                        labelProps={{ children: 'Image set name' }}
+                                        inputProps={{
+                                            ...nameProps,
+                                            placeholder: 'e.g "My image set"',
+                                        }}
+                                        errors={fields.name.errors}
+                                    />
+                                    <Button type="submit" size="full" disabled={fields.name?.errors?.length ? true : false}>
+                                        Save image set
+                                    </Button>
+                                </fetcher.Form>
+                            </div>
+                        </DialogPanel>
+                    </div>
+                </Container>
+            </div>
+        </Dialog>
+    );
+};

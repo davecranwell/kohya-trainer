@@ -16,6 +16,10 @@ export const addAllImageToGroup = async (trainingId: string, imageGroupId: strin
                 imageGroupId,
                 text: image.text,
                 caption: image.caption,
+                width: 100,
+                height: 100,
+                x: 0,
+                y: 0,
                 isResized: false,
             })),
         });
@@ -68,6 +72,10 @@ export const addImageToGroup = async (imageGroupId: string, imageId: string) => 
             imageGroupId,
             text: image.text,
             caption: image.caption,
+            width: 100,
+            height: 100,
+            x: 0,
+            y: 0,
             isResized: false,
         },
     });
@@ -110,10 +118,10 @@ export const setImageCrop = async (imageGroupId: string, imageId: string, crop: 
             where: { imageId_imageGroupId: { imageId, imageGroupId } },
             // important that we reset isResized so that images aren't stuck in their first resizing forever
             data: {
-                x: Number(crop.x.toFixed(0)),
-                y: Number(crop.y.toFixed(0)),
-                width: Number(crop.width.toFixed(1)),
-                height: Number(crop.height.toFixed(1)),
+                x: Math.floor(Number(crop.x.toFixed(0))),
+                y: Math.floor(Number(crop.y.toFixed(0))),
+                width: Math.floor(Number(crop.width.toFixed(1))),
+                height: Math.floor(Number(crop.height.toFixed(1))),
                 isResized: false,
             },
         });

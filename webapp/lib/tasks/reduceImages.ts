@@ -22,14 +22,11 @@ export const reduceImages = async ({ runId }: { runId: string }) => {
         throw new Error('Training run not found');
     }
 
-    console.log('reducing images')
-
-    const MAX_SIZE = modelTypeMetadata[trainingRun.training.baseModel as keyof typeof modelTypeMetadata]?.minResolution || 1024;
+    const MAX_SIZE = modelTypeMetadata[trainingRun.training.baseModel as keyof typeof modelTypeMetadata]?.trainingResolution || 1024;
 
     // If the image group is set, only process the images in the image group.
     // Also expect cropping, so send through the x, y, width, height.
 
-    console.log(trainingRun)
     if (trainingRun.imageGroupId) {
         const images = await prisma.imageSize.findMany({
             where: { imageGroupId: trainingRun.imageGroupId, isResized: false },
@@ -47,8 +44,6 @@ export const reduceImages = async ({ runId }: { runId: string }) => {
             },
         });
 
-        console.log(images);
-
         if (!images?.length) {
             // If no images are unprocesed, go straight to zipping
             return true;
@@ -59,7 +54,7 @@ export const reduceImages = async ({ runId }: { runId: string }) => {
             const restOfPath = image.image.url.split('/').slice(0, -1).join('/');
             const targetUrl = `${restOfPath}/${trainingRun.imageGroupId}/${filename}`;
 
-            console.log('queing task', image.image.url, SizeIcon, image.x, image.y, image.width, image.height)
+            console.log('queing task', image.image.url, SizeIcon, image.x, image.y, image.width, image.height);
 
             queueTask({
                 queueUrl: process.env.AWS_SQS_MAXSIZE_QUEUE_URL!,

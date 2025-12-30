@@ -4,14 +4,15 @@ import { requireUserWithPermission } from '~/services/permissions.server.js';
 
 import { TrainingEditor } from './training-editor';
 
-export { action } from './training-editor.server';
 import { baseModels } from '~/util/difussion-models';
 import { Container } from '~/components/container';
+
+export { action } from './training-editor.server';
 
 export async function loader({ request }: LoaderFunctionArgs) {
     const userId = await requireUserWithPermission(request, 'create:training:own');
 
-    return { userId, baseModels: baseModels.filter((model) => model.type === process.env.MODELS) };
+    return { userId, baseModels: baseModels.filter((m) => process.env.MODELS?.split(',').includes(m.type)) };
 }
 
 export default function TrainingRoute() {

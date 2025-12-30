@@ -16,7 +16,6 @@ export async function registerDag() {
 
         switch (task) {
             case 'reduceImages': {
-                console.log('a reduceimages message')
                 const alreadyReduced = await reduceImages({ runId });
                 if (alreadyReduced) {
                     await queueTask({ messageBody: { task: 'zipImages', runId, unique: true } });
@@ -36,7 +35,6 @@ export async function registerDag() {
 
             case 'zipImages': {
                 const zipKey = await zipImages({ runId });
-                console.log('zipKey', zipKey);
                 if (zipKey) {
                     await queueTask({ messageBody: { task: 'allocateGpu', runId, unique: true } });
                 }

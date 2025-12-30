@@ -62,8 +62,8 @@ export function sanitiseTagString(tagString: string, filterTags?: string[]) {
 
 // Takes an array of tags, an optional second array to filter on, and returns a new array of tags that are unique and that are not in the filter array
 // The second param is typically used when removing tags.
-export function sanitiseTagArray(tagArray: string[], filterTags?: string[]) {
-    return makeArrayUnique(tagArray).filter((tag) => !filterTags?.includes(tag));
+export function sanitiseTagArray(tagArray: string[], filterOutTags?: string[]) {
+    return makeArrayUnique(tagArray).filter((tag) => !filterOutTags?.includes(tag));
 }
 
 // // a function which converts an S3 string pointing to an image file, to a string in which the file extension is replaced with _thumbnail.extension
@@ -71,7 +71,7 @@ export function sanitiseTagArray(tagArray: string[], filterTags?: string[]) {
 //     return s3Key.replace(/\.[^.]+$/, '_thumbnail-200$&');
 // }
 
-export function getThumbnailUrl(s3root: string, origionalKey: string, size: number) {
+export function getThumbnailUrl(s3root: string, origionalKey: string, size: 200 | 600) {
     const origionalPath = origionalKey.split('/').slice(0, -1).join('/');
     const origionalFilename = origionalKey.split('/').pop();
 
@@ -88,7 +88,7 @@ export function getOriginalUrl(s3root: string, origionalKey: string) {
 export function getImageWidthAndHeightAsPercentage(width: number, height: number, arbitraryValue: number) {
     const largestValue = Math.max(width, height);
     return {
-        width: (width / largestValue) * 100,
-        height: (height / largestValue) * 100,
+        width: (width / largestValue) * arbitraryValue,
+        height: (height / largestValue) * arbitraryValue,
     };
 }

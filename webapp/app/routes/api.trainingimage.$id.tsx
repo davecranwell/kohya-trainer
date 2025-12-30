@@ -42,8 +42,8 @@ export const action = async ({ params, request }: ActionFunctionArgs) => {
         const updatedImage = await prisma.trainingImage.update({
             where: { id: data.id },
             data: {
-                text: sanitiseTagString(data.text, training.triggerWord.split(' ')),
-                caption: data.caption,
+                ...(typeof data.text !== 'undefined' ? { text: sanitiseTagString(data.text, training.triggerWord.split(' ')) } : {}),
+                ...(typeof data.caption !== 'undefined' ? { caption: data.caption } : {}),
             },
         });
 

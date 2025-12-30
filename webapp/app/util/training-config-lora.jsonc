@@ -41,14 +41,14 @@
     "max_bucket_reso": 2048,
 
     // network, optimiser and lr scheduler
-    "learning_rate": 0.00003, // this is the learning rate for the unet and it's believe that text_encoder_lr and unet_lr override it.
-    "text_encoder_lr": 0.000003, // one of the key things to change, should be 1/10 of the unet_lr for characters.
-    "unet_lr": 0.00003, // one of the key things to change, was 0.0003 (20250909).  With adafactor it seems this can be 0.0004 or more?, with prodigy it should be 1 because it's handled dynamically
+    "learning_rate": 1, // this is the learning rate for the unet and it's believe that text_encoder_lr and unet_lr override it.
+    "text_encoder_lr": 0.00001, // one of the key things to change, should be 1/10 of the unet_lr for characters.
+    "unet_lr": 1, // one of the key things to change, was 0.0003 (20250909).  With adafactor it seems this can be 0.0004 or more?, with prodigy it should be 1 because it's handled dynamically
     "network_alpha": 32, // Was half of dim .Some commentary here: https://rentry.org/59xed3#net-dim-network-dimensionsrank
     "network_dim": 32, // Was 32. as above
-    "optimizer_type": "AdamW", //"AdamW", "AdamW8bit" (for less vram) or "Adafactor" or "Prodigy"
-    "optimizer_args": "", // for Prodigy use: ["decouple=True", "weight_decay=0.01", "d_coef=0.8", "use_bias_correction=True", "safeguard_warmup=True", "betas=0.9,0.99"], this is needed for adafactor ["scale_parameter=False", "relative_step=False", "warmup_init=False"],
-    "lr_scheduler": "constant", // also: cosine, cosine_with_restarts,
+    "optimizer_type": "Prodigy", //"AdamW", "AdamW8bit" (for less vram) or "Adafactor" or "Prodigy"
+    "optimizer_args": ["decouple=True", "weight_decay=0.01", "d_coef=0.9", "use_bias_correction=True", "safeguard_warmup=True", "betas=0.9,0.99"], // for Prodigy use: ["decouple=True", "weight_decay=0.01", "d_coef=0.8", "use_bias_correction=True", "safeguard_warmup=True", "betas=0.9,0.99"], this is needed for adafactor ["scale_parameter=False", "relative_step=False", "warmup_init=False"],
+    "lr_scheduler": "cosine", // also: cosine, cosine_with_restarts,
     "lr_warmup_steps": 0, // 10% of desired total steps (always 2000). Came from here: https://discuss.huggingface.co/t/perfect-lora-training-parameters-human-character/147211
 
     // sampling

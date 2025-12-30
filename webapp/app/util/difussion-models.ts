@@ -1,9 +1,23 @@
 export const modelTypeMetadata = {
     'SD 1.5': {
         minResolution: 512,
+        textMode: 'tags',
+        trainingResolution: 1024,
     },
     'SDXL 1.0': {
         minResolution: 1024,
+        textMode: 'tags',
+        trainingResolution: 2048,
+    },
+    Flux: {
+        minResolution: 1024,
+        textMode: 'caption',
+        trainingResolution: 2048,
+    },
+    ZImageTurbo: {
+        minResolution: 1024,
+        textMode: 'caption',
+        trainingResolution: 2048,
     },
 };
 
@@ -28,5 +42,12 @@ export const baseModels = [
         url: 'https://civitai.com/api/download/models/691639?type=Model&format=SafeTensor&size=full&fp=fp32',
         filename: 'flux_dev.safetensors',
         type: 'Flux',
+    },
+    {
+        id: '4',
+        name: 'Z-Image Turbo',
+        url: 'https://civitai.com/api/download/models/691639?type=Model&format=SafeTensor&size=full&fp=fp32',
+        filename: 'flux_dev.safetensors',
+        type: 'ZImageTurbo',
     },
 ];

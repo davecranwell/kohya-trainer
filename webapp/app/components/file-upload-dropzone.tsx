@@ -1,6 +1,7 @@
 import React, { useCallback, useState, useRef } from 'react';
 import clsx from 'clsx';
 import { ImageIcon } from '@radix-ui/react-icons';
+
 import { IconText } from './icon-text';
 
 export type Preview = {
@@ -30,13 +31,13 @@ export type ImageWithMetadata = {
     caption?: string | null;
     type: string;
     url?: string;
-    width?: number;
-    height?: number;
+    width?: number | null;
+    height?: number | null;
     updatedAt?: Date;
     isIncludedInGroup?: boolean;
 };
 
-export const FileUploadPreview: React.FC<FileUploadPreviewProps> = ({
+export const FileUploadDropzone: React.FC<FileUploadPreviewProps> = ({
     acceptedImageTypes = ['image/png', 'image/jpeg'],
     acceptedImageTypesHumanised = ['png', 'jpeg'],
     acceptedTextTypes = ['text/plain'],
@@ -174,7 +175,7 @@ export const FileUploadPreview: React.FC<FileUploadPreviewProps> = ({
                             text={
                                 dragMessage ||
                                 `Drag and drop ${[...acceptedImageTypesHumanised, ...acceptedTextTypesHumanised].map((type) => `*.${type.split(',')}`).join(', ')} files here, or click, to
-                    select from your computer. Any *.txt files matching the filename of an image (minus the extension) will be used to tag that image.`
+                    select from your computer. Any *.txt files matching the filename of an image (minus the extension) will be used to tag & caption that image.`
                             }
                         />
                     </label>
@@ -200,4 +201,4 @@ export const FileUploadPreview: React.FC<FileUploadPreviewProps> = ({
     );
 };
 
-export default FileUploadPreview;
+export default FileUploadDropzone;

@@ -2,6 +2,7 @@ import { LambdaClient, InvokeCommand } from '@aws-sdk/client-lambda';
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 
 import prisma from '#/prisma/db.server';
+import { modelTypeMetadata } from '~/util/difussion-models';
 
 type ZipPayloadResponse = {
     message: string;
@@ -23,6 +24,7 @@ export const zipImages = async ({ runId }: { runId: string }) => {
             training: {
                 select: {
                     id: true,
+                    baseModel: true,
                     triggerWord: true,
                     config: true,
                     ownerId: true,
@@ -38,26 +40,40 @@ export const zipImages = async ({ runId }: { runId: string }) => {
 
     const { training } = trainingRun;
 
-    // upload all the captions from the Images table for this training as .txt files named after their image filenames, to the same location on S3
+    const textMode = modelTypeMetadata[JSON.parse(training.baseModel as string)?.type as keyof typeof modelTypeMetadata]?.textMode || 'tags';
 
     const images = trainingRun.imageGroupId
         ? (
               await prisma.imageSize.findMany({
                   where: { imageGroupId: trainingRun.imageGroupId },
-                  select: { text: true, image: { select: { name: true } } },
+                  select: { text: true, caption: true, image: { select: { name: true, caption: true, text: true } } },
               })
           ).map((image) => ({
-              text: image.text,
+              imageSizeText: image.text,
+              imageSizeCaption: image.caption,
+              originalImageText: image.image.text,
+              originalImageCaption: image.image.caption,
               name: image.image.name,
           }))
-        : await prisma.trainingImage.findMany({
-              where: { trainingId: training.id },
-              select: { text: true, name: true },
-          });
+        : (
+              await prisma.trainingImage.findMany({
+                  where: { trainingId: training.id },
+                  select: { text: true, caption: true, name: true },
+              })
+          ).map((image) => ({
+              imageSizeText: image.text,
+              imageSizeCaption: image.caption,
+              originalImageText: image.text,
+              originalImageCaption: image.caption,
+              name: image.name,
+          }));
 
     // upload tags to S3
     for (const image of images) {
-        if (!image.text) {
+        const text = image.imageSizeText === null ? image.originalImageText : image.imageSizeText;
+        const caption = image.imageSizeCaption === null ? image.originalImageCaption : image.imageSizeCaption;
+
+        if (!(text?.length || 0 > 0) && !(caption?.length || 0 > 0)) {
             continue;
         }
 
@@ -65,7 +81,7 @@ export const zipImages = async ({ runId }: { runId: string }) => {
             new PutObjectCommand({
                 Bucket: process.env.AWS_S3_MAXRES_BUCKET_NAME,
                 Key: `${training.ownerId}/${training.id}/images/${trainingRun.imageGroupId ? `${trainingRun.imageGroupId}/` : ''}${image.name.replace(/\.[^.]+$/, '.txt')}`,
-                Body: `${training.triggerWord},${image.text}`,
+                Body: textMode === 'tags' ? `${training.triggerWord},${text}` : (caption || '').replace('[trigger]', training.triggerWord),
             }),
         );
     }

@@ -23,6 +23,9 @@ export default [
         route('/api/training', './routes/api.training.tsx'),
         route('/api/trainingimage/:id', './routes/api.trainingimage.$id.tsx'),
         route('/api/:imageGroupId/imagesize/:id', './routes/api.$imageGroupId.imagesize.$id.tsx'),
+        route('/api/:imageGroupId/edit', './routes/api.$imageGroupId.edit.tsx'),
+        route('/api/imagegroup/:imageGroupId/delete', './routes/api.imagegroup.$imageGroupId.delete.tsx'),
+        route('/api/imagegroup/:imageGroupId/duplicate', './routes/api.imagegroup.$imageGroupId.duplicate.tsx'),
         route('/api/uploadurls/:id', './routes/api.uploadurls.$id.tsx'),
         route('/sse/:userId', './routes/sse.$userId.tsx'),
         // route('/training/:id', 'training.tsx', {

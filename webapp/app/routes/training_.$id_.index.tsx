@@ -10,8 +10,9 @@ import prisma from '#/prisma/db.server';
 import { requireUserWithPermission } from '~/services/permissions.server';
 
 import { getThumbnailUrl, sanitiseTagString } from '~/util/misc';
+import { modelTypeMetadata } from '~/util/difussion-models';
 
-import { FileUploadPreview, ImageWithMetadata } from '~/components/file-upload-preview';
+import { FileUploadDropzone, ImageWithMetadata } from '~/components/file-upload-dropzone';
 import { Panel } from '~/components/panel';
 import { Textarea } from '~/components/forms/textarea';
 import { ImageTaggingList } from '~/components/image-tagging-list';
@@ -71,6 +72,7 @@ export async function loader({ params, request }: LoaderFunctionArgs) {
             createdAt: true,
         },
         where: { trainingId: params.id },
+        orderBy: { createdAt: 'desc' },
     });
 
     return {
@@ -78,17 +80,20 @@ export async function loader({ params, request }: LoaderFunctionArgs) {
         userId,
         images: images.map((image) => ({ ...image, filenameNoExtension: image.name.split('.').slice(0, -1).join('.') })),
         training,
+        textMode: modelTypeMetadata[JSON.parse(training.baseModel as string)?.type as keyof typeof modelTypeMetadata]?.textMode || 'tags',
     };
 }
 
 export default function ImageUpload() {
-    const { images, training, thumbnailBucketUrl } = useLoaderData<typeof loader>();
+    const { images, training, thumbnailBucketUrl, textMode } = useLoaderData<typeof loader>();
     const [uploadedImages, setUploadedImages] = useState<ImageWithMetadata[]>(images as ImageWithMetadata[]);
     const listRef = useRef<HTMLDivElement>(null);
     const [windowWidth, setWindowWidth] = useState(0);
     const [cols, setCols] = useState(3);
     const { trainingStatuses } = useTrainingStatus();
     const fetcher = useFetcher();
+
+    const imageWidth = Math.min(Math.ceil(windowWidth / cols), 500);
 
     useEffect(() => {
         const detectedWidth = listRef?.current?.clientWidth;
@@ -196,9 +201,16 @@ export default function ImageUpload() {
                 await Promise.all(
                     textFiles.map(async (textFile) => {
                         return new Promise(async (resolve, reject) => {
-                            const matchingImage = allImages.find(
-                                (image) => image.filenameNoExtension === textFile.name.split('.').slice(0, -1).join('.'),
-                            );
+                            const matchingImage = allImages.find((image) => {
+                                const txtWithoutExt = textFile.name.split('.').slice(0, -1);
+
+                                // handle files like textfile.caption.txt which identify a text file containing a caption
+                                if (txtWithoutExt[txtWithoutExt.length - 1].toLowerCase() === 'caption') {
+                                    return image.filenameNoExtension === txtWithoutExt.slice(0, -1).join('.');
+                                }
+
+                                return image.filenameNoExtension === txtWithoutExt.join('.');
+                            });
 
                             if (!matchingImage) {
                                 reject();
@@ -207,21 +219,31 @@ export default function ImageUpload() {
 
                             const reader = new FileReader();
                             reader.onload = async function (e: any) {
-                                matchingImage.text = sanitiseTagString(e.target?.result as string, [
-                                    ...training.name.split(' '),
-                                    ...training.triggerWord.split(' '),
-                                ]);
-                                matchingImage.caption = e.target?.result as string;
-                                const updateTextResponse = await fetch(`/api/trainingimage/${training.id}`, {
-                                    method: 'PATCH',
-                                    body: JSON.stringify({
-                                        id: matchingImage?.id,
-                                        text: matchingImage?.text,
-                                        caption: matchingImage?.caption,
-                                    }),
-                                });
-                                if (updateTextResponse.ok) {
-                                    resolve(matchingImage);
+                                const textMode = textFile.name.split('.').slice(0, -1).pop()?.toLowerCase() === 'caption' ? 'caption' : 'tags';
+
+                                if (textMode === 'caption') {
+                                    matchingImage.caption = e.target?.result as string;
+                                } else {
+                                    matchingImage.text = sanitiseTagString(e.target?.result as string, [
+                                        ...training.name.split(' '),
+                                        ...training.triggerWord.split(' '),
+                                    ]);
+                                }
+
+                                try {
+                                    const updateTextResponse = await fetch(`/api/trainingimage/${training.id}`, {
+                                        method: 'PATCH',
+                                        body: JSON.stringify({
+                                            id: matchingImage?.id,
+                                            ...(textMode === 'tags' ? { text: matchingImage?.text } : {}),
+                                            ...(textMode === 'caption' ? { caption: matchingImage?.caption } : {}),
+                                        }),
+                                    });
+                                    if (updateTextResponse.ok) {
+                                        resolve(matchingImage);
+                                    }
+                                } catch (error) {
+                                    reject(error);
                                 }
                             };
                             reader.readAsText(textFile);
@@ -252,17 +274,6 @@ export default function ImageUpload() {
                 body: JSON.stringify({ id: imageId, text: sanitisedTags.join(',') }),
             });
 
-            // if (updateTextResponse.ok) {
-            // const updatedImages = images.map((image) => {
-            //     if (image.id === imageId) {
-            //         image.text = sanitisedTags.join(',');
-            //     }
-            //     return image;
-            // });
-            // we don't want to update the uploaded images here because we don't want to re-render the entire list
-            //setUploadedImages(updatedImages);
-            // }
-
             return updateTextResponse.ok;
         },
         [images],
@@ -282,7 +293,7 @@ export default function ImageUpload() {
                 </div>
             }>
             <div className="flex h-full flex-col justify-stretch overflow-hidden" ref={listRef}>
-                <FileUploadPreview
+                <FileUploadDropzone
                     key={`${training.id}-preview`}
                     acceptedImageTypes={ACCEPTED_IMAGE_TYPES}
                     acceptedTextTypes={ACCEPTED_TEXT_TYPES}
@@ -291,20 +302,24 @@ export default function ImageUpload() {
                     onDropped={handleNewFile}>
                     {uploadedImages.length > 0 && (
                         <ImageTaggingList
-                            handleDelete={handleDelete}
+                            textMode={textMode as 'tags' | 'caption'}
                             images={uploadedImages}
                             cols={cols}
-                            imageWidth={Math.min(Math.ceil(windowWidth / cols), 500)}
-                            imageHeight={240}
+                            imageWidth={imageWidth}
+                            imageHeight={250}
                             windowWidth={windowWidth}
                             onImageTagsUpdated={handleTagsUpdated}
-                            onImageCaptionUpdated={handleCaptionUpdated}
-                            RenderImage={memo(({ ...props }) => (
-                                <UploadedImage {...props} thumbnailBucketUrl={thumbnailBucketUrl} />
+                            ImageComponent={memo(({ ...props }) => (
+                                <UploadedImage
+                                    {...props}
+                                    onDelete={handleDelete}
+                                    onCaptionChange={handleCaptionUpdated}
+                                    thumbnailBucketUrl={thumbnailBucketUrl}
+                                />
                             ))}
                         />
                     )}
-                </FileUploadPreview>
+                </FileUploadDropzone>
             </div>
         </Panel>
     );
@@ -314,19 +329,19 @@ const UploadedImage = ({
     image,
     thumbnailBucketUrl,
     handleTagChange,
+    onCaptionChange,
     handleTagRemove,
-    handleDelete,
+    onDelete,
     handleGetTagOptions,
-    handleCaptionChange,
     textMode = 'tags',
 }: {
     image: ImageWithMetadata;
     thumbnailBucketUrl: string;
     handleTagChange: (tags: string[], imageId: string) => void;
+    onCaptionChange: (imageId: string, caption: string) => void;
     handleTagRemove: (tags: string[], removedTag: string, imageId: string) => void;
-    handleDelete: (imageId: string) => void;
+    onDelete: (imageId: string) => void;
     handleGetTagOptions: () => string[];
-    handleCaptionChange: (caption: string, imageId: string) => void;
     textMode?: 'tags' | 'caption';
 }) => {
     // Memoize the onChange and onRemove functions to prevent unnecessary re-renders
@@ -342,7 +357,7 @@ const UploadedImage = ({
     );
 
     return (
-        <div className="relative flex">
+        <div className="relative flex flex-1">
             {image.url && (
                 <ImagePreview
                     url={`${image.url?.startsWith('blob') ? image.url : getThumbnailUrl(thumbnailBucketUrl, image.url, 200)}`}
@@ -351,14 +366,14 @@ const UploadedImage = ({
                 />
             )}
 
-            <div className="absolute left-0 top-0 z-50">
+            <div className="absolute left-0 top-0 z-50 opacity-0 duration-150 group-hover/image:opacity-100">
                 <Button
                     name={`exclude`}
                     value={image.id}
                     display="ghost"
                     size="icon"
                     icon={Cross1Icon}
-                    onClick={() => handleDelete(image.id!)}
+                    onClick={() => onDelete(image.id!)}
                     title="Delete from training data"
                 />
             </div>
@@ -376,11 +391,11 @@ const UploadedImage = ({
                 {textMode === 'caption' && (
                     <Textarea
                         name={`${image.id}-caption`}
-                        defaultValue={image.caption || ''}
-                        onChange={(e) => handleCaptionChange(e.target.value, image.id!)}
+                        defaultValue={image?.caption || ''}
+                        onBlur={(e) => onCaptionChange(image.id!, e.target.value)}
                         rows={5}
-                        className="text-sm"
-                        placeholder="Enter a caption for the image"
+                        className="flex h-full text-sm"
+                        placeholder={'Enter a caption for the image'}
                     />
                 )}
             </div>

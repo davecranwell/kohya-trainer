@@ -12,7 +12,7 @@ import { Input } from './forms/input';
 const getModels = async (baseModels: string[], search: string) => {
     try {
         const response = await fetch(
-            `https://civitai.com/api/v1/models?types=Checkpoint&sort=Highest%20Rated&nsfw=true&baseModels=${baseModels.map((model) => encodeURIComponent(model)).join(',')}&query=${search}`,
+            `https://civitai.com/api/v1/models?types=Checkpoint&sort=Highest%20Rated&nsfw=true${baseModels.map((model) => `&baseModels[]=${encodeURIComponent(model)}`)}&query=${search}`,
         );
 
         const data = await response.json();
@@ -39,8 +39,11 @@ const Model = ({
     const baseModels = new Set(model?.modelVersions.map((version: any) => version.baseModel));
     const baseModelsUnique = [...baseModels] as string[];
     const baseModelsSupported = baseModelsUnique.filter((baseModel) => supported.includes(baseModel));
-    const isSupported = baseModelsUnique.some((baseModel: string) => supported.includes(baseModel));
-    const [selectedVersion, setSelectedVersion] = useState({ ...model?.modelVersions[0], originalModelName: model.name });
+    const isSupported = baseModelsUnique.some((baseModel: string) => supported.includes(baseModel)) && model.allowNoCredit == true;
+    const [selectedVersion, setSelectedVersion] = useState({
+        ...model?.modelVersions.filter((version: any) => version.availability.toLowerCase() == 'public')[0],
+        originalModelName: model.name,
+    });
 
     if (!isSupported) return null;
 
@@ -102,7 +105,7 @@ const Model = ({
                                             className="w-[var(--button-width)] rounded-md bg-black py-1 shadow-lg ring-1 ring-black ring-opacity-5 transition duration-100 ease-in focus:outline-none data-[leave]:data-[closed]:opacity-0 sm:text-sm">
                                             {model?.modelVersions
                                                 .filter((version: any) => supported.includes(version.baseModel))
-                                                .filter((version: any) => version.availability.toLowerCase() === 'public')
+                                                .filter((version: any) => version.availability.toLowerCase() == 'public')
                                                 .map((version: any) => (
                                                     <ListboxOption
                                                         key={`${model.id}-${version.id}`}
@@ -157,7 +160,7 @@ export function CivitaiBrowser({
         <>
             <Dialog open={isOpen} onClose={() => setIsOpen(false)} className="relative z-50">
                 <div className="fixed inset-0 flex w-screen items-center justify-center">
-                    <Container className="flex h-[80vh] max-h-[80vh] max-w-6xl self-center overflow-y-auto bg-gradient-to-br from-gray-950 via-gray-900 to-slate-900 shadow-2xl shadow-cyan-500/10">
+                    <Container className="flex h-[80vh] max-h-[80vh] min-h-[80vh] max-w-6xl self-center overflow-y-auto bg-gradient-to-br from-gray-950 via-gray-900 to-slate-900 shadow-2xl shadow-cyan-500/10">
                         <div className="flex min-h-full w-full">
                             <DialogPanel className="w-full">
                                 {isLoading ? (

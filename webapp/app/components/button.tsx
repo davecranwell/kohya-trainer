@@ -18,7 +18,8 @@ const buttonVariants = cva(
             },
             display: {
                 default: 'border border-stroke text-white hover:bg-primary-dark ',
-                ghost: 'bg-black/40 hover:bg-accent1-dark/60 text-white',
+                ghost: 'bg-black/40 hover:bg-primary-dark/60 text-white',
+                icononly: 'hover:bg-primary-dark/60 text-white',
                 textonly: '',
             },
             size: {

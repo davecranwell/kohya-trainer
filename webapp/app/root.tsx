@@ -67,7 +67,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 <ScrollRestoration nonce={nonce} />
                 <Scripts nonce={nonce} />
                 <Toaster
-                    position="bottom-center"
+                    position="top-center"
                     toastOptions={{
                         unstyled: true,
                         classNames: {

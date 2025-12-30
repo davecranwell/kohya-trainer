@@ -153,10 +153,10 @@ model ImageSize {
     imageGroupId String
     isResized    Boolean  @default(false)
     url          String?
-    width        Float?
-    height       Float?
-    x            Float?
-    y            Float?
+    width        Float? // this is a percentage of the original image width
+    height       Float? // this is a percentage of the original image height
+    x            Float? // this is a percentage of the original image width from the left
+    y            Float? // this is a percentage of the original image height from the top
     createdAt    DateTime @default(now())
     updatedAt    DateTime @updatedAt
     text         String?
